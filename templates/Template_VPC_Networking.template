@@ -2,20 +2,6 @@
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description"              : "This template creates a VPC infrastructure for a generic multi-AZ, multi-tier infrastructure.",
     "Parameters"               : {
-        "KeyPairName" : {
-            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
-        },
-        "InstanceTypeNAT" : {
-            "Description" : "Amazon EC2 instance type for the NAT Instances",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
-            "AllowedValues" : [
-                "t2.micro",
-                "t2.small",
-                "t2.medium"
-            ]
-        },
         "CIDRDMZ1"         : {
             "Description" : "CIDR Block for the Public DMZ Subnet located in AZ1",
             "Type"        : "String",
@@ -45,85 +31,6 @@
             "Type"        : "String",
             "Default"     : "10.0.0.0/16",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
-        "IpAddressDmzNAT1"   : {
-            "Description" : "Fixed private IP for the NAT instance located in AZ1",
-            "Type"        : "String",
-            "Default"     : "10.0.47.254"
-        },
-        "IpAddressDmzNAT2"   : {
-            "Description" : "Fixed private IP for the NAT instance located in AZ2",
-            "Type"        : "String",
-            "Default"     : "10.0.111.254"
-        }
-    },
-    "Mappings"                 : {
-        "AWSInstanceType2Arch" : {
-            "m1.small" : {
-                "Arch" : "64"
-            },
-            "m1.medium" : {
-                "Arch" : "64"
-            },
-            "m1.large"  : {
-                "Arch" : "64"
-            },
-            "m2.xlarge" : {
-                "Arch" : "64"
-            },
-            "t2.micro" : {
-                "Arch" : "64"
-            },
-            "t2.small" : {
-                "Arch" : "64"
-            },
-            "t2.medium" : {
-                "Arch" : "64"
-            },
-            "m2.2xlarge" : {
-                "Arch" : "64"
-            },
-            "m2.4xlarge" : {
-                "Arch" : "64"
-            },
-            "m3.xlarge"  : {
-                "Arch" : "64"
-            },
-            "c1.medium"  : {
-                "Arch" : "64"
-            },
-            "c1.xlarge"  : {
-                "Arch" : "64"
-            }
-        },
-        "AWSRegionArchNatAMI"  : {
-            "us-east-1" : {
-                "64" : "ami-303b1458"
-            },
-            "us-west-2" : {
-                "64" : "ami-69ae8259"
-            },
-            "us-west-1" : {
-                "64" : "ami-7da94839"
-            },
-            "eu-west-1" : {
-                "64" : "ami-6975eb1e"
-            },
-            "eu-central-1" : {
-                "64" : "ami-46073a5b"
-            },
-            "ap-southeast-1" : {
-                "64" : "ami-b49dace6"
-            },
-            "ap-northeast-1" : {
-                "64" : "ami-03cf3903"
-            },
-            "ap-southeast-2" : {
-                "64" : "ami-e7ee9edd"
-            },
-            "sa-east-1"      : {
-                "64" : "ami-fbfa41e6"
-            }
         }
     },
     "Resources"                : {
@@ -178,7 +85,7 @@
                         "Value" : "Public"
                     },
                     {
-                        "Key" : "Role",
+                        "Key" : "Name",
                         "Value" : "AZ1 DMZ Subnet"
                     }
                 ]
@@ -213,7 +120,7 @@
                         "Value" : "Public"
                     },
                     {
-                        "Key" : "Role",
+                        "Key" : "Name",
                         "Value" : "AZ2 DMZ Subnet"
                     }
                 ]
@@ -248,7 +155,7 @@
                         "Value" : "Private"
                     },
                     {
-                        "Key" : "Role",
+                        "Key" : "Name",
                         "Value" : "AZ1 Private Subnet"
                     }
                 ]
@@ -283,7 +190,7 @@
                         "Value" : "Private"
                     },
                     {
-                        "Key" : "Role",
+                        "Key" : "Name",
                         "Value" : "AZ2 Private Subnet"
                     }
                 ]
@@ -332,6 +239,10 @@
                     },
                     {
                         "Key" : "Network",
+                        "Value" : "DMZ"
+                    },
+                    {
+                        "Key" : "Name",
                         "Value" : "DMZ"
                     }
                 ]
@@ -387,21 +298,13 @@
                     },
                     {
                         "Key" : "Network",
+                        "Value" : "Private"
+                    },
+                    {
+                        "Key" : "Name",
                         "Value" : "AZ1 Private"
                     }
                 ]
-            }
-        },
-        "PrivateRoute1"                    : {
-            "Type" : "AWS::EC2::Route",
-            "Properties" : {
-                "RouteTableId" : {
-                    "Ref" : "PrivateRouteTable1"
-                },
-                "DestinationCidrBlock" : "0.0.0.0/0",
-                "NetworkInterfaceId" : {
-                    "Ref" : "NAT1ElasticNetworkInterface"
-                }
             }
         },
         "PrivateRouteTable2"              : {
@@ -419,21 +322,13 @@
                     },
                     {
                         "Key" : "Network",
+                        "Value" : "Private"
+                    },
+                    {
+                        "Key" : "Name",
                         "Value" : "AZ2 Private"
                     }
                 ]
-            }
-        },
-        "PrivateRoute2"                   : {
-            "Type" : "AWS::EC2::Route",
-            "Properties" : {
-                "RouteTableId" : {
-                    "Ref" : "PrivateRouteTable2"
-                },
-                "DestinationCidrBlock" : "0.0.0.0/0",
-                "NetworkInterfaceId" : {
-                    "Ref" : "NAT2ElasticNetworkInterface"
-                }
             }
         },
         "PrivateSubnetRouteTableAssociation1" : {
@@ -457,213 +352,6 @@
                     "Ref" : "PrivateRouteTable2"
                 }
             }
-        },
-        "NAT1ElasticIP" : {
-            "Type" : "AWS::EC2::EIP",
-            "DependsOn" : "AttachGateway",
-            "Properties" : {
-                "Domain" : "vpc"
-            }
-        },
-        "NAT1ElasticIPAssociation" : {
-            "Type": "AWS::EC2::EIPAssociation",
-            "Properties": {
-                "AllocationId" : { "Fn::GetAtt" : [ "NAT1ElasticIP", "AllocationId" ]},
-                "NetworkInterfaceId": { "Ref" : "NAT1ElasticNetworkInterface" }
-            }
-        },
-        "NAT1ElasticNetworkInterface" : {
-           "Type" : "AWS::EC2::NetworkInterface",
-           "Properties" : {
-                "Description" : "Network Interface for NAT Instance in AZ1",
-                "GroupSet" : [ { "Ref" : "NATSecurityGroup" } ],
-                "PrivateIpAddress" : { "Ref" : "IpAddressDmzNAT1" },
-                "SourceDestCheck" : "false",
-                "SubnetId" : { "Ref" : "DMZ1Subnet" },
-                "Tags" : [
-                    {
-                        "Key" : "Name",
-                        "Value" : "NAT1"
-                    }
-                ]
-           }
-        },
-        "NAT1AutoScalingGroup" : {
-          "Type" : "AWS::AutoScaling::AutoScalingGroup",
-          "Properties" : {
-            "VPCZoneIdentifier" : [ { "Ref" : "DMZ1Subnet" } ],
-            "LaunchConfigurationName" : { "Ref" : "NAT1LaunchConfig" },
-            "MinSize" : "1",
-            "MaxSize" : "1",
-            "DesiredCapacity" : "1",
-            "Tags" : [
-                {
-                    "Key" : "Name",
-                    "Value" : "NAT1",
-                    "PropagateAtLaunch" : "true"
-                }
-            ]
-          }
-        },
-        "NAT1LaunchConfig" : {
-            "Type" : "AWS::AutoScaling::LaunchConfiguration",
-            "Properties" : {
-                "ImageId" : {
-                    "Fn::FindInMap" : [
-                        "AWSRegionArchNatAMI",
-                        {
-                            "Ref" : "AWS::Region"
-                        },
-                        {
-                            "Fn::FindInMap" : [
-                                "AWSInstanceType2Arch",
-                                {
-                                    "Ref" : "InstanceTypeNAT"
-                                },
-                                "Arch"
-                            ]
-                        }
-                    ]
-                },
-                "InstanceType" : {
-                    "Ref" : "InstanceTypeNAT"
-                },
-				"SecurityGroups" : [ { "Ref" : "NATSecurityGroup" } ],
-                "BlockDeviceMappings" : [
-                  {
-                    "DeviceName" : "/dev/xvda",
-                    "Ebs" : { "DeleteOnTermination" : "true" } 
-                  }
-                ],
-                "KeyName"          : {
-                    "Ref" : "KeyPairName"
-                }
-            }
-        },
-        "NAT2ElasticIP" : {
-            "Type" : "AWS::EC2::EIP",
-            "DependsOn" : "AttachGateway",
-            "Properties" : {
-                "Domain" : "vpc"
-            }
-        },
-        "NAT2ElasticIPAssociation" : {
-            "Type": "AWS::EC2::EIPAssociation",
-            "Properties": {
-                "AllocationId" : { "Fn::GetAtt" : [ "NAT2ElasticIP", "AllocationId" ]},
-                "NetworkInterfaceId": { "Ref" : "NAT2ElasticNetworkInterface" }
-            }
-        },
-        "NAT2ElasticNetworkInterface" : {
-           "Type" : "AWS::EC2::NetworkInterface",
-           "Properties" : {
-                "Description" : "Network Interface for NAT Instance in AZ2",
-                "GroupSet" : [ { "Ref" : "NATSecurityGroup" } ],
-                "PrivateIpAddress" : { "Ref" : "IpAddressDmzNAT2" },
-                "SourceDestCheck" : "false",
-                "SubnetId" : { "Ref" : "DMZ2Subnet" },
-                "Tags" : [
-                    {
-                        "Key" : "Name",
-                        "Value" : "NAT2"
-                    }
-                ]
-           }
-        },
-        "NAT2AutoScalingGroup" : {
-          "Type" : "AWS::AutoScaling::AutoScalingGroup",
-          "Properties" : {
-            "VPCZoneIdentifier" : [ { "Ref" : "DMZ2Subnet" } ],
-            "LaunchConfigurationName" : { "Ref" : "NAT2LaunchConfig" },
-            "MinSize" : "1",
-            "MaxSize" : "1",
-            "DesiredCapacity" : "1",
-            "Tags" : [
-                {
-                    "Key" : "Name",
-                    "Value" : "NAT2",
-                    "PropagateAtLaunch" : "true"
-                }
-            ]
-          }
-        },
-        "NAT2LaunchConfig" : {
-            "Type" : "AWS::AutoScaling::LaunchConfiguration",
-            "Properties" : {
-                "ImageId" : {
-                    "Fn::FindInMap" : [
-                        "AWSRegionArchNatAMI",
-                        {
-                            "Ref" : "AWS::Region"
-                        },
-                        {
-                            "Fn::FindInMap" : [
-                                "AWSInstanceType2Arch",
-                                {
-                                    "Ref" : "InstanceTypeNAT"
-                                },
-                                "Arch"
-                            ]
-                        }
-                    ]
-                },
-                "InstanceType" : {
-                    "Ref" : "InstanceTypeNAT"
-                },
-				"SecurityGroups" : [ { "Ref" : "NATSecurityGroup" } ],
-                "BlockDeviceMappings" : [
-                  {
-                    "DeviceName" : "/dev/xvda",
-                    "Ebs" : { "DeleteOnTermination" : "true" } 
-                  }
-                ],
-                "KeyName"          : {
-                    "Ref" : "KeyPairName"
-                }
-            }
-        },
-        "NATSecurityGroup"                    : {
-            "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
-                "GroupDescription" : "Enables outbound internet access for private subnets via NAT instances",
-                "VpcId"            : {
-                    "Ref" : "VPC"
-                },
-                "SecurityGroupIngress" : [
-                    {
-                        "IpProtocol" : "-1",
-                        "FromPort"   : "1",
-                        "ToPort"     : "65535",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRPrivSub1"
-                        }
-                    },
-                    {
-                        "IpProtocol" : "icmp",
-                        "FromPort"   : "-1",
-                        "ToPort"     : "-1",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRPrivSub1"
-                        }
-                    },
-                    {
-                        "IpProtocol" : "-1",
-                        "FromPort"   : "1",
-                        "ToPort"     : "65535",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRPrivSub2"
-                        }
-                    },
-                    {
-                        "IpProtocol" : "icmp",
-                        "FromPort"   : "-1",
-                        "ToPort"     : "-1",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRPrivSub2"
-                        }
-                    }
-                ]
-            }
         }
     },
     "Outputs"                  : {
@@ -678,6 +366,18 @@
                 "Ref": "CIDRVPC" 
             },
             "Description" : "VPC CIDR"
+        },
+        "CIDRPrivSub1"        : {
+            "Value" : { 
+                "Ref": "CIDRPrivSub1" 
+            },
+            "Description" : "Private Subnet 1 CIDR"
+        },
+        "CIDRPrivSub2"        : {
+            "Value" : { 
+                "Ref": "CIDRPrivSub2" 
+            },
+            "Description" : "Private Subnet 2 CIDR"
         },
         "DMZ1SubnetId" : {
             "Value" : {
@@ -702,6 +402,18 @@
                 "Ref" : "PrivateSubnet2"
             },
             "Description" : "Private Subnet ID in AZ2"
+        },
+        "PrivateRouteTable1Id" : {
+            "Value" : {
+                "Ref" : "PrivateRouteTable1"
+            },
+            "Description" : "Route Table ID for Private Subnet 1"
+        },
+        "PrivateRouteTable2Id" : {
+            "Value" : {
+                "Ref" : "PrivateRouteTable2"
+            },
+            "Description" : "Route Table ID for Private Subnet 2"
         }
     }
 }
