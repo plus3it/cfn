@@ -2,38 +2,26 @@
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description"              : "This template creates a VPC infrastructure for a generic multi-AZ, multi-tier infrastructure.",
     "Parameters"               : {
-        "CIDRDMZ1"         : {
-            "Description" : "CIDR Block for the Public DMZ Subnet located in AZ1",
+        "CIDRDMZ"         : {
+            "Description" : "CIDR Block for a Public DMZ Subnet (Ex: 10.0.32.0/20, 10.0.96.0/20, etc...)",
             "Type"        : "String",
             "Default"     : "10.0.32.0/20",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "CIDRDMZ2"         : {
-            "Description" : "CIDR Block for the Public DMZ Subnet located in AZ2",
-            "Type"        : "String",
-            "Default"     : "10.0.96.0/20",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
-        "CIDRPrivSub1"     : {
-            "Description" : "CIDR Block for Private Subnet 1 located in AZ1",
+        "CIDRPrivSub"     : {
+            "Description" : "CIDR Block for a Private Subnet (Ex: 10.0.0.0/19, 10.0.64.0/19, etc...)",
             "Type"        : "String",
             "Default"     : "10.0.0.0/19",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "CIDRPrivSub2"     : {
-            "Description" : "CIDR Block for Private Subnet 2 located in AZ2",
-            "Type"        : "String",
-            "Default"     : "10.0.64.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
         "CIDRVPC"          : {
-            "Description" : "CIDR Block for the VPC",
+            "Description" : "CIDR Block for the VPC (Ex: 10.0.0.0/16, etc...)",
             "Type"        : "String",
             "Default"     : "10.0.0.0/16",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         }
     },
-    "Resources"                : {
+    "Resources" : {
         "VPC" : {
             "Type" : "AWS::EC2::VPC",
             "Properties" : {
@@ -56,14 +44,14 @@
                 ]
             }
         },
-        "DMZ1Subnet" : {
+        "DMZSubnet" : {
             "Type" : "AWS::EC2::Subnet",
             "Properties" : {
                 "VpcId" : {
                     "Ref" : "VPC"
                 },
                 "CidrBlock" : {
-                    "Ref" : "CIDRDMZ1"
+                    "Ref" : "CIDRDMZ"
                 },
                 "AvailabilityZone" : {
                     "Fn::Select" : [
@@ -86,54 +74,19 @@
                     },
                     {
                         "Key" : "Name",
-                        "Value" : "AZ1 DMZ Subnet"
+                        "Value" : "DMZ Subnet"
                     }
                 ]
             }
         },
-        "DMZ2Subnet" : {
+        "PrivateSubnet" : {
             "Type" : "AWS::EC2::Subnet",
             "Properties" : {
                 "VpcId" : {
                     "Ref" : "VPC"
                 },
                 "CidrBlock" : {
-                    "Ref" : "CIDRDMZ2"
-                },
-                "AvailabilityZone" : {
-                    "Fn::Select" : [
-                        1,
-                        {
-                            "Fn::GetAZs" : ""
-                        }
-                    ]
-                },
-                "Tags"             : [
-                    {
-                        "Key" : "Application",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
-                    },
-                    {
-                        "Key" : "Network",
-                        "Value" : "Public"
-                    },
-                    {
-                        "Key" : "Name",
-                        "Value" : "AZ2 DMZ Subnet"
-                    }
-                ]
-            }
-        },
-        "PrivateSubnet1" : {
-            "Type" : "AWS::EC2::Subnet",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "CidrBlock" : {
-                    "Ref" : "CIDRPrivSub1"
+                    "Ref" : "CIDRPrivSub"
                 },
                 "AvailabilityZone" : {
                     "Fn::Select" : [
@@ -156,42 +109,7 @@
                     },
                     {
                         "Key" : "Name",
-                        "Value" : "AZ1 Private Subnet"
-                    }
-                ]
-            }
-        },
-        "PrivateSubnet2" : {
-            "Type" : "AWS::EC2::Subnet",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "CidrBlock" : {
-                    "Ref" : "CIDRPrivSub2"
-                },
-                "AvailabilityZone" : {
-                    "Fn::Select" : [
-                        1,
-                        {
-                            "Fn::GetAZs" : ""
-                        }
-                    ]
-                },
-                "Tags"             : [
-                    {
-                        "Key" : "Application",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
-                    },
-                    {
-                        "Key" : "Network",
-                        "Value" : "Private"
-                    },
-                    {
-                        "Key" : "Name",
-                        "Value" : "AZ2 Private Subnet"
+                        "Value" : "Private Subnet"
                     }
                 ]
             }
@@ -261,29 +179,18 @@
                 }
             }
         },
-        "DMZ1SubnetRouteTableAssociation" : {
+        "DMZSubnetRouteTableAssociation" : {
             "Type" : "AWS::EC2::SubnetRouteTableAssociation",
             "Properties" : {
                 "SubnetId" : {
-                    "Ref" : "DMZ1Subnet"
+                    "Ref" : "DMZSubnet"
                 },
                 "RouteTableId" : {
                     "Ref" : "DMZRouteTable"
                 }
             }
         },
-        "DMZ2SubnetRouteTableAssociation" : {
-            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties" : {
-                "SubnetId" : {
-                    "Ref" : "DMZ2Subnet"
-                },
-                "RouteTableId" : {
-                    "Ref" : "DMZRouteTable"
-                }
-            }
-        },
-        "PrivateRouteTable1"               : {
+        "PrivateRouteTable"               : {
             "Type" : "AWS::EC2::RouteTable",
             "Properties" : {
                 "VpcId" : {
@@ -302,54 +209,19 @@
                     },
                     {
                         "Key" : "Name",
-                        "Value" : "AZ1 Private"
-                    }
-                ]
-            }
-        },
-        "PrivateRouteTable2"              : {
-            "Type" : "AWS::EC2::RouteTable",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "Tags"  : [
-                    {
-                        "Key" : "Application",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
-                    },
-                    {
-                        "Key" : "Network",
                         "Value" : "Private"
-                    },
-                    {
-                        "Key" : "Name",
-                        "Value" : "AZ2 Private"
                     }
                 ]
             }
         },
-        "PrivateSubnetRouteTableAssociation1" : {
+        "PrivateSubnetRouteTableAssociation" : {
             "Type" : "AWS::EC2::SubnetRouteTableAssociation",
             "Properties" : {
                 "SubnetId" : {
-                    "Ref" : "PrivateSubnet1"
+                    "Ref" : "PrivateSubnet"
                 },
                 "RouteTableId" : {
-                    "Ref" : "PrivateRouteTable1"
-                }
-            }
-        },
-        "PrivateSubnetRouteTableAssociation2" : {
-            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties" : {
-                "SubnetId" : {
-                    "Ref" : "PrivateSubnet2"
-                },
-                "RouteTableId" : {
-                    "Ref" : "PrivateRouteTable2"
+                    "Ref" : "PrivateRouteTable"
                 }
             }
         }
@@ -367,53 +239,29 @@
             },
             "Description" : "VPC CIDR"
         },
-        "CIDRPrivSub1"        : {
+        "CIDRPrivSub"        : {
             "Value" : { 
-                "Ref": "CIDRPrivSub1" 
+                "Ref": "CIDRPrivSub" 
             },
-            "Description" : "Private Subnet 1 CIDR"
+            "Description" : "Private Subnet CIDR"
         },
-        "CIDRPrivSub2"        : {
-            "Value" : { 
-                "Ref": "CIDRPrivSub2" 
-            },
-            "Description" : "Private Subnet 2 CIDR"
-        },
-        "DMZ1SubnetId" : {
+        "DMZSubnetId" : {
             "Value" : {
-                "Ref" : "DMZ1Subnet"
+                "Ref" : "DMZSubnet"
             },
-            "Description" : "Subnet ID for the public subnet in AZ1"
+            "Description" : "Subnet ID for the public subnet"
         },
-        "DMZ2SubnetId" : {
+        "PrivateSubnetId" : {
             "Value" : {
-                "Ref" : "DMZ2Subnet"
+                "Ref" : "PrivateSubnet"
             },
-            "Description" : "Subnet ID for the public in AZ2"
+            "Description" : "Private Subnet ID"
         },
-        "PrivateSubnet1Id" : {
+        "PrivateRouteTableId" : {
             "Value" : {
-                "Ref" : "PrivateSubnet1"
+                "Ref" : "PrivateRouteTable"
             },
-            "Description" : "Private Subnet ID in AZ1"
-        },
-        "PrivateSubnet2Id" : {
-            "Value" : {
-                "Ref" : "PrivateSubnet2"
-            },
-            "Description" : "Private Subnet ID in AZ2"
-        },
-        "PrivateRouteTable1Id" : {
-            "Value" : {
-                "Ref" : "PrivateRouteTable1"
-            },
-            "Description" : "Route Table ID for Private Subnet 1"
-        },
-        "PrivateRouteTable2Id" : {
-            "Value" : {
-                "Ref" : "PrivateRouteTable2"
-            },
-            "Description" : "Route Table ID for Private Subnet 2"
+            "Description" : "Route Table ID for Private Subnet"
         }
     }
 }
