@@ -289,16 +289,13 @@
                     },
                     "configure-nat" : {
                         "commands" : {
-                            "a-attach-eni" : {
+                            "10-attach-eni" : {
                                 "command" : "/etc/cfn/scripts/configure-nat-eni.sh Name"
                             },
-                            "b-sleep" : {
-                                "command" : "sleep 20"
-                            },
-                            "c-configure-pat" : {
+                            "20-configure-pat" : {
                                 "command" : "/etc/cfn/scripts/configure-pat.sh eth1"
                             },
-                            "d-disable-eth0" : {
+                            "30-disable-eth0" : {
                                 "command" : "ec2ifdown eth0"
                             }
                         }

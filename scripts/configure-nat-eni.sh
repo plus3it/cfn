@@ -49,6 +49,12 @@ function die {
 PATH="/usr/sbin:/sbin:/usr/bin:/bin:/usr/local/bin"
 
 TAG_KEY="${1:-Name}"
+DEVICE_TYPE="${2:-eth}" # The type of network interface recognized by the system, i.e. 'eth'
+DEVICE_INDEX="${3:-1}"  # The device to attach to, i.e. 1=eth1, 2=eth2, etc
+
+RETRY_DELAY=1   # retry every <delay> seconds
+TIMER_NIC_DISCOVERY=20  # wait this many seconds before failing
+
 
 INSTANCE_ID=$(curl --retry 3 --silent --fail http://169.254.169.254/latest/meta-data/instance-id) || \
     die "Could not get instance id."
@@ -110,8 +116,24 @@ fi
 
 log "Attaching the network interface to this instance..."
 aws ec2 attach-network-interface --network-interface-id ${ENI_ID} \
-    --instance-id ${INSTANCE_ID} --device-index 1 || \
+    --instance-id ${INSTANCE_ID} --device-index ${DEVICE_INDEX} || \
         die "ENI attachment failed."
+
+ETH="${DEVICE_TYPE}${DEVICE_INDEX}"
+log "Waiting for '${ETH}' network interface to be discovered by the system..."
+delay=$RETRY_DELAY
+timer=$TIMER_NIC_DISCOVERY
+while true; do
+    if [[ $timer -le 0 ]]; then
+        die "Timer expired before network interface acquired MAC address."
+    done
+    ETH_MAC=$(cat /sys/class/net/${ETH}/address 2> /dev/null) && break  # break loop if MAC was found
+    log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
+    sleep $delay
+    timer=$[$timer-$delay]
+done
+
+log "Found ${ETH} MAC '${ETH_MAC}'."
 
 log "ENI attachment successful"'!'
 exit 0
