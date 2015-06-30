@@ -1,0 +1,86 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description"              : "This template creates a Public Subnet and associates it with a given Route Table.",
+    "Parameters"               : {
+        "AvailabilityZoneName" : {
+            "Description"      : "Availability Zone Name",
+            "Type"             : "AWS::EC2::AvailabilityZone::Name"
+        },
+        "CIDRPublicSubnet"   : {
+            "Description"    : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, etc...)",
+            "Type"           : "String",
+            "Default"        : "10.0.32.0/20",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "PublicRouteTableId" : {
+            "Description"    : "ID of the Route Table the public subnet will be associated with.",
+            "Type"           : "String"
+        },
+        "VPC" : {
+            "Description" : "VPC ID",
+            "Type"        : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources" : {
+        "PublicSubnet" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "CidrBlock" : {
+                    "Ref" : "CIDRPublicSubnet"
+                },
+                "AvailabilityZone" : {
+                    "Ref" : "AvailabilityZoneName"
+                },
+                "Tags"             : [
+                    {
+                        "Key" : "Application",
+                        "Value" : {
+                            "Ref" : "AWS::StackName"
+                        }
+                    },
+                    {
+                        "Key" : "Network",
+                        "Value" : "Public"
+                    },
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "Public-",
+                            { "Ref" : "AWS::StackName" },
+                            "-",
+                            { "Ref" : "AvailabilityZoneName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PublicSubnetRouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : {
+                    "Ref" : "PublicSubnet"
+                },
+                "RouteTableId" : {
+                    "Ref" : "PublicRouteTableId"
+                }
+            }
+        }
+    },
+    "Outputs" : {
+        "PublicSubnetId" : {
+            "Value" : {
+                "Ref" : "PublicSubnet"
+            },
+            "Description" : "Subnet ID for the public subnet"
+        },
+        "PublicSubnetCIDR" : {
+            "Value" : { 
+                "Ref": "CIDRPublicSubnet" 
+            },
+            "Description" : "Public Subnet CIDR"
+        }
+    }
+}

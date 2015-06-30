@@ -2,6 +2,12 @@
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description"              : "This template creates a self-healing NAT instance.",
     "Parameters"               : {
+        "CIDRPrivateSubnet"  : {
+            "Description"    : "CIDR Block for the Private Subnet",
+            "Type"           : "String",
+            "Default"        : "10.0.0.0/19",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type"        : "AWS::EC2::KeyPair::KeyName"
@@ -16,28 +22,18 @@
                 "t2.medium"
             ]
         },
+        "IpAddressNAT"   : {
+            "Description" : "Fixed private IP in the public subnet for the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
+            "Type"        : "String",
+            "Default"     : "10.0.47.254"
+        },
+        "PublicSubnetId"    : {
+            "Description" : "Subnet ID for the Public Subnet where the NAT instance will run",
+            "Type"        : "AWS::EC2::Subnet::Id"
+        },
         "VPC" : {
             "Description" : "VPC ID",
             "Type"        : "AWS::EC2::VPC::Id"
-        },
-        "DMZSubnetId"    : {
-            "Description" : "Subnet ID for the DMZ where the NAT instance will run",
-            "Type"        : "AWS::EC2::Subnet::Id"
-        },
-        "PrivateRouteTableId" : {
-            "Description" : "RouteTable ID for the Private Subnet that will route through the NAT",
-            "Type"        : "String"
-        },
-        "CIDRPrivSub"     : {
-            "Description" : "CIDR Block for the Private Subnet",
-            "Type"        : "String",
-            "Default"     : "10.0.0.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
-        "IpAddressDmzNAT"   : {
-            "Description" : "Fixed private IP for the NAT instance",
-            "Type"        : "String",
-            "Default"     : "10.0.47.254"
         }
     },
     "Mappings"                 : {
@@ -153,11 +149,35 @@
                 "Roles": [ { "Ref": "IamNatRole" } ]
             }
         },
+        "PrivateRouteTable"               : {
+            "Type" : "AWS::EC2::RouteTable",
+            "Properties" : {
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "Tags"  : [
+                    {
+                        "Key" : "Application",
+                        "Value" : {
+                            "Ref" : "AWS::StackName"
+                        }
+                    },
+                    {
+                        "Key" : "Network",
+                        "Value" : "Private"
+                    },
+                    {
+                        "Key" : "Name",
+                        "Value" : "Private"
+                    }
+                ]
+            }
+        },
         "PrivateRoute"                    : {
             "Type" : "AWS::EC2::Route",
             "Properties" : {
                 "RouteTableId" : {
-                    "Ref" : "PrivateRouteTableId"
+                    "Ref" : "PrivateRouteTable"
                 },
                 "DestinationCidrBlock" : "0.0.0.0/0",
                 "NetworkInterfaceId" : {
@@ -183,15 +203,15 @@
             "Properties" : {
                 "Description" : "Network Interface for NAT Instance",
                 "GroupSet" : [ { "Ref" : "NATSecurityGroup" } ],
-                "PrivateIpAddress" : { "Ref" : "IpAddressDmzNAT" },
+                "PrivateIpAddress" : { "Ref" : "IpAddressNAT" },
                 "SourceDestCheck" : "false",
-                "SubnetId" : { "Ref" : "DMZSubnetId" },
+                "SubnetId" : { "Ref" : "PublicSubnetId" },
                 "Tags" : [
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
                             "NAT-",
-                            { "Ref" : "DMZSubnetId" }
+                            { "Ref" : "PublicSubnetId" }
                         ]]}
                     }
                 ]
@@ -200,7 +220,7 @@
         "NATAutoScalingGroup" : {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "Properties" : {
-                "VPCZoneIdentifier" : [ { "Ref" : "DMZSubnetId" } ],
+                "VPCZoneIdentifier" : [ { "Ref" : "PublicSubnetId" } ],
                 "LaunchConfigurationName" : { "Ref" : "NATLaunchConfig" },
                 "MinSize" : "1",
                 "MaxSize" : "1",
@@ -210,7 +230,7 @@
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
                             "NAT-",
-                            { "Ref" : "DMZSubnetId" }
+                            { "Ref" : "PublicSubnetId" }
                         ]]},
                         "PropagateAtLaunch" : "true"
                     }
@@ -358,7 +378,7 @@
                         "FromPort"   : "1",
                         "ToPort"     : "65535",
                         "CidrIp"     : {
-                            "Ref" : "CIDRPrivSub"
+                            "Ref" : "CIDRPrivateSubnet"
                         }
                     },
                     {
@@ -366,7 +386,7 @@
                         "FromPort"   : "-1",
                         "ToPort"     : "-1",
                         "CidrIp"     : {
-                            "Ref" : "CIDRPrivSub"
+                            "Ref" : "CIDRPrivateSubnet"
                         }
                     }
                 ]
@@ -378,13 +398,19 @@
             "Value" : {
                 "Ref" : "NATElasticNetworkInterface"
             },
-            "Description" : "NATElasticNetworkInterface ID"
+            "Description" : "ID of the NAT Elastic Network Interface"
         },
         "NATSecurityGroupId"        : {
             "Value" : { 
                 "Ref": "NATSecurityGroup" 
             },
-            "Description" : "NATSecurityGroup ID"
+            "Description" : "ID of the NAT Security Group"
+        },
+        "PrivateRouteTableId" : {
+            "Value" : {
+                "Ref" : "PrivateRouteTable"
+            },
+            "Description" : "ID of the Private Route Table"
         }
     }
 }
