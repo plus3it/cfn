@@ -1,19 +1,19 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a self-healing NAT instance.",
+    "Description"              : "This template creates a self-healing NAT instance with an Elastic Network Interface.",
     "Parameters"               : {
         "CIDRVPC"  : {
-            "Description"    : "CIDR Block for the VPC",
+            "Description"    : "CIDR Block for the VPC. This is used in the security group for the NAT instance, to allow inbound connections from instances in the VPC.",
             "Type"           : "String",
             "Default"        : "10.0.0.0/16",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
         "KeyPairName" : {
-            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches.",
             "Type"        : "AWS::EC2::KeyPair::KeyName"
         },
         "InstanceTypeNAT" : {
-            "Description" : "Amazon EC2 instance type for the NAT Instance",
+            "Description" : "Amazon EC2 instance type for the NAT Instance.",
             "Type"        : "String",
             "Default"     : "t2.micro",
             "AllowedValues" : [
@@ -23,12 +23,12 @@
             ]
         },
         "IpAddressNAT"   : {
-            "Description" : "Fixed private IP in the public subnet for the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
+            "Description" : "Fixed private IP in the public subnet for the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc).",
             "Type"        : "String",
             "Default"     : "10.0.47.254"
         },
         "PublicSubnetId"    : {
-            "Description" : "Subnet ID for the Public Subnet where the NAT instance will run",
+            "Description" : "Subnet ID for the Public Subnet where the NAT instance will run.",
             "Type"        : "AWS::EC2::Subnet::Id"
         },
         "VPC" : {
