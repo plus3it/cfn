@@ -113,7 +113,7 @@
        	 	"Properties" : {
            		"TemplateURL" : "https://github.com/lorengordon/cfn/raw/master/templates/Template_Networking_NAT_with_ENI.template",
            	 	"Parameters" : {
-					"CIDRPrivateSubnet" : {"Ref" : "CIDRPrivateSubnet1"},
+					"CIDRVPC" : {"Ref" : "CIDRVPC"},
 					"KeyPairName" : {"Ref" : "KeyPairName"},
 					"InstanceTypeNAT" : {"Ref" : "InstanceTypeNAT"},
 					"IpAddressNAT" : {"Ref" : "IpAddressNAT1"},
@@ -128,7 +128,7 @@
        	 	"Properties" : {
            		"TemplateURL" : "https://github.com/lorengordon/cfn/raw/master/templates/Template_Networking_NAT_with_ENI.template",
            	 	"Parameters" : {
-					"CIDRPrivateSubnet" : {"Ref" : "CIDRPrivateSubnet2"},
+					"CIDRVPC" : {"Ref" : "CIDRVPC"},
 					"KeyPairName" : {"Ref" : "KeyPairName"},
 					"InstanceTypeNAT" : {"Ref" : "InstanceTypeNAT"},
 					"IpAddressNAT" : {"Ref" : "IpAddressNAT2"},

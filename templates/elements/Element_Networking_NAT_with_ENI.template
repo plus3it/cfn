@@ -2,10 +2,10 @@
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description"              : "This template creates a self-healing NAT instance.",
     "Parameters"               : {
-        "CIDRPrivateSubnet"  : {
-            "Description"    : "CIDR Block for the Private Subnet",
+        "CIDRVPC"  : {
+            "Description"    : "CIDR Block for the VPC",
             "Type"           : "String",
-            "Default"        : "10.0.0.0/19",
+            "Default"        : "10.0.0.0/16",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
         "KeyPairName" : {
@@ -365,10 +365,10 @@
                 ]]}}
             }
         },
-        "NATSecurityGroup"                    : {
+        "NATSecurityGroup" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" : {
-                "GroupDescription" : "Enables outbound internet access for private subnets via NAT instances",
+                "GroupDescription" : "Enables outbound internet access for private subnets via the NAT instances",
                 "VpcId"            : {
                     "Ref" : "VPC"
                 },
@@ -378,7 +378,7 @@
                         "FromPort"   : "1",
                         "ToPort"     : "65535",
                         "CidrIp"     : {
-                            "Ref" : "CIDRPrivateSubnet"
+                            "Ref" : "CIDRVPC"
                         }
                     },
                     {
@@ -386,7 +386,7 @@
                         "FromPort"   : "-1",
                         "ToPort"     : "-1",
                         "CidrIp"     : {
-                            "Ref" : "CIDRPrivateSubnet"
+                            "Ref" : "CIDRVPC"
                         }
                     }
                 ]
