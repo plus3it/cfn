@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a VPC infrastructure for a multi-AZ, multi-tier deployment of a Windows-based application infrastructure. It installs 2 Active Directory Domain Controllers into subnets in separate AZs inside a VPC, as well as Remote Desktop Gateway and NAT instances into the DMZ for each Availability Zone. The default Domain Administrator password will be the one retrieved from the instance.  For adding members to the domain, ensure that they are launched into the domain member security group created by this template and then configure them to use the AD instances fixed private IP addresses as the DNS server. **WARNING** This template creates Amazon EC2 Windows instance and related resources. You will be billed for the AWS resources used if you create a stack from this template.",
+    "Description"              : "This template creates a VPC infrastructure for a dual-AZ, dual-tier application. Outbound access for private subnets is enabled via a NAT instance in each AZ.",
     "Parameters"               : {
         "CIDRVPC"          : {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
