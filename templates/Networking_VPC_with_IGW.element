@@ -91,7 +91,10 @@
                     },
                     {
                         "Key" : "Name",
-                        "Value" : "Public"
+                        "Value" : { "Fn::Join" : ["", [
+                            "Public-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
                     }
                 ]
             }
