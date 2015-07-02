@@ -127,13 +127,31 @@ while true; do
     if [[ $timer -le 0 ]]; then
         die "Timer expired before network interface acquired MAC address."
     fi
-    ETH_MAC=$(cat /sys/class/net/${ETH}/address 2> /dev/null) && break  # break loop if MAC was found
+    ETH_MAC=$(cat /sys/class/net/"${ETH}"/address 2> /dev/null) && break  # break loop if MAC was found
     log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
     sleep $delay
     timer=$[$timer-$delay]
 done
 
 log "Found ${ETH} MAC '${ETH_MAC}'."
+
+log "Waiting for '${ETH}' network interface to get an IP address..."
+delay=$RETRY_DELAY
+timer=$TIMER_NIC_DISCOVERY
+while true; do
+    if [[ $timer -le 0 ]]; then
+        die "Timer expired before network interface acquired IP address."
+    fi
+    IP_ADDRESS=$(ip addr show dev "${ETH}" 2> /dev/null | awk '/inet /{ sub(/\/.*$/,"",$2); print $2 }')
+    if [[ -n "${IP_ADDRESS}" ]]; then 
+        break  # break loop if IP was found
+    fi  
+    log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
+    sleep $delay
+    timer=$[$timer-$delay]
+done
+
+log "Got IP '${IP_ADDRESS}' on ${ETH}."
 
 log "ENI attachment successful"'!'
 exit 0
