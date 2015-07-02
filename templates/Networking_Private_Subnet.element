@@ -81,6 +81,12 @@
                 "Ref": "CIDRPrivateSubnet" 
             },
             "Description" : "Private Subnet CIDR"
+        },
+        "AvailabilityZoneName" : {
+            "Value" : {
+                "Ref" : "AvailabilityZoneName"
+            },
+            "Description" : "Name of the Availability Zone where the private subnet was created"
         }
     }
 }

@@ -81,6 +81,12 @@
                 "Ref": "CIDRPublicSubnet" 
             },
             "Description" : "Public Subnet CIDR"
+        },
+        "AvailabilityZoneName" : {
+            "Value" : {
+                "Ref" : "AvailabilityZoneName"
+            },
+            "Description" : "Name of the Availability Zone where the public subnet was created"
         }
     }
 }
