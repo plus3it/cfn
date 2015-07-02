@@ -211,7 +211,7 @@
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
                             "NAT-",
-                            { "Fn::GetAtt" : [ "PublicSubnetId", "AvailabilityZone" ]}
+                            { "Ref" : "PublicSubnetId" }
                         ]]}
                     }
                 ]
