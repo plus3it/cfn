@@ -37,7 +37,7 @@
 #        }
 # 5. The `awscli` package must be installed.
 
-function log { logger -t "configure-nat-eni" -- $1; }
+function log { logger -i -t "configure-nat-eni" -s -- $1 2> /dev/console; }
 
 function die {
     [ -n "$1" ] && log "$1"

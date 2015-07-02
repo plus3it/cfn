@@ -12,7 +12,7 @@
 # * Die if unable to read the VPC_CIDR_RANGE from metadata
 #
 
-function log { logger -t "configure-pat" -- $1; }
+function log { logger -i -t "configure-pat" -s -- $1 2> /dev/console; }
 
 function die {
     [ -n "$1" ] && log "$1"
