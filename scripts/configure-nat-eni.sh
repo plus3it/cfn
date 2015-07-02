@@ -126,7 +126,7 @@ timer=$TIMER_NIC_DISCOVERY
 while true; do
     if [[ $timer -le 0 ]]; then
         die "Timer expired before network interface acquired MAC address."
-    done
+    fi
     ETH_MAC=$(cat /sys/class/net/${ETH}/address 2> /dev/null) && break  # break loop if MAC was found
     log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
     sleep $delay
