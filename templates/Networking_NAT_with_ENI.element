@@ -352,7 +352,10 @@
                 "BlockDeviceMappings" : [
                   {
                     "DeviceName" : "/dev/xvda",
-                    "Ebs" : { "DeleteOnTermination" : "true" } 
+                    "Ebs" : { 
+                        "VolumeType" : "gp2",
+                        "DeleteOnTermination" : "true"
+                    } 
                   }
                 ],
                 "KeyName" : {
