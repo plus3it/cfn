@@ -25,6 +25,8 @@ PATH="/usr/sbin:/sbin:/usr/bin:/bin"
 
 # Get ETH from first parameter, or default to eth0
 ETH=${1:-eth0}
+RETRY_DELAY=1   # retry every <delay> seconds
+TIMER_NIC_DISCOVERY=20  # wait this many seconds before failing
 
 log "Determining the MAC address on ${ETH}..."
 ETH_MAC=$(cat /sys/class/net/${ETH}/address) ||
@@ -34,12 +36,19 @@ log "Found MAC ${ETH_MAC} for ${ETH}."
 VPC_CIDR_URI="http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH_MAC}/vpc-ipv4-cidr-block"
 log "Metadata location for vpc ipv4 range: ${VPC_CIDR_URI}"
 
-VPC_CIDR_RANGE=$(curl --retry 3 --silent --fail ${VPC_CIDR_URI})
-if [ $? -ne 0 ]; then
-   die "Unable to retrieve VPC CIDR range from meta-data!"
-else
-   log "Retrieved VPC CIDR range ${VPC_CIDR_RANGE} from meta-data."
-fi
+log "Attempting to get the vpc ipv4 range from metadata..."
+delay=$RETRY_DELAY
+timer=$TIMER_NIC_DISCOVERY
+while true; do
+    if [[ $timer -le 0 ]]; then
+        die "Timer expired before retrieving VPC CIDR range from metadata."
+    fi
+    VPC_CIDR_RANGE=$(curl --retry 3 --silent --fail ${VPC_CIDR_URI}) && break  # break loop if successful
+    log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
+    sleep $delay
+    timer=$[$timer-$delay]
+done
+log "Retrieved VPC CIDR range ${VPC_CIDR_RANGE} from meta-data."
 
 log "Enabling PAT..."
 sysctl -q -w net.ipv4.ip_forward=1 net.ipv4.conf.${ETH}.send_redirects=0 && (
