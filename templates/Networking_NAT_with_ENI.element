@@ -258,7 +258,8 @@
                                 "content" : { "Fn::Join" : ["", [
                                     "[main]\n",
                                     "stack=", { "Ref" : "AWS::StackId" }, "\n",
-                                    "region=", { "Ref" : "AWS::Region" }, "\n"
+                                    "region=", { "Ref" : "AWS::Region" }, "\n",
+                                    "verbose=true", "\n"
                                 ]]},
                                 "mode"    : "000400",
                                 "owner"   : "root",
@@ -268,7 +269,7 @@
                                 "content" : { "Fn::Join" : ["", [
                                     "[cfn-auto-reloader-hook]\n",
                                     "triggers=post.update\n",
-                                    "path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                    "path=Resources.NATLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
                                     "action=/opt/aws/bin/cfn-init -v -c config ",
                                     "         --stack ", { "Ref" : "AWS::StackName" },
                                     "         --resource NATLaunchConfig ",
