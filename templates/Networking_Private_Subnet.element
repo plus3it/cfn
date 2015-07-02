@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a Private Subnet and associates it with a given Route Table.",
+    "Description"              : "This element creates a Private Subnet and associates it with a given Route Table.",
     "Parameters"               : {
         "AvailabilityZoneName" : {
             "Description"      : "Availability Zone Name",

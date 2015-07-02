@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a self-healing NAT instance with an Elastic Network Interface.",
+    "Description"              : "This element creates a self-healing NAT instance with an Elastic Network Interface.",
     "Parameters"               : {
         "CIDRVPC"  : {
             "Description"    : "CIDR Block for the VPC. This is used in the security group for the NAT instance, to allow inbound connections from instances in the VPC.",

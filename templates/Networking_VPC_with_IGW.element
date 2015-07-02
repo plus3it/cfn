@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a VPC network with an Internet Gateway.",
+    "Description"              : "This element creates a VPC network with an Internet Gateway.",
     "Parameters"               : {
         "CIDRVPC"          : {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
