@@ -389,6 +389,15 @@
                             "Ref" : "CIDRVPC"
                         }
                     }
+                ],
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "NAT-",
+                            { "Ref" : "PublicSubnetId" }
+                        ]]}
+                    }
                 ]
             }
         }
