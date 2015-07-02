@@ -319,13 +319,10 @@
                             "20-configure-pat" : {
                                 "command" : "/etc/cfn/scripts/configure-pat.sh eth1"
                             },
-                            "24-ensure-eth1-up" : {
-                                "command" : "ec2ifup eth1 | echo"
-                            },
-                            "25-delete-metadata-route" : {
+                            "25-delete-old-metadata-route" : {
                                 "command" : "ip route delete 169.254.169.254 via 0.0.0.0 dev eth0"
                             },
-                            "26-add-metadata-route" : {
+                            "26-add-new-metadata-route" : {
                                 "command" : "ip route add 169.254.169.254 via 0.0.0.0 dev eth1"
                             },
                             "30-disable-eth0" : {
