@@ -47,12 +47,12 @@
             ]
         },
         "IpAddressNAT1"   : {
-            "Description" : "Fixed private IP in the public subnet for the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
+            "Description" : "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
             "Type"        : "String",
             "Default"     : "10.0.47.254"
         },
         "IpAddressNAT2"   : {
-            "Description" : "Fixed private IP in the public subnet for the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
+            "Description" : "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
             "Type"        : "String",
             "Default"     : "10.0.111.254"
         }
@@ -124,7 +124,7 @@
       	},
     	"NATwithENI2Stack" : {
 	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "PublicSubnet2Stack",
+			"DependsOn" : "NATwithENI1Stack",
        	 	"Properties" : {
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/networking_nat_with_eni.element",
            	 	"Parameters" : {
