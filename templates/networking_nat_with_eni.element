@@ -23,7 +23,7 @@
             ]
         },
         "IpAddressNAT"   : {
-            "Description" : "Fixed private IP in the public subnet for the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc).",
+            "Description" : "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
             "Type"        : "String",
             "Default"     : "10.0.47.254"
         },
@@ -222,6 +222,12 @@
         },
         "NATAutoScalingGroup" : {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "CreationPolicy" : {
+                "ResourceSignal" : {
+                    "Count" : "1",
+                    "Timeout" : "PT15M"
+                }
+            },
             "Properties" : {
                 "VPCZoneIdentifier" : [ { "Ref" : "PublicSubnetId" } ],
                 "LaunchConfigurationName" : { "Ref" : "NATLaunchConfig" },
@@ -259,6 +265,7 @@
                                     "[main]\n",
                                     "stack=", { "Ref" : "AWS::StackId" }, "\n",
                                     "region=", { "Ref" : "AWS::Region" }, "\n",
+                                    "interval=1", "\n",
                                     "verbose=true", "\n"
                                 ]]},
                                 "mode"    : "000400",
@@ -320,10 +327,12 @@
                                 "command" : "/etc/cfn/scripts/configure-pat.sh eth1"
                             },
                             "25-delete-old-metadata-route" : {
-                                "command" : "ip route delete 169.254.169.254 via 0.0.0.0 dev eth0"
+                                "command" : "ip route delete 169.254.169.254 via 0.0.0.0 dev eth0",
+                                "ignoreErrors" : "true"
                             },
                             "26-add-new-metadata-route" : {
-                                "command" : "ip route add 169.254.169.254 via 0.0.0.0 dev eth1"
+                                "command" : "ip route add 169.254.169.254 via 0.0.0.0 dev eth1",
+                                "ignoreErrors" : "true"
                             },
                             "30-disable-eth0" : {
                                 "command" : "ec2ifdown eth0"
@@ -372,9 +381,15 @@
                     "#!/bin/bash -xe\n",
 
                     "/opt/aws/bin/cfn-init -v -c config ",
-                    "         --stack ", { "Ref" : "AWS::StackName" },
-                    "         --resource NATLaunchConfig ",
-                    "         --region ", { "Ref" : "AWS::Region" }, "\n"
+                    "    --stack ", { "Ref" : "AWS::StackName" },
+                    "    --resource NATLaunchConfig ",
+                    "    --region ", { "Ref" : "AWS::Region" }, "\n",
+                    
+                    "/opt/aws/bin/cfn-signal -e $? ",
+                    "   --stack ", { "Ref" : "AWS::StackName" },
+                    "   --resource NATAutoScalingGroup ",
+                    "   --region ", { "Ref" : "AWS::Region"}, "\n"
+
                 ]]}}
             }
         },
