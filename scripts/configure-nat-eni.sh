@@ -153,5 +153,13 @@ done
 
 log "Got IP '${IP_ADDRESS}' on ${ETH}."
 
+# Add route to metadata IP address via the new interface
+# The logic for RTABLE is derived from the ec2-net-utils scripts created by Amazon
+RTABLE=$(( 10000 + DEVICE_INDEX ))
+METADATA_IP="169.254.169.254"
+log "Adding route to ${METADATA_IP} via device ${ETH}..."
+ip route add "${METADATA_IP}" dev ${ETH} table ${RTABLE} 2>&1 | log
+ip route add "${METADATA_IP}" dev ${ETH} metric ${RTABLE} 2>&1 | log
+
 log "ENI attachment successful"'!'
 exit 0

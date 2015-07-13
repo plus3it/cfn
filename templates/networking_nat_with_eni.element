@@ -315,14 +315,6 @@
                             "20-configure-pat" : {
                                 "command" : "/etc/cfn/scripts/configure-pat.sh eth1"
                             },
-                            "25-delete-old-metadata-route" : {
-                                "command" : "ip route delete 169.254.169.254 via 0.0.0.0 dev eth0",
-                                "ignoreErrors" : "true"
-                            },
-                            "26-add-new-metadata-route" : {
-                                "command" : "ip route add 169.254.169.254 via 0.0.0.0 dev eth1",
-                                "ignoreErrors" : "true"
-                            },
                             "30-disable-eth0" : {
                                 "command" : "ec2ifdown eth0"
                             }
