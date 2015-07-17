@@ -344,13 +344,13 @@
                                                 "Ref" : "ADRestoreModePassword"
                                             },
                                             " -asplaintext -force) ",
-                                            "-DomainMode Win2012 ",
+                                            "-DomainMode Win2012R2 ",
                                             "-DomainNetbiosName ",
                                             {
                                                 "Ref" : "ADDomainNetBIOSName"
                                             },
                                             " ",
-                                            "-ForestMode Win2012 ",
+                                            "-ForestMode Win2012R2 ",
                                             "-Confirm:$false ",
                                             "-Force\""
                                         ]
