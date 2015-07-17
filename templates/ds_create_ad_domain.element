@@ -241,9 +241,6 @@
                                     ]
                                 }
                             },
-                            "c:\\cfn\\scripts\\ConvertTo-EnterpriseAdmin.ps1"              : {
-                                "source" : "https://s3.amazonaws.com/quickstart-reference/microsoft/activedirectory/latest/scripts/ConvertTo-EnterpriseAdmin.ps1"
-                            },
                             "c:\\cfn\\scripts\\New-CertificateAuthority.ps1"              : {
                                 "source" : "https://s3.amazonaws.com/quickstart-reference/microsoft/activedirectory/latest/scripts/New-CertificateAuthority.ps1"
                             },
@@ -410,10 +407,14 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\ConvertTo-EnterpriseAdmin.ps1 -Members ",
+                                            "powershell.exe ",
+                                            "\"",
+                                            "@('Domain Admins','Schema Admins','Enterprise Admins') | ",
+                                            "ForEach-Object { Add-ADGroupMember -Identity $_ -Members $Members } -Members ",
                                             {
                                                 "Ref" : "ADDomainAdminUser"
-                                            }
+                                            },
+                                            "\""
                                         ]
                                     ]
                                 },
