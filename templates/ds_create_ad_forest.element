@@ -602,14 +602,6 @@
                 "SecurityGroupIngress" : [
                     {
                         "IpProtocol" : "tcp",
-                        "FromPort"   : "5985",
-                        "ToPort"     : "5985",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRVPC"
-                        }
-                    },
-                    {
-                        "IpProtocol" : "tcp",
                         "FromPort"   : "80",
                         "ToPort"     : "80",
                         "CidrIp"     : {
@@ -1270,6 +1262,34 @@
                 "IpProtocol" : "tcp",
                 "FromPort"   : "139",
                 "ToPort"     : "139",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp5985" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "5985",
+                "ToPort"     : "5985",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp5986" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "5986",
+                "ToPort"     : "5986",
                 "SourceSecurityGroupId" : {
                     "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
                 }
