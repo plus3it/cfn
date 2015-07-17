@@ -1,0 +1,65 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description"              : "This template creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
+    "Parameters"               : {
+        "VPC" : {
+            "Description" : "VPC ID",
+            "Type"        : "AWS::EC2::VPC::Id"
+        }
+        "DomainDNSName" : {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+            "Type"        : "String",
+            "Default"     : "example.com",
+            "MinLength"   : "3",
+            "MaxLength"   : "25",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "NetbiosNameServers" : {
+            "Description" : "Comma-separated list of IP addresses of NetBIOS Name Servers (Domain Controllers)",
+            "Type"        : "CommaDelimitedList"
+        },
+        "NtpServers" : {
+            "Description" : "Comma-separated list of IP addresses of NTP Servers (Commonly the Domain Controllers)",
+            "Type"        : "CommaDelimitedList"
+        },
+    },
+    "Resources" : {
+        "DhcpOptions" : {
+            "Type" : "AWS::EC2::DHCPOptions",
+            "Properties" : {
+                "DomainName" : {
+                    "Ref" : "DomainDNSName"
+                },
+                "DomainNameServers" : [
+                    "AmazonProvidedDNS"
+                ],
+                "NtpServers" : {
+                    "Ref" : "NtpServers"
+                },
+                "NetbiosNameServers" : {
+                    "Ref" : "NetbiosNameServers"
+                },
+                "NetbiosNodeType"    : "2",
+                "Tags"               : [
+                    {
+                        "Key" : "Domain",
+                        "Value" : {
+                            "Ref" : "DomainDNSName"
+                        }
+                    }
+                ]
+            }
+        },
+        "VPCDHCPOptionsAssociation" : {
+            "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
+            "Properties" : {
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "DhcpOptionsId" : {
+                    "Ref" : "DhcpOptions"
+                }
+            }
+        }
+    }
+}

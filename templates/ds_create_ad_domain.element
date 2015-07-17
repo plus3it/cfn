@@ -1,0 +1,1356 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description"              : "This template creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
+    "Parameters"               : {
+        "ADInstanceType" : {
+            "Description" : "Amazon EC2 instance type for the Active Directory Instance",
+            "Type"        : "String",
+            "Default"     : "t2.micro",
+            "AllowedValues" : [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ]
+        },
+        "ADDomainAdminPassword" : {
+            "Description" : "Password for the domain admin user. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type"        : "String",
+            "MinLength"   : "8",
+            "MaxLength"   : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho"         : "true",
+            "Default"        : "Password123"
+        },
+        "ADDomainAdminUser" : {
+            "Description" : "User name for the account that will be added as Domain Administrator. This is separate from the default \"Administrator\" account",
+            "Type"        : "String",
+            "Default"     : "StackAdmin",
+            "MinLength"   : "5",
+            "MaxLength"   : "25",
+            "AllowedPattern" : "[a-zA-Z0-9]*"
+        },
+        "ADDomainDNSName" : {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+            "Type"        : "String",
+            "Default"     : "example.com",
+            "MinLength"   : "3",
+            "MaxLength"   : "25",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "ADDomainNetBIOSName" : {
+            "Description" : "NetBIOS name of the domain (upto 15 characters) for users of earlier versions of Windows e.g. EXAMPLE",
+            "Type"        : "String",
+            "Default"     : "example",
+            "MinLength"   : "1",
+            "MaxLength"   : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "ADPrivateIp" : {
+            "Description" : "Fixed private IP for the first Active Directory server (e.g. 10.0.0.10, 10.0.64.10, etc...)",
+            "Type"        : "String",
+            "Default"     : "10.0.0.10"
+        },
+        "ADRestoreModePassword" : {
+            "Description" : "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type"        : "String",
+            "MinLength"   : "8",
+            "MaxLength"   : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho"         : "True",
+            "Default"        : "Password123"
+        },
+        "ADServerNetBIOSName" : {
+            "Description" : "NetBIOS name of the 1st AD Server (upto 15 characters)",
+            "Type"        : "String",
+            "Default"     : "DC1",
+            "MinLength"   : "1",
+            "MaxLength"   : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "AvailabilityZoneName" : {
+            "Description" : "Name of the Availability Zone where the AD instance will run (e.g. us-east-1a, us-east-1b, us-west-2c, etc...)",
+            "Type"        : "String",
+            "Default"     : "us-east-1a"
+        },
+        "CIDRVPC"          : {
+            "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
+            "Type"        : "String",
+            "Default"     : "10.0.0.0/16",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "CIDRPrivateSubnet"  : {
+            "Description"    : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, etc...)",
+            "Type"           : "String",
+            "Default"        : "10.0.0.0/19",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "CIDRDMZ"   : {
+            "Description"    : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, etc...)",
+            "Type"           : "String",
+            "Default"        : "10.0.32.0/20",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "KeyPairName" : {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type"        : "AWS::EC2::KeyPair::KeyName"
+        },
+        "PrivateSubnetId" : {
+            "Description" : "Subnet ID for the Public Subnet where the NAT instance will run",
+            "Type"        : "AWS::EC2::Subnet::Id"
+        },
+        "VPC" : {
+            "Description" : "VPC ID",
+            "Type"        : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Mappings"                 : {
+        "AWSInstanceType2Arch" : {
+            "t2.micro" : {
+                "Arch" : "64"
+            },
+            "t2.small" : {
+                "Arch" : "64"
+            },
+            "t2.medium" : {
+                "Arch" : "64"
+            },
+            "c4.large" : {
+                "Arch" : "64"
+            },
+            "c4.xlarge" : {
+                "Arch" : "64"
+            },
+            "m4.large" : {
+                "Arch" : "64"
+            },
+            "m4.xlarge" : {
+                "Arch" : "64"
+            }
+        },
+        "AWSRegionArch2AMI"    : {
+            "us-east-1" : {
+                "64" : "ami-5b9e6b30"
+            },
+            "us-west-2" : {
+                "64" : "ami-67c7ff57"
+            },
+            "us-west-1" : {
+                "64" : "ami-c5688281"
+            },
+            "eu-west-1" : {
+                "64" : "ami-c1740ab6"
+            },
+            "eu-central-1" : {
+                "64" : "ami-2e87be33"
+            },
+            "ap-southeast-1" : {
+                "64" : "ami-e0d1ebb2"
+            },
+            "ap-northeast-1" : {
+                "64" : "ami-c6b46dc6"
+            },
+            "sa-east-1"      : {
+                "64" : "ami-b93bbba4"
+            },
+            "ap-southeast-2" : {
+                "64" : "ami-f9760dc3"
+            }
+        }
+    },
+    "Resources" : {
+        "DomainController" : {
+            "Type" : "AWS::EC2::Instance",
+            "CreationPolicy" : {
+                "ResourceSignal" : {
+                    "Count" : "1",
+                    "Timeout" : "PT60M"
+                }
+            },
+            "Metadata" : {
+                "AWS::CloudFormation::Init" : {
+                    "configSets" : {
+                        "config" : [
+                            "setup",
+                            "rename",
+                            "installADDS",
+                            "configureSites",
+							"installADCS",
+                            "finalize"
+                        ]
+                    },
+                    "setup" : {
+                        "files" : {
+                            "c:\\cfn\\cfn-hup.conf" : {
+                                "content" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "[main]\n",
+                                            "stack=",
+                                            {
+                                                "Ref" : "AWS::StackName"
+                                            },
+                                            "\n",
+                                            "region=",
+                                            {
+                                                "Ref" : "AWS::Region"
+                                            },
+                                            "\n"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" : {
+                                "content" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "[cfn-auto-reloader-hook]\n",
+                                            "triggers=post.update\n",
+                                            "path=Resources.DomainController.Metadata.AWS::CloudFormation::Init\n",
+                                            "action=cfn-init.exe -v -c config -s ",
+                                            {
+                                                "Ref" : "AWS::StackId"
+                                            },
+                                            " -r DomainController",
+                                            " --region ",
+                                            {
+                                                "Ref" : "AWS::Region"
+                                            },
+                                            "\n"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "c:\\cfn\\scripts\\Set-StaticIP.ps1"       : {
+                                "content" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "$netip = Get-NetIPConfiguration;",
+                                            "$ipconfig = Get-NetIPAddress | ?{$_.IpAddress -eq $netip.IPv4Address.IpAddress};",
+                                            "Get-NetAdapter | Set-NetIPInterface -DHCP Disabled;",
+                                            "Get-NetAdapter | New-NetIPAddress -AddressFamily IPv4 -IPAddress $netip.IPv4Address.IpAddress -PrefixLength $ipconfig.PrefixLength -DefaultGateway $netip.IPv4DefaultGateway.NextHop;",
+                                            "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses $netip.DNSServer.ServerAddresses;",
+                                            "\n"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "c:\\cfn\\scripts\\ConvertTo-EnterpriseAdmin.ps1"              : {
+                                "source" : "https://s3.amazonaws.com/quickstart-reference/microsoft/activedirectory/latest/scripts/ConvertTo-EnterpriseAdmin.ps1"
+                            },
+                            "c:\\cfn\\scripts\\New-CertificateAuthority.ps1"              : {
+                                "source" : "https://s3.amazonaws.com/quickstart-reference/microsoft/activedirectory/latest/scripts/New-CertificateAuthority.ps1"
+                            },
+                            "c:\\cfn\\modules\\xAdcsDeployment_0.1.0.0.zip"              : {
+                                "source" : "https://s3.amazonaws.com/quickstart-reference/microsoft/activedirectory/latest/scripts/xAdcsDeployment_0.1.0.0.zip"
+                            },
+                            "c:\\cfn\\scripts\\Unzip-Archive.ps1"      : {
+                                "source" : "https://s3.amazonaws.com/quickstart-reference/microsoft/utilities/latest/scripts/Unzip-Archive.ps1"
+                            }
+                        },
+                        "services" : {
+                            "windows" : {
+                                "cfn-hup" : {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files"         : [
+                                        "c:\\cfn\\cfn-hup.conf",
+                                        "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        },
+                        "commands" : {
+                            "10-disable-win-fw" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"Get-NetFirewallProfile | Set-NetFirewallProfile -Enabled False\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-set-execution-policy" : {
+                                "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-unpack-dsc-resource" : {
+                                "command" : "powershell.exe -command c:\\cfn\\scripts\\Unzip-Archive.ps1 -Source c:\\cfn\\modules\\xAdcsDeployment_0.1.0.0.zip -Destination 'C:\\Program Files\\WindowsPowerShell\\Modules'",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "rename" : {
+                        "commands" : {
+                            "10-set-static-ip" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Set-StaticIP.ps1"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "45"
+                            },
+                            "20-execute-powershell-script-RenameComputer" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe Rename-Computer -NewName ",
+                                            {
+                                                "Ref" : "ADServerNetBIOSName"
+                                            },
+                                            " -Restart"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "installADDS" : {
+                        "commands" : {
+                            "10-install-prereqs" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"Install-WindowsFeature AD-Domain-Services, rsat-adds -IncludeAllSubFeature\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-install-adds"    : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command ",
+                                            "\"Install-ADDSForest -DomainName ",
+                                            {
+                                                "Ref" : "ADDomainDNSName"
+                                            },
+                                            " ",
+                                            "-SafeModeAdministratorPassword (convertto-securestring ",
+                                            {
+                                                "Ref" : "ADRestoreModePassword"
+                                            },
+                                            " -asplaintext -force) ",
+                                            "-DomainMode Win2012 ",
+                                            "-DomainNetbiosName ",
+                                            {
+                                                "Ref" : "ADDomainNetBIOSName"
+                                            },
+                                            " ",
+                                            "-ForestMode Win2012 ",
+                                            "-Confirm:$false ",
+                                            "-Force\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever"
+                            },
+                            "30-restart-service" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command Restart-Service NetLogon -EA 0"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "180"
+                            },
+                            "40-create-adminuser" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command ",
+                                            "\"New-ADUser ",
+                                            "-Name ",
+                                            {
+                                                "Ref" : "ADDomainAdminUser"
+                                            },
+                                            " ",
+                                            "-UserPrincipalName ",
+                                            {
+                                                "Ref" : "ADDomainAdminUser"
+                                            },
+                                            "@",
+                                            {
+                                                "Ref" : "ADDomainDNSName"
+                                            },
+                                            " ",
+                                            "-AccountPassword (ConvertTo-SecureString ",
+                                            {
+                                                "Ref" : "ADDomainAdminPassword"
+                                            },
+                                            " -AsPlainText -Force) ",
+                                            "-Enabled $true ",
+                                            "-PasswordNeverExpires $true\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "50-update-adminuser" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\ConvertTo-EnterpriseAdmin.ps1 -Members ",
+                                            {
+                                                "Ref" : "ADDomainAdminUser"
+                                            }
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configureSites" : {
+                        "commands" : {
+                            "10-rename-default-site" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe ",
+                                            "\"",
+                                            "Get-ADObject -SearchBase (Get-ADRootDSE).ConfigurationNamingContext -filter {Name -eq 'Default-First-Site-Name'} | Rename-ADObject -NewName ",
+                                            {
+                                                "Ref" : "AvailabilityZoneName"
+                                            },
+                                            "\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-create-dmzsubnet-1"  : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command New-ADReplicationSubnet -Name ",
+                                            {
+                                                "Ref" : "CIDRDMZ"
+                                            },
+                                            " -Site ",
+                                            {
+                                                "Ref" : "AvailabilityZoneName"
+                                            }
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-create-subnet-1" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command New-ADReplicationSubnet -Name ",
+                                            {
+                                                "Ref" : "CIDRPrivateSubnet"
+                                            },
+                                            " -Site ",
+                                            {
+                                                "Ref" : "AvailabilityZoneName"
+                                            }
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "installADCS" : {
+                        "commands" : {
+                            "10-install-ca" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command c:\\cfn\\scripts\\New-CertificateAuthority.ps1 ",
+                                            " -Username ", { "Ref" : "ADDomainAdminUser"},
+											" -Password ", { "Ref" : "ADDomainAdminPassword" },
+											" -DomainDNSName ", { "Ref" : "ADDomainDNSName" }
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "finalize" : {
+                        "commands" : {
+                            "10-signal-success" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "cfn-signal.exe -e 0 ",
+                                            "   --stack ", { "Ref" : "AWS::StackName" },
+                                            "   --resource DomainController ",
+                                            "   --region ", { "Ref" : "AWS::Region"}
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" : {
+                "ImageId" : {
+                    "Fn::FindInMap" : [
+                        "AWSRegionArch2AMI",
+                        {
+                            "Ref" : "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap" : [
+                                "AWSInstanceType2Arch",
+                                {
+                                    "Ref" : "ADInstanceType"
+                                },
+                                "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType" : {
+                    "Ref" : "ADInstanceType"
+                },
+                "SubnetId"     : {
+                    "Ref" : "PrivateSubnetId"
+                },
+                "Tags"         : [
+                    {
+                        "Key" : "Name",
+                        "Value" : {
+                            "Ref" : "ADServerNetBIOSName"
+                        }
+                    }
+                ],
+                "BlockDeviceMappings" : [
+                    {
+                        "DeviceName" : "/dev/sda1",
+                        "Ebs"        : {
+                            "VolumeSize" : "100",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    }
+                ],
+                "SecurityGroupIds" : [
+                    {
+                        "Ref" : "DomainControllerSG"
+                    }
+                ],
+                "PrivateIpAddress" : {
+                    "Ref" : "ADPrivateIp"
+                },
+                "KeyName" : {
+                    "Ref" : "KeyPairName"
+                },
+                "UserData" : {
+                    "Fn::Base64" : {
+                        "Fn::Join" : [
+                            "",
+                            [
+                                "<script>\n",
+                                "cfn-init.exe -v -c config -s ",
+                                {
+                                    "Ref" : "AWS::StackId"
+                                },
+                                " -r DomainController",
+                                " --region ",
+                                {
+                                    "Ref" : "AWS::Region"
+                                },
+                                "\n",
+                                "</script>\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "DomainControllerSG" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Domain Controller",
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "SecurityGroupIngress" : [
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "5985",
+                        "ToPort"     : "5985",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    },
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "80",
+                        "ToPort"     : "80",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    },
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "443",
+                        "ToPort"     : "443",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    },
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "53",
+                        "ToPort"     : "53",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    },
+                    {
+                        "IpProtocol" : "udp",
+                        "FromPort"   : "53",
+                        "ToPort"     : "53",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    },
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "3389",
+                        "ToPort"     : "3389",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    },
+                    {
+                        "IpProtocol" : "icmp",
+                        "FromPort"   : "-1",
+                        "ToPort"     : "-1",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    }
+                ]
+            }
+        },
+        "DC2DCIngressTcp389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "389",
+                "ToPort"     : "389",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "389",
+                "ToPort"     : "389",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp636" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "636",
+                "ToPort"     : "636",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp3268" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3268",
+                "ToPort"     : "3268",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp3269" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3269",
+                "ToPort"     : "3269",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp88" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "88",
+                "ToPort"     : "88",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp88" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "88",
+                "ToPort"     : "88",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp53" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "53",
+                "ToPort"     : "53",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp53" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "53",
+                "ToPort"     : "53",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp445" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "445",
+                "ToPort"     : "445",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp445" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "445",
+                "ToPort"     : "445",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp135" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "135",
+                "ToPort"     : "135",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressDynamicTCP" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "49152",
+                "ToPort"     : "65535",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp5722" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "5722",
+                "ToPort"     : "5722",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp123" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "123",
+                "ToPort"     : "123",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp464" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "464",
+                "ToPort"     : "464",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp464" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "464",
+                "ToPort"     : "464",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressDynamicUDP" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "49152",
+                "ToPort"     : "65535",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp138" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "138",
+                "ToPort"     : "138",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp9389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "9389",
+                "ToPort"     : "9389",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp137" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "137",
+                "ToPort"     : "137",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressTcp139" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "139",
+                "ToPort"     : "139",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DCIngressUdp5355" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "5355",
+                "ToPort"     : "5355",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "389",
+                "ToPort"     : "389",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "389",
+                "ToPort"     : "389",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp636" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "636",
+                "ToPort"     : "636",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp3268" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3268",
+                "ToPort"     : "3268",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp3269" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3269",
+                "ToPort"     : "3269",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp88" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "88",
+                "ToPort"     : "88",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp88" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "88",
+                "ToPort"     : "88",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp53" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "53",
+                "ToPort"     : "53",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp53" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "53",
+                "ToPort"     : "53",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp445" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "445",
+                "ToPort"     : "445",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp445" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "445",
+                "ToPort"     : "445",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp135" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "135",
+                "ToPort"     : "135",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressDynamicTCP" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "49152",
+                "ToPort"     : "65535",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp123" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "123",
+                "ToPort"     : "123",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp464" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "464",
+                "ToPort"     : "464",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp464" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "464",
+                "ToPort"     : "464",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressDynamicUDP" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "49152",
+                "ToPort"     : "65535",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp138" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "138",
+                "ToPort"     : "138",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp9389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "9389",
+                "ToPort"     : "9389",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressUdp137" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "137",
+                "ToPort"     : "137",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMember2DCIngressTcp139" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "139",
+                "ToPort"     : "139",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                }
+            }
+        },
+        "DomainMemberSG"                      : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Domain Members",
+                "VpcId"            : {
+                    "Ref" : "VPC"
+                },
+                "SecurityGroupIngress" : [
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "3389",
+                        "ToPort"     : "3389",
+                        "CidrIp"     : {
+                            "Ref" : "CIDRVPC"
+                        }
+                    }
+                ]
+            }
+        },
+        "DC2DomainMemberIngressDynamicTCP" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "49152",
+                "ToPort"     : "65535",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        },
+        "DC2DomainMemberIngressDynamicUDP" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { 
+                    "Fn::GetAtt": [ "DomainMemberSG", "GroupId" ]
+                },
+                "IpProtocol" : "udp",
+                "FromPort"   : "49152",
+                "ToPort"     : "65535",
+                "SourceSecurityGroupId" : {
+                    "Fn::GetAtt": [ "DomainControllerSG", "GroupId" ]
+                }
+            }
+        }
+    },
+    "Outputs" : {
+        "DomainAdmin" : {
+            "Value" : {
+                "Fn::Join" : [
+                    "",
+                    [
+                        {
+                            "Ref" : "ADDomainNetBIOSName"
+                        },
+                        "\\",
+                        {
+                            "Ref" : "ADDomainAdminUser"
+                        }
+                    ]
+                ]
+            },
+            "Description" : "Domain administrator account"
+        },
+        "DomainControllerSGID"  : {
+            "Value" : {
+                "Ref" : "DomainControllerSG"
+            },
+            "Description" : "Domain Controller Security Group ID"
+        },
+        "DomainMemberSGID"  : {
+            "Value" : {
+                "Ref" : "DomainMemberSG"
+            },
+            "Description" : "Domain Member Security Group ID"
+        }
+    }
+}
