@@ -234,7 +234,7 @@
                                 }
                             },
                             "c:\\cfn\\scripts\\Configure-RDGW.ps1" : {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/Scripts/master/Configure-RDGW.ps1"
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/configure-rdgw.ps1"
                             }
                         },
                         "services" : {
