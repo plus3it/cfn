@@ -1,0 +1,82 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description"              : "This template creates a public Elastic Load Balancer using HTTPS on port 443",
+    "Parameters"               : {
+        "SslCertificateName" : {
+            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must already be loaded in AWS (via the command line).",
+            "Type" : "String"
+        },
+        "PublicSubnetIDs" : {
+            "Description" : "A list of Public subnet IDs to attach to the load balancer.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "SecurityGroupId" : {
+            "Description" : "ID of the security group for ELB",
+            "Type"        : "AWS::EC2::SecurityGroup::Id"
+        }
+        "InstanceIDs" : {
+            "Description" : "A list of instance IDs to attach to the load balancer.",
+            "Type" : "List<AWS::EC2::Instance::Id>"
+        }
+    },
+    "Resources" : {
+        "ELB" : {
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "CrossZone" : "false",
+                "HealthCheck" : {
+                    "HealthyThreshold" : "5",
+                    "Interval" : "30",
+                    "Target" : "HTTPS:443/",
+                    "Timeout" : "5",
+                    "UnhealthyThreshold" : "3"
+                },
+                "Instances" : { "Ref" : "InstanceIDs" },
+                "Listeners" : [
+                    {
+                        "InstancePort" : "443",
+                        "InstanceProtocol" : "HTTPS",
+                        "LoadBalancerPort" : "443",
+                        "Protocol" : "HTTPS",
+                        "SSLCertificateId" : {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "arn:aws:iam::",
+                                    {
+                                        "Ref":"AWS::AccountId"
+                                    },
+                                    ":server-certificate/",
+                                    {
+                                        "Ref":"SslCertificateName"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "Policies" : [
+                ],
+                "Scheme" : "internet-facing",
+                "SecurityGroups" : [ { "Ref" : "SecurityGroupId" } ],
+                "Subnets" : { "Ref" : "PublicSubnetIDs" },
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+           }
+        },
+    },
+    "Outputs" : {
+        "LoadBalancerId" : {
+          "Description": "ELB ID",
+          "Value": { "Ref" : "ELB" }
+        },
+        "LoadBalancerDns" : {
+          "Description": "DNS name for the ELB",
+          "Value": { "Fn::GetAtt" : ["ELB", "DNSName"] }
+        }
+    }
+}
