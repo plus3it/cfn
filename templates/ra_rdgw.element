@@ -50,10 +50,6 @@
             "Type"        : "CommaDelimitedList",
             "Default"     : "10.0.0.10"
         },
-        "DomainMemberSecurityGroupId" : {
-            "Description" : "ID of the security group that allows domain member to domain controller communication",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
-        },
         "DomainNetBIOSName" : {
             "Description" : "NetBIOS name of the domain (upto 15 characters) for users of earlier versions of Windows (e.g. EXAMPLE)",
             "Type"        : "String",
@@ -65,6 +61,14 @@
         "PublicSubnetId" : {
             "Description" : "Subnet ID for the Public Subnet where the NAT instance will run",
             "Type"        : "AWS::EC2::Subnet::Id"
+        },
+        "SecurityGroupIdDomainMember" : {
+            "Description" : "ID of the security group for Active Directory domain members",
+            "Type"        : "AWS::EC2::SecurityGroup::Id"
+        },
+        "SecurityGroupIdRDGW" : {
+            "Description" : "ID of the security group for RDGW instances",
+            "Type"        : "AWS::EC2::SecurityGroup::Id"
         },
         "VPC" : {
             "Description" : "VPC ID",
@@ -146,10 +150,10 @@
                 "SubnetId" : { "Ref" : "PublicSubnetId" },
                 "GroupSet" : [
                     {
-                        "Ref" : "DomainMemberSecurityGroupId"
+                        "Ref" : "SecurityGroupIdDomainMember"
                     },
                     {
-                        "Ref" : "RDGWSecurityGroup"
+                        "Ref" : "SecurityGroupIdRDGW"
                     }
                 ],
                 "Tags" : [
@@ -429,38 +433,6 @@
                     }
                 }
             }
-        },
-        "RDGWSecurityGroup" : {
-            "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
-                "GroupDescription" : "Enable RDGW access from the Internet",
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "SecurityGroupIngress" : [
-                    {
-                        "IpProtocol" : "tcp",
-                        "FromPort"   : "443",
-                        "ToPort"     : "443",
-                        "CidrIp"     : "0.0.0.0/0"
-                    },
-                    {
-                        "IpProtocol" : "icmp",
-                        "FromPort"   : "-1",
-                        "ToPort"     : "-1",
-                        "CidrIp"     : "0.0.0.0/0"
-                    }
-                ],
-                "Tags" : [
-                    {
-                        "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
-                            "RDGW-",
-                            { "Ref" : "AWS::StackName" }
-                        ]]}
-                    }
-                ]
-            }
         }
     },
     "Outputs" : {
@@ -475,12 +447,6 @@
                 "Ref" : "RDGateway"
             },
             "Description" : "Instance ID for the RDGW"
-        },
-        "RDGWSecurityGroup" : {
-            "Value" : {
-                "Ref" : "RDGWSecurityGroup"
-            },
-            "Description" : "Security Group ID for the RDGW"
         }
     }
 }
