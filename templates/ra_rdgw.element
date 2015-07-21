@@ -59,7 +59,7 @@
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
         "PublicSubnetId" : {
-            "Description" : "Subnet ID for the Public Subnet where the NAT instance will run",
+            "Description" : "Subnet ID for the Public Subnet where the RDGW instance will run",
             "Type"        : "AWS::EC2::Subnet::Id"
         },
         "SecurityGroupIdDomainMember" : {
