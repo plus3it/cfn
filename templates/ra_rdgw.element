@@ -184,6 +184,9 @@
                             "join",
                             "installRDS",
                             "finalize"
+                        ],
+                        "update : [
+                            "finalize"
                         ]
                     },
                     "setup" : {
@@ -216,7 +219,7 @@
                                             "[cfn-auto-reloader-hook]\n",
                                             "triggers=post.update\n",
                                             "path=Resources.RDGateway.Metadata.AWS::CloudFormation::Init\n",
-                                            "action=cfn-init.exe -v -c config -s ",
+                                            "action=cfn-init.exe -v -c update -s ",
                                             {
                                                 "Ref" : "AWS::StackId"
                                             },
