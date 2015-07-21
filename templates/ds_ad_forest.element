@@ -71,11 +71,6 @@
             "MaxLength"   : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "ADSiteName" : {
-            "Description" : "Name of the site in Active Directory. Recommend using the name of the Availability Zone where the AD instance will run (e.g. us-east-1b, us-east-1e, us-west-2c, etc...)",
-            "Type"        : "String",
-            "Default"     : "us-east-1b"
-        },
         "CIDRVPC"          : {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
             "Type"        : "String",
@@ -414,9 +409,7 @@
                                             "powershell.exe ",
                                             "\"",
                                             "Get-ADObject -SearchBase (Get-ADRootDSE).ConfigurationNamingContext -filter {Name -eq 'Default-First-Site-Name'} | Rename-ADObject -NewName ",
-                                            {
-                                                "Ref" : "ADSiteName"
-                                            },
+                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/placement/availability-zone)",
                                             "\""
                                         ]
                                     ]
@@ -433,9 +426,7 @@
                                                 "Ref" : "CIDRPublicSubnet"
                                             },
                                             " -Site ",
-                                            {
-                                                "Ref" : "ADSiteName"
-                                            }
+                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/placement/availability-zone)"
                                         ]
                                     ]
                                 },
@@ -451,9 +442,7 @@
                                                 "Ref" : "CIDRPrivateSubnet"
                                             },
                                             " -Site ",
-                                            {
-                                                "Ref" : "ADSiteName"
-                                            }
+                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/placement/availability-zone)"
                                         ]
                                     ]
                                 },
