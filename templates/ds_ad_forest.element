@@ -93,6 +93,12 @@
             "Description" : "Subnet ID for the Private Subnet where the AD Domain Controller instance will run",
             "Type"        : "AWS::EC2::Subnet::Id"
         },
+        "RemoteAccessUserGroup" : {
+            "Description" : "Domain group that will be used to authorize users to connect via the RDGW",
+            "Type" : "String"
+            "Default" : "Remote Access Users",
+            "MinLength" : "1",
+        },
         "VPC" : {
             "Description" : "VPC ID",
             "Type"        : "AWS::EC2::VPC::Id"
@@ -193,6 +199,7 @@
                             "init",
                             "installADDS",
                             "configureSites",
+                            "createRemoteAccessGroup",
                             "finalize"
                         ],
                         "update" : [
@@ -428,7 +435,7 @@
                                 },
                                 "waitAfterCompletion" : "0"
                             },
-                            "20-create-dmzsubnet-1"  : {
+                            "20-create-public-subnet"  : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -444,7 +451,7 @@
                                 },
                                 "waitAfterCompletion" : "0"
                             },
-                            "30-create-subnet-1" : {
+                            "30-create-private-subnet" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -462,6 +469,44 @@
                             }
                         }
                     },
+                    "createRemoteAccessGroup" : {
+                        "commands" : {
+                            "10-create-remoteaccess-group" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command "
+                                            "\"",
+                                            "New-ADGroup -Name '",
+                                            { "Ref" : "RemoteAccessUserGroup" },
+                                            "'",
+                                            " -GroupScope Global",
+                                            "\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-update-remoteaccess-group" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command "
+                                            "\"",
+                                            "Add-ADGroupMember -Identity '",
+                                            { "Ref" : "RemoteAccessUserGroup" },
+                                            "'",
+                                            " -Members 'Domain Admins'",
+                                            "\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    }
                     "finalize" : {
                         "commands" : {
                             "10-signal-success" : {
