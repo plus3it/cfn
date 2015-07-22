@@ -49,11 +49,6 @@
             "MaxLength"   : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "ADPrivateIp" : {
-            "Description" : "Fixed private IP for the first Active Directory server (e.g. 10.0.0.10, 10.0.64.10, etc...)",
-            "Type"        : "String",
-            "Default"     : "10.0.0.10"
-        },
         "ADRestoreModePassword" : {
             "Description" : "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
             "Type"        : "String",
@@ -62,14 +57,6 @@
             "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
             "NoEcho"         : "True",
             "Default"        : "Password123"
-        },
-        "ADServerNetBIOSName" : {
-            "Description" : "NetBIOS name of the 1st AD Server (upto 15 characters)",
-            "Type"        : "String",
-            "Default"     : "DC1",
-            "MinLength"   : "1",
-            "MaxLength"   : "15",
-            "AllowedPattern" : "[a-zA-Z0-9]+"
         },
         "CIDRVPC"          : {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
@@ -89,7 +76,12 @@
             "Default"        : "10.0.32.0/20",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "DomainControllerSGId" : {
+        "DcPrivateIp" : {
+            "Description" : "Fixed private IP for the Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...)",
+            "Type"        : "String",
+            "Default"     : "10.0.0.10"
+        },
+        "DcSecurityGroupId" : {
             "Description" : "ID of the security group for domain controllers",
             "Type"        : "AWS::EC2::SecurityGroup::Id"
         },
@@ -161,6 +153,30 @@
         }
     },
     "Resources" : {
+        "DcElasticNetworkInterface" : {
+            "Type" : "AWS::EC2::NetworkInterface",
+            "Properties" : {
+                "Description" : "Network Interface for DC Instance",
+                "SubnetId" : { "Ref" : "PrivateSubnetId" },
+                "GroupSet" : [
+                    {
+                        "Ref" : "DcSecurityGroupId"
+                    }
+                ],
+                "PrivateIpAddress" : {
+                    "Ref" : "DcPrivateIp"
+                },
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "DomainController-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
         "DomainController" : {
             "Type" : "AWS::EC2::Instance",
             "CreationPolicy" : {
@@ -179,7 +195,7 @@
                             "configureSites",
                             "finalize"
                         ],
-                        "update : [
+                        "update" : [
                             "finalize"
                         ]
                     },
@@ -269,10 +285,6 @@
                             },
                             "20-set-execution-policy" : {
                                 "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
-                                "waitAfterCompletion" : "0"
-                            },
-                            "30-unpack-dsc-resource" : {
-                                "command" : "powershell.exe -command c:\\cfn\\scripts\\Unzip-Archive.ps1 -Source c:\\cfn\\modules\\xAdcsDeployment_0.1.0.0.zip -Destination 'C:\\Program Files\\WindowsPowerShell\\Modules'",
                                 "waitAfterCompletion" : "0"
                             }
                         }
@@ -490,9 +502,6 @@
                 "InstanceType" : {
                     "Ref" : "ADInstanceType"
                 },
-                "SubnetId"     : {
-                    "Ref" : "PrivateSubnetId"
-                },
                 "Tags"         : [
                     {
                         "Key" : "Name",
@@ -512,14 +521,15 @@
                         }
                     }
                 ],
-                "SecurityGroupIds" : [
+                "NetworkInterfaces" : [ 
                     {
-                        "Ref" : "DomainControllerSGId"
+                        "DeviceIndex" : "0",
+                        "NetworkInterfaceId" :
+                            {
+                                "Ref" : "DcElasticNetworkInterface" 
+                            }
                     }
                 ],
-                "PrivateIpAddress" : {
-                    "Ref" : "ADPrivateIp"
-                },
                 "KeyName" : {
                     "Ref" : "KeyPairName"
                 },
