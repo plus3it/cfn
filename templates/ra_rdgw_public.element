@@ -1,12 +1,12 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This templates deploys a Remote Desktop Gateway (RDGW) instance and joins it to a domain.",
+    "Description"              : "This templates deploys a Remote Desktop Gateway (RDGW) instance in a public subnet and joins it to a domain.",
     "Parameters"               : {
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type"        : "AWS::EC2::KeyPair::KeyName"
         },
-        "RDGWInstanceType" : {
+        "RdgwInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gatweway Instance",
             "Type"        : "String",
             "Default"     : "t2.micro",
@@ -19,6 +19,12 @@
                 "m4.large",
                 "m4.xlarge"
             ]
+        },
+        "RdgwUserGroup" : {
+            "Description" : "Domain group of users authorized to use the RDGW",
+            "Type" : "String"
+            "Default" : "Domain Admins",
+            "MinLength" : "1",
         },
         "DomainJoinPassword" : {
             "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
@@ -328,8 +334,8 @@
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned",
                                             " C:\\cfn\\scripts\\configure-rdgw.ps1 ",
-                                            " -DomainNetBiosName 'BUILTIN'",
-                                            " -GroupName 'Administrators'",
+                                            " -DomainNetBiosName ", { "Ref" : "DomainNetBiosName" },
+                                            " -GroupName ", { "Ref" : "RdgwUserGroup" },
                                             " -Verbose"
                                         ]
                                     ]
@@ -369,7 +375,7 @@
                             "Fn::FindInMap" : [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref" : "RDGWInstanceType"
+                                    "Ref" : "RdgwInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -377,7 +383,7 @@
                     ]
                 },
                 "InstanceType" : {
-                    "Ref" : "RDGWInstanceType"
+                    "Ref" : "RdgwInstanceType"
                 },
                 "NetworkInterfaces" : [ 
                     {
