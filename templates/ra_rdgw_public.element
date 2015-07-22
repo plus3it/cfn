@@ -7,7 +7,7 @@
             "Type"        : "AWS::EC2::KeyPair::KeyName"
         },
         "RdgwInstanceType" : {
-            "Description" : "Amazon EC2 instance type for the Remote Desktop Gatweway Instance",
+            "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
             "Type"        : "String",
             "Default"     : "t2.micro",
             "AllowedValues" : [
