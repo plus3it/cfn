@@ -317,7 +317,7 @@
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned",
                                             " C:\\cfn\\scripts\\configure-rdgw.ps1 ",
-                                            " -DomainNetBiosName ", { "Ref" : "DomainNetBiosName" },
+                                            " -DomainNetBiosName ", { "Ref" : "DomainNetBIOSName" },
                                             " -GroupName ", { "Ref" : "RemoteAccessUserGroup" },
                                             " -Verbose"
                                         ]

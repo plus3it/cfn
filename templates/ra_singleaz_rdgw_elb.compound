@@ -32,12 +32,7 @@
                 "m4.xlarge"
             ]
         },
-        "RdgwElbName" : {
-            "Description" : "Name of the RDGW Elastic Load Balancer",
-            "Type" : "String",
-            "MinLength" : "1"
-        },
-        "RdgwUserGroup" : {
+        "RemoteAccessUserGroup" : {
             "Description" : "Domain group of users authorized to use the RDGW",
             "Type" : "String",
             "Default" : "Domain Admins",
@@ -81,7 +76,7 @@
             "MaxLength"   : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "RdgwPrivateSubnetID" : {
+        "Rdgw1PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the RDGW instance will run.",
             "Type"        : "AWS::EC2::Subnet::Id"
         },
@@ -96,7 +91,7 @@
        	 	"Properties" : {
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_security_group.element",
            	 	"Parameters" : {
-					"VPC" : {"Ref" : "VPC"},
+					"VPC" : { "Ref" : "VPC" },
                     "UseELB" : "true"
            		}
 			}
@@ -108,7 +103,12 @@
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_elb_public_ssl_443.element",
            	 	"Parameters" : {
 					"SslCertificateName" : { "Ref" : "ElbSslCertificateName" },
-					"PublicSubnetIDs" : {"Ref" : "ElbPublicSubnetIDs"},
+					"PublicSubnetIDs" : {
+                        "Fn::Join" : [
+                            ",",
+                            { "Ref" : "ElbPublicSubnetIDs" }
+                        ]
+                    },
 					"SecurityGroupId" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwElbSecurityGroupId" ] }
            		}
 			}
@@ -119,20 +119,24 @@
        	 	"Properties" : {
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
            	 	"Parameters" : {
-					"CIDRVPC" : {"Ref" : "CIDRVPC"},
 					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"InstanceTypeNAT" : {"Ref" : "InstanceTypeRdgw"},
+					"RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
 					"RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
-                    "RdgwUserGroup" : { "Ref" : "RdgwUserGroup" },
+                    "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
-                    "DomainDNSServers" : { "Ref" : "DomainDNSServers" },
+                    "DomainDNSServers" : {
+                        "Fn::Join" : [
+                            ",",
+                            { "Ref" : "DomainDNSServers" }
+                        ]
+                    },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
-                    "PrivateSubnetID" : { "Ref" : "RdgwPrivateSubnetID" },
+                    "PrivateSubnetID" : { "Ref" : "Rdgw1PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
 					"SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
-					"VPC" : {"Ref" : "VPC"},
+					"VPC" : { "Ref" : "VPC" }
            		}
 			}
       	}
@@ -151,8 +155,7 @@
             "Value": { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] }
         },
         "RdgwElbSecurityGroupId" : {
-            "Description" : "Security Group ID for the RDGW Elastic Load Balancer"
-            "Condition" : "UseELB",
+            "Description" : "Security Group ID for the RDGW Elastic Load Balancer",
             "Value": { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwElbSecurityGroupId" ] }
         }
     }
