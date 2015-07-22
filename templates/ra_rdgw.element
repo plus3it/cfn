@@ -185,7 +185,7 @@
                             "installRDS",
                             "finalize"
                         ],
-                        "update : [
+                        "update" : [
                             "finalize"
                         ]
                     },
@@ -233,7 +233,7 @@
                                     ]
                                 }
                             },
-                            "c:\\cfn\\scripts\\Configure-RDGW.ps1" : {
+                            "c:\\cfn\\scripts\\configure-rdgw.ps1" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/configure-rdgw.ps1"
                             }
                         },
@@ -327,11 +327,7 @@
                                         "",
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned",
-                                            " C:\\cfn\\scripts\\Configure-RDGW.ps1 -ServerFQDN ",
-                                            "%computername%",".",
-                                            {
-                                                "Ref" : "DomainDNSName"
-                                            },
+                                            " C:\\cfn\\scripts\\configure-rdgw.ps1 ",
                                             " -DomainNetBiosName 'BUILTIN'",
                                             " -GroupName 'Administrators'",
                                             " -Verbose"
