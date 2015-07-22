@@ -21,11 +21,11 @@
             "Properties": {
                 "CrossZone" : "false",
                 "HealthCheck" : {
-                    "HealthyThreshold" : "2",
-                    "Interval" : "300",
+                    "HealthyThreshold" : "5",
+                    "Interval" : "60",
                     "Target" : "HTTPS:443/",
                     "Timeout" : "5",
-                    "UnhealthyThreshold" : "3"
+                    "UnhealthyThreshold" : "10"
                 },
                 "Listeners" : [
                     {
