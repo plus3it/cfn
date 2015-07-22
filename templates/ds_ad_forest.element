@@ -2,8 +2,8 @@
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description"              : "This template creates an Active Directory forest with a single site and a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
     "Parameters"               : {
-        "ADInstanceType" : {
-            "Description" : "Amazon EC2 instance type for the Active Directory Instance",
+        "DcInstanceType" : {
+            "Description" : "Amazon EC2 instance type for the Domain Controller Instance",
             "Type"        : "String",
             "Default"     : "t2.micro",
             "AllowedValues" : [
@@ -538,7 +538,7 @@
                             "Fn::FindInMap" : [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref" : "ADInstanceType"
+                                    "Ref" : "DcInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -546,7 +546,7 @@
                     ]
                 },
                 "InstanceType" : {
-                    "Ref" : "ADInstanceType"
+                    "Ref" : "DcInstanceType"
                 },
                 "Tags"         : [
                     {
