@@ -95,9 +95,9 @@
         },
         "RemoteAccessUserGroup" : {
             "Description" : "Domain group that will be used to authorize users to connect via the RDGW",
-            "Type" : "String"
+            "Type" : "String",
             "Default" : "Remote Access Users",
-            "MinLength" : "1",
+            "MinLength" : "1"
         },
         "VPC" : {
             "Description" : "VPC ID",

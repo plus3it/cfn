@@ -22,14 +22,14 @@
         },
         "RdgwElbName" : {
             "Description" : "Name of the RDGW Elastic Load Balancer",
-            "Type" : "String"
-            "MinLength" : "1",
+            "Type" : "String",
+            "MinLength" : "1"
         },
         "RemoteAccessUserGroup" : {
             "Description" : "Domain group of users authorized to use the RDGW",
-            "Type" : "String"
+            "Type" : "String",
             "Default" : "Domain Admins",
-            "MinLength" : "1",
+            "MinLength" : "1"
         },
         "DomainJoinPassword" : {
             "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
