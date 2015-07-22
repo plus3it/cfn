@@ -14,10 +14,6 @@
             "Description" : "ID of the security group for ELB",
             "Type"        : "AWS::EC2::SecurityGroup::Id"
         }
-        "InstanceIDs" : {
-            "Description" : "A list of instance IDs to attach to the load balancer.",
-            "Type" : "List<AWS::EC2::Instance::Id>"
-        }
     },
     "Resources" : {
         "ELB" : {
@@ -25,13 +21,12 @@
             "Properties": {
                 "CrossZone" : "false",
                 "HealthCheck" : {
-                    "HealthyThreshold" : "5",
-                    "Interval" : "30",
+                    "HealthyThreshold" : "2",
+                    "Interval" : "300",
                     "Target" : "HTTPS:443/",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "3"
                 },
-                "Instances" : { "Ref" : "InstanceIDs" },
                 "Listeners" : [
                     {
                         "InstancePort" : "443",
@@ -67,11 +62,11 @@
                     }
                 ]
            }
-        },
+        }
     },
     "Outputs" : {
-        "LoadBalancerId" : {
-          "Description": "ELB ID",
+        "LoadBalancerName" : {
+          "Description": "Name of the Elastic Load Balancer",
           "Value": { "Ref" : "ELB" }
         },
         "LoadBalancerDns" : {
