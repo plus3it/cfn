@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates creates 1 security group to be used by all Remote Desktop Gateway instances",
+    "Description" : "This templates creates one security group for RDGW instances, and one for their load balancer",
     "Parameters" : {
         "UseELB" : {
             "Description" : "Set to true if using an ELB in front of the RDGW; otherwise set to false",
@@ -48,7 +48,7 @@
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "NoELB",
             "Properties" : {
-                "GroupId" :  { "Ref": "RDGWSecurityGroup" },
+                "GroupId" :  { "Ref": "RdgwSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort"   : "443",
                 "ToPort"     : "443",
@@ -59,7 +59,7 @@
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
             "Properties" : {
-                "GroupId" :  { "Ref": "RDGWSecurityGroup" },
+                "GroupId" :  { "Ref": "RdgwSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort"   : "443",
                 "ToPort"     : "443",
@@ -94,7 +94,7 @@
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
-                            "RDGW-",
+                            "RDGW-ELB-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
                     }
@@ -105,7 +105,7 @@
     "Outputs" : {
         "RdgwSecurityGroupId" : {
             "Value" : {
-                "Ref" : "RDGWSecurityGroup"
+                "Ref" : "RdgwSecurityGroup"
             },
             "Description" : "Security Group ID for the RDGW"
         },
