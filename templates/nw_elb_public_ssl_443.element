@@ -3,7 +3,7 @@
     "Description"              : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
     "Parameters"               : {
         "SslCertificateName" : {
-            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must already be loaded in AWS (via the command line).",
+            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have previously been loaded in AWS (via the command line).",
             "Type" : "String"
         },
         "PublicSubnetIDs" : {
