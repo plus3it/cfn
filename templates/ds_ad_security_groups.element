@@ -468,6 +468,16 @@
                 "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
             }
         },
+        "DomainMember2DCIngressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { "Ref": "DomainControllerSG" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+            }
+        },
         "DomainMemberSG"                      : {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" : {
