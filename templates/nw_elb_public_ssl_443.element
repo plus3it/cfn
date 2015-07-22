@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a public Elastic Load Balancer using HTTPS on port 443",
+    "Description"              : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
     "Parameters"               : {
         "SslCertificateName" : {
             "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must already be loaded in AWS (via the command line).",
@@ -35,9 +35,9 @@
                 "Listeners" : [
                     {
                         "InstancePort" : "443",
-                        "InstanceProtocol" : "HTTPS",
+                        "InstanceProtocol" : "SSL",
                         "LoadBalancerPort" : "443",
-                        "Protocol" : "HTTPS",
+                        "Protocol" : "SSL",
                         "SSLCertificateId" : {
                             "Fn::Join": [
                                 "",
