@@ -309,6 +309,9 @@
                     },
                     "configure-nat" : {
                         "commands" : {
+                            "5-sleep-for-tags" : {
+                                "command" : "echo 'Sleeping 30 seconds to allow tags to propagate...' && sleep 30 && echo 'Proceeding...'"
+                            },
                             "10-attach-eni" : {
                                 "command" : "/etc/cfn/scripts/configure-nat-eni.sh Name"
                             },
