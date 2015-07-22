@@ -25,7 +25,7 @@
             "Type" : "String"
             "MinLength" : "1",
         },
-        "RdgwUserGroup" : {
+        "RemoteAccessUserGroup" : {
             "Description" : "Domain group of users authorized to use the RDGW",
             "Type" : "String"
             "Default" : "Domain Admins",
@@ -318,7 +318,7 @@
                                             "powershell.exe -ExecutionPolicy RemoteSigned",
                                             " C:\\cfn\\scripts\\configure-rdgw.ps1 ",
                                             " -DomainNetBiosName ", { "Ref" : "DomainNetBiosName" },
-                                            " -GroupName ", { "Ref" : "RdgwUserGroup" },
+                                            " -GroupName ", { "Ref" : "RemoteAccessUserGroup" },
                                             " -Verbose"
                                         ]
                                     ]
