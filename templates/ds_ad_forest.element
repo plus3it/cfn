@@ -495,7 +495,8 @@
                                         [
                                             "powershell.exe -Command "
                                             "\"",
-                                            "Add-ADGroupMember -Identity '",
+                                            "Add-ADGroupMember -Identity ",
+                                            "'",
                                             { "Ref" : "RemoteAccessUserGroup" },
                                             "'",
                                             " -Members 'Domain Admins'",
