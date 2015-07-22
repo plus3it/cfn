@@ -177,5 +177,85 @@
            		}
 			}
       	}
+    },
+    "Outputs" : {
+         "VPC" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ]
+            },
+            "Description" : "VPC ID"
+        },
+        "InternetGatewayId" : {
+            "Value" : { 
+                "Fn::GetAtt": [ "VPCStack", "Outputs.InternetGatewayId" ]
+            },
+            "Description" : "ID of the Internet Gateway"
+        },
+        "PublicRouteTableId" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "VPCStack", "Outputs.PublicRouteTableId" ]
+            },
+            "Description" : "Route Table ID for Public Subnet"
+        },
+        "PublicSubnet1Id" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "PublicSubnet1Stack", "Outputs.PublicSubnetId" ]
+            },
+            "Description" : "Subnet ID for Public Subnet 1"
+        },
+        "PublicSubnet2Id" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "PublicSubnet2Stack", "Outputs.PublicSubnetId" ]
+            },
+            "Description" : "Subnet ID for Public Subnet 2"
+        },
+        "PrivateSubnet1Id" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "PrivateSubnet1Stack", "Outputs.PrivateSubnetId" ]
+            },
+            "Description" : "Subnet ID for Private Subnet 1"
+        },
+        "PrivateSubnet2Id" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "PrivateSubnet2Stack", "Outputs.PrivateSubnetId" ]
+            },
+            "Description" : "Subnet ID for Private Subnet 2"
+        },
+        "NAT1ElasticNetworkInterfaceId" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "NATwithENI1Stack", "Outputs.NATElasticNetworkInterfaceId" ]
+            },
+            "Description" : "ID of the Elastic Network Interface for NAT 1"
+        },
+        "NAT1SecurityGroupId" : {
+            "Value" : { 
+                "Fn::GetAtt": [ "NATwithENI1Stack", "Outputs.NATSecurityGroupId" ]
+            },
+            "Description" : "ID of the Security Group for NAT 1"
+        },
+        "PrivateRouteTable1Id" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "NATwithENI1Stack", "Outputs.PrivateRouteTableId" ]
+            },
+            "Description" : "ID of the Private Route Table for NAT 1"
+        },
+        "NAT2ElasticNetworkInterfaceId" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "NATwithENI2Stack", "Outputs.NATElasticNetworkInterfaceId" ]
+            },
+            "Description" : "ID of the Elastic Network Interface for NAT 2"
+        },
+        "NAT2SecurityGroupId" : {
+            "Value" : { 
+                "Fn::GetAtt": [ "NATwithENI2Stack", "Outputs.NATSecurityGroupId" ]
+            },
+            "Description" : "ID of the Security Group for NAT 2"
+        },
+        "PrivateRouteTable2Id" : {
+            "Value" : {
+                "Fn::GetAtt" : [ "NATwithENI2Stack", "Outputs.PrivateRouteTableId" ]
+            },
+            "Description" : "ID of the Private Route Table for NAT 2"
+        }
     }
 }
