@@ -146,7 +146,7 @@
             "CreationPolicy" : {
                 "ResourceSignal" : {
                     "Count" : "1",
-                    "Timeout" : "PT60M"
+                    "Timeout" : "PT30M"
                 }
             },
             "Properties" : {
@@ -178,10 +178,12 @@
                         "config" : [
                             "setup",
                             "join",
-                            "installRDS"
+                            "installRDS",
+                            "finalize"
                         ],
                         "update" : [
-                            "setup"
+                            "setup",
+                            "finalize"
                         ]
                     },
                     "setup" : {
@@ -329,6 +331,25 @@
                                 "waitAfterCompletion" : "0"
                             }
                         }
+                    },
+                    "finalize" : {
+                        "commands" : {
+                            "10-signal-success" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "cfn-signal.exe -e 0 ",
+                                            "   --stack ", { "Ref" : "AWS::StackName" },
+                                            "   --resource RdgwAutoScalingGroup ",
+                                            "   --region ", { "Ref" : "AWS::Region"}
+                                        ]
+                                    ]
+                                },
+                                "ignoreErrors" : "true",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
                     }
                 }
             },
@@ -383,11 +404,6 @@
                                 "cfn-init.exe -v -c config ",
                                 "   --stack ", { "Ref" : "AWS::StackName" },
                                 "   --resource RdgwLaunchConfig ",
-                                "   --region ", { "Ref" : "AWS::Region"}, "\n",
-
-                                "cfn-signal.exe -e %ERRORLEVEL% ",
-                                "   --stack ", { "Ref" : "AWS::StackName" },
-                                "   --resource RdgwAutoScalingGroup ",
                                 "   --region ", { "Ref" : "AWS::Region"}, "\n",
                                 "</script>\n"
                             ]
