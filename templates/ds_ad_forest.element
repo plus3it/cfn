@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates an Active Directory forest with a single site and a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
+    "Description"              : "This element creates an Active Directory forest with a single site and a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
     "Parameters"               : {
         "DcInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Domain Controller Instance",
@@ -16,7 +16,7 @@
                 "m4.xlarge"
             ]
         },
-        "ADDomainAdminPassword" : {
+        "ADDomainAdminPw" : {
             "Description" : "Password for the domain admin user. Must be at least 8 characters containing letters, numbers and symbols",
             "Type"        : "String",
             "MinLength"   : "8",
@@ -49,7 +49,7 @@
             "MaxLength"   : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "ADRestoreModePassword" : {
+        "ADRestoreModePw" : {
             "Description" : "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
             "Type"        : "String",
             "MinLength"   : "8",
@@ -188,7 +188,7 @@
             "CreationPolicy" : {
                 "ResourceSignal" : {
                     "Count" : "1",
-                    "Timeout" : "PT60M"
+                    "Timeout" : "PT40M"
                 }
             },
             "Metadata" : {
@@ -203,6 +203,7 @@
                             "finalize"
                         ],
                         "update" : [
+                            "setup",
                             "finalize"
                         ]
                     },
@@ -337,7 +338,7 @@
                                             " ",
                                             "-SafeModeAdministratorPassword (convertto-securestring ",
                                             {
-                                                "Ref" : "ADRestoreModePassword"
+                                                "Ref" : "ADRestoreModePw"
                                             },
                                             " -asplaintext -force) ",
                                             "-DomainMode Win2012R2 ",
@@ -388,7 +389,7 @@
                                             " ",
                                             "-AccountPassword (ConvertTo-SecureString ",
                                             {
-                                                "Ref" : "ADDomainAdminPassword"
+                                                "Ref" : "ADDomainAdminPw"
                                             },
                                             " -AsPlainText -Force) ",
                                             "-Enabled $true ",
@@ -476,7 +477,7 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command "
+                                            "powershell.exe -Command ",
                                             "\"",
                                             "New-ADGroup -Name '",
                                             { "Ref" : "RemoteAccessUserGroup" },
@@ -493,7 +494,7 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command "
+                                            "powershell.exe -Command ",
                                             "\"",
                                             "Add-ADGroupMember -Identity ",
                                             "'",
@@ -507,7 +508,7 @@
                                 "waitAfterCompletion" : "0"
                             }
                         }
-                    }
+                    },
                     "finalize" : {
                         "commands" : {
                             "10-signal-success" : {
@@ -521,7 +522,8 @@
                                             "   --region ", { "Ref" : "AWS::Region"}
                                         ]
                                     ]
-                                }
+                                },
+                                "waitAfterCompletion" : "0"
                             }
                         }
                     }

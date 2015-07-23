@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates 2 security groups for an Active Directory domain -- one for Domain Controllers and one for Domain Members.",
+    "Description"              : "This element creates 2 security groups for an Active Directory domain -- one for Domain Controllers and one for Domain Members.",
     "Parameters"               : {
         "CIDRVPC"          : {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",

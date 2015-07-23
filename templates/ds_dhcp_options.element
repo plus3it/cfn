@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
+    "Description"              : "This element creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
     "Parameters"               : {
         "DomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",

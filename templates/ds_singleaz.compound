@@ -10,7 +10,7 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type"        : "AWS::EC2::KeyPair::KeyName"
         },
-        "DcInstanceType" : {
+        "InstanceTypeDC" : {
             "Description" : "Amazon EC2 instance type for the Domain Controller instance",
             "Type"        : "String",
             "Default"     : "t2.micro",
@@ -30,7 +30,7 @@
             "Default" : "Remote Access Users",
             "MinLength" : "1"
         },
-        "ADDomainAdminPassword" : {
+        "ADDomainAdminPw" : {
             "Description" : "Password for the domain admin user. Must be at least 8 characters containing letters, numbers and symbols",
             "Type"        : "String",
             "MinLength"   : "8",
@@ -63,7 +63,7 @@
             "MaxLength"   : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "ADRestoreModePassword" : {
+        "ADRestoreModePw" : {
             "Description" : "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
             "Type"        : "String",
             "MinLength"   : "8",
@@ -90,17 +90,13 @@
             "Default"        : "10.0.32.0/20",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "Dc1PrivateIp" : {
+        "PrivateIpDC1" : {
             "Description" : "Fixed private IP for the Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...)",
             "Type"        : "String",
             "Default"     : "10.0.0.10"
         },
-        "DcSecurityGroupId" : {
-            "Description" : "ID of the security group for domain controllers",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
-        },
-        "Dc1PrivateSubnetID" : {
-            "Description" : "Private Subnet ID where the RDGW instance will run.",
+        "PrivateSubnet1Id" : {
+            "Description" : "Private Subnet ID where the first domain controller instance will run.",
             "Type"        : "AWS::EC2::Subnet::Id"
         }
     },
@@ -121,21 +117,21 @@
        	 	"Properties" : {
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_forest.element",
            	 	"Parameters" : {
-                    "DcInstanceType" : { "Ref" : "DcInstanceType" },
-                    "ADDomainAdminPassword" : { "Ref" : "ADDomainAdminPassword" },
+                    "DcInstanceType" : { "Ref" : "InstanceTypeDC" },
+                    "ADDomainAdminPw" : { "Ref" : "ADDomainAdminPw" },
                     "ADDomainAdminUser" : { "Ref" : "ADDomainAdminUser" },
                     "ADDomainDNSName" : { "Ref" : "ADDomainDNSName" },
                     "ADDomainNetBIOSName" : { "Ref" : "ADDomainNetBIOSName" },
-                    "ADRestoreModePassword" : { "Ref" : "ADRestoreModePassword" },
+                    "ADRestoreModePw" : { "Ref" : "ADRestoreModePw" },
                     "CIDRVPC" : { "Ref" : "CIDRVPC" },
                     "CIDRPrivateSubnet" : { "Ref" : "CIDRPrivateSubnet1" },
                     "CIDRPublicSubnet" : { "Ref" : "CIDRPublicSubnet1" },
-                    "DcPrivateIp" : { "Ref" : "Dc1PrivateIp" },
+                    "DcPrivateIp" : { "Ref" : "PrivateIpDC1" },
                     "DcSecurityGroupId" : { "Fn::GetAtt" : [ "AdSecurityGroupStack", "Outputs.DomainControllerSGID" ] },
                     "KeyPairName" : { "Ref" : "KeyPairName" },
-                    "PrivateSubnetId" : { "Ref" : "Dc1PrivateSubnetId" },
+                    "PrivateSubnetId" : { "Ref" : "PrivateSubnet1Id" },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
-                    "VPC" : { "Ref" : "VPC" },
+                    "VPC" : { "Ref" : "VPC" }
            		}
 			}
       	},
@@ -150,7 +146,7 @@
                         "Fn::Join" : [
                             ",",
                             [ 
-                                { "Ref" : "Dc1PrivateIp" }
+                                { "Ref" : "PrivateIpDC1" }
                             ]
                         ]
                     },
@@ -158,30 +154,30 @@
                         "Fn::Join" : [
                             ",",
                             [ 
-                                { "Ref" : "Dc1PrivateIp" }
+                                { "Ref" : "PrivateIpDC1" }
                             ]
                         ]
                     },
-                    "VPC" : { "Ref" : "VPC" },
+                    "VPC" : { "Ref" : "VPC" }
            		}
 			}
       	}
     },
     "Outputs" : {
         "DomainControllerSGID" : {
-            "Description" : "Domain Controller Security Group ID"
+            "Description" : "Domain Controller Security Group ID",
             "Value": { "Fn::GetAtt" : [ "AdSecurityGroupStack", "Outputs.DomainControllerSGID" ] }
         },
         "DomainMemberSGID" : {
-            "Description" : "Domain Member Security Group ID"
+            "Description" : "Domain Member Security Group ID",
             "Value": { "Fn::GetAtt" : [ "AdSecurityGroupStack", "Outputs.DomainMemberSGID" ] }
         },
         "DomainAdmin" : {
-            "Description" : "Domain administrator account"
+            "Description" : "Domain administrator account",
             "Value": { "Fn::GetAtt" : [ "AdForestStack", "Outputs.DomainAdmin" ] }
         },
         "DomainController1ID" : {
-            "Description" : "Instance ID of the Domain Controller"
+            "Description" : "Instance ID of the Domain Controller",
             "Value": { "Fn::GetAtt" : [ "AdForestStack", "Outputs.DomainControllerID" ] }
         }
     }
