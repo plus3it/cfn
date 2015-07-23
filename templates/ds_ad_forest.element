@@ -265,6 +265,15 @@
                                         ]
                                     ]
                                 }
+                            },
+                            "c:\\cfn\\scripts\\assert-hadc.ps1"              : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-hadc.ps1"
+                            },
+                            "c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip"              : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xactivedirectory_2.4.0.0.zip"
+                            },
+                            "c:\\cfn\\scripts\\unzip-archive.ps1"      : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/unzip-archive.ps1"
                             }
                         },
                         "services" : {
@@ -293,6 +302,10 @@
                             },
                             "20-set-execution-policy" : {
                                 "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-unpack-ad-dsc-resource" : {
+                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip -Destination \"%ProgramFiles%\\WindowsPowerShell\\Modules\"",
                                 "waitAfterCompletion" : "0"
                             }
                         }
@@ -330,43 +343,30 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command ",
-                                            "\"Install-ADDSForest -DomainName ",
+                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
+                                            "c:\\cfn\\scripts\\assert-hadc.ps1 -DomainAdminUsername ",
                                             {
-                                                "Ref" : "ADDomainDNSName"
+                                                "Ref" : "ADDomainAdminUser"
                                             },
-                                            " ",
-                                            "-SafeModeAdministratorPassword (convertto-securestring ",
+                                            " -DomainAdminPw (convertto-securestring '",
+                                            {
+                                                "Ref" : "ADDomainAdminPw"
+                                            },
+                                            "') -RestoreModePw (convertto-securestring '",
                                             {
                                                 "Ref" : "ADRestoreModePw"
                                             },
-                                            " -asplaintext -force) ",
-                                            "-DomainMode Win2012R2 ",
-                                            "-DomainNetbiosName ",
+                                            "') -DomainDnsName ",
                                             {
-                                                "Ref" : "ADDomainNetBIOSName"
+                                                "Ref" : "ADDomainDNSName"
                                             },
-                                            " ",
-                                            "-ForestMode Win2012R2 ",
-                                            "-Confirm:$false ",
-                                            "-Force\""
+                                            " -DcRole 'Primary DC' -Verbose\""
                                         ]
                                     ]
                                 },
                                 "waitAfterCompletion" : "forever"
                             },
-                            "30-restart-service" : {
-                                "command" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "powershell.exe -Command Restart-Service NetLogon -EA 0"
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "180"
-                            },
-                            "40-create-adminuser" : {
+                            "30-create-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -409,12 +409,12 @@
                                                 "Ref" : "ADDomainAdminUser"
                                             },
                                             "'",
-                                            "})) { continue } else {throw}"
+                                            "})) { continue } else { throw }"
                                         ]
                                     ]
                                 }
                             },
-                            "50-update-adminuser" : {
+                            "40-update-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
