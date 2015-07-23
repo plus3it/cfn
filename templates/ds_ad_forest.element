@@ -397,7 +397,22 @@
                                         ]
                                     ]
                                 },
-                                "waitAfterCompletion" : "0"
+                                "waitAfterCompletion" : "0",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "(Get-ADUser -filter {sAMAccountName -eq ",
+                                            "'",
+                                            {
+                                                "Ref" : "ADDomainAdminUser"
+                                            },
+                                            "'",
+                                            "})) { continue } else {throw}"
+                                        ]
+                                    ]
+                                }
                             },
                             "50-update-adminuser" : {
                                 "command" : {
