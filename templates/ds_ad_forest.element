@@ -321,7 +321,17 @@
                                         ]
                                     ]
                                 },
-                                "waitAfterCompletion" : "45"
+                                "waitAfterCompletion" : "45",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "((Get-NetIPConfiguration).netipv4interface.dhcp -eq 'Disabled')) ",
+                                            "{ continue } else { throw 'IP Address is already static.' }"
+                                        ]
+                                    ]
+                                }
                             }
                         }
                     },
