@@ -257,9 +257,8 @@
                                         "",
                                         [
                                             "$netip = Get-NetIPConfiguration;",
-                                            "$ipconfig = Get-NetIPAddress | ?{$_.IpAddress -eq $netip.IPv4Address.IpAddress};",
                                             "Get-NetAdapter | Set-NetIPInterface -DHCP Disabled;",
-                                            "Get-NetAdapter | New-NetIPAddress -AddressFamily IPv4 -IPAddress $netip.IPv4Address.IpAddress -PrefixLength $ipconfig.PrefixLength -DefaultGateway $netip.IPv4DefaultGateway.NextHop;",
+                                            "Get-NetAdapter | New-NetIPAddress -AddressFamily IPv4 -IPAddress $netip.IPv4Address.IpAddress -PrefixLength $netip.IPv4Address.PrefixLength -DefaultGateway $netip.IPv4DefaultGateway.NextHop;",
                                             "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses $netip.DNSServer.ServerAddresses;",
                                             "\n"
                                         ]
@@ -271,6 +270,9 @@
                             },
                             "c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip"              : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xactivedirectory-2.4.0.0.zip"
+                            },
+                            "c:\\cfn\\modules\\xnetworking_2.2.0.0.zip"              : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xnetworking-2.2.0.0.zip"
                             },
                             "c:\\cfn\\scripts\\unzip-archive.ps1"      : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/unzip-archive.ps1"
@@ -305,7 +307,11 @@
                                 "waitAfterCompletion" : "0"
                             },
                             "30-unpack-ad-dsc-resource" : {
-                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
+                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xactivedirectory-2.4.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
+                                "waitAfterCompletion" : "0"
+                            }
+                            "40-unpack-nw-dsc-resource" : {
+                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xnetworking-2.2.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
                                 "waitAfterCompletion" : "0"
                             }
                         }

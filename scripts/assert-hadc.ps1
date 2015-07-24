@@ -22,6 +22,10 @@ param(
 
     https://gallery.technet.microsoft.com/scriptcenter/xActiveDirectory-f2d573f3
     https://github.com/PowerShell/xActiveDirectory
+
+    Requires xNetworking DSC Resource (v2.2.0.0 or later):
+    https://github.com/PowerShell/xNetworking
+
 #>
 
 # Generate PS Credentials
@@ -30,16 +34,25 @@ $SecureRestoreModePw = ConvertTo-SecureString $RestoreModePw -AsPlainText -Force
 $DomainAdminCredential = New-Object System.Management.Automation.PSCredential -ArgumentList "$DomainAdminUsername@$DomainDnsName", $SecureDomainAdminPw
 $RestoreModeCredential = New-Object System.Management.Automation.PSCredential -ArgumentList '(Password Only)', $SecureRestoreModePw
 
+# Grab the current network info, which will be DHCP initially
+# Expecting DSC will convert it to a static address, see:
+# https://github.com/PowerShell/xNetworking/issues/9
+$netip = Get-NetIPConfiguration
 
 $ConfigData = @{
     AllNodes = @(
         @{
-            Nodename = "localhost"
+            Nodename = 'localhost'
             Role = $DcRole
             DomainName = $DomainDnsName
             RetryCount = 20
             RetryIntervalSec = 30
             PsDscAllowPlainTextPassword = $true
+            InterfaceAlias = 'Ethernet'
+            IPAddress = $netip.IPv4Address.IpAddress
+            SubnetMask = $netip.IPv4Address.PrefixLength
+            DefaultGateway = $netip.IPv4DefaultGateway.NextHop
+            AddressFamily = 'IPv4'
         }
     )
 }
@@ -47,7 +60,7 @@ $ConfigData = @{
 
 Configuration AssertHADC
 {
-    Import-DscResource -ModuleName xActiveDirectory
+    Import-DscResource -ModuleName xActiveDirectory, xNetworking
 
     Node $AllNodes.Where{$_.Role -eq "Primary DC"}.Nodename
     {
@@ -56,6 +69,14 @@ Configuration AssertHADC
             ActionAfterReboot = 'ContinueConfiguration'
             ConfigurationMode = 'ApplyOnly'
             RebootNodeIfNeeded = $true
+        }
+
+        xIPAddress SetIP {
+            IPAddress = $Node.IPAddress
+            InterfaceAlias = $Node.InterfaceAlias
+            DefaultGateway = $Node.DefaultGateway
+            SubnetMask = $Node.SubnetMask
+            AddressFamily = $Node.AddressFamily
         }
 
         WindowsFeature ADDSInstall
@@ -76,7 +97,17 @@ Configuration AssertHADC
             DomainName = $Node.DomainName
             DomainAdministratorCredential = $DomainAdminCredential
             SafemodeAdministratorPassword = $RestoreModeCredential
-            DependsOn = "[WindowsFeature]ADDSInstall"
+            DependsOn = '[xIPAddress]SetIP','[WindowsFeature]ADDSInstall'
+        }
+
+        User FirstUser
+        {
+            UserName = $DomainAdminUsername
+            Ensure = 'Present'
+            Disabled = $false
+            Password = $DomainAdminCredential
+            PasswordNeverExpires = $true
+            DependsOn = '[xADDomain]FirstDS'
         }
     }
 
@@ -87,6 +118,14 @@ Configuration AssertHADC
             ActionAfterReboot = 'ContinueConfiguration'
             ConfigurationMode = 'ApplyOnly'
             RebootNodeIfNeeded = $true
+        }
+
+        xIPAddress SetIP {
+            IPAddress = $Node.IPAddress
+            InterfaceAlias = $Node.InterfaceAlias
+            DefaultGateway = $Node.DefaultGateway
+            SubnetMask = $Node.SubnetMask
+            AddressFamily = $Node.AddressFamily
         }
 
         WindowsFeature ADDSInstall
@@ -108,7 +147,7 @@ Configuration AssertHADC
             DomainUserCredential = $DomainAdminCredential
             RetryCount = $Node.RetryCount
             RetryIntervalSec = $Node.RetryIntervalSec
-            DependsOn = "[WindowsFeature]ADDSInstall"
+            DependsOn = '[WindowsFeature]ADDSInstall'
         }
 
         xADDomainController AdditionalDC
@@ -116,7 +155,7 @@ Configuration AssertHADC
             DomainName = $Node.DomainName
             DomainAdministratorCredential = $DomainAdminCredential
             SafemodeAdministratorPassword = $RestoreModeCredential
-            DependsOn = "[xWaitForADDomain]DscForestWait"
+            DependsOn = '[xIPAddress]SetIP','[xWaitForADDomain]DscForestWait'
         }
     }
 }
