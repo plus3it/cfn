@@ -142,15 +142,7 @@
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_dhcp_options.element",
            	 	"Parameters" : {
                     "DomainDNSName" : { "Ref" : "ADDomainDNSName" },
-                    "NetbiosNameServers" : {
-                        "Fn::Join" : [
-                            ",",
-                            [ 
-                                { "Ref" : "PrivateIpDC1" }
-                            ]
-                        ]
-                    },
-                    "NtpServers" : {
+                    "DomainControllerIPs" : {
                         "Fn::Join" : [
                             ",",
                             [ 
