@@ -462,7 +462,22 @@
                                         ]
                                     ]
                                 },
-                                "waitAfterCompletion" : "0"
+                                "waitAfterCompletion" : "0",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "(Get-ADReplicationSubnet -filter {Name -eq ",
+                                            "'",
+                                            {
+                                                "Ref" : "CIDRPublicSubnet"
+                                            },
+                                            "'",
+                                            "})) { continue } else { throw 'Subnet already exists in AD.' }"
+                                        ]
+                                    ]
+                                }
                             },
                             "30-create-private-subnet" : {
                                 "command" : {
@@ -478,7 +493,22 @@
                                         ]
                                     ]
                                 },
-                                "waitAfterCompletion" : "0"
+                                "waitAfterCompletion" : "0",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "(Get-ADReplicationSubnet -filter {Name -eq ",
+                                            "'",
+                                            {
+                                                "Ref" : "CIDRPrivateSubnet"
+                                            },
+                                            "'",
+                                            "})) { continue } else { throw 'Subnet already exists in AD.' }"
+                                        ]
+                                    ]
+                                }
                             }
                         }
                     },
