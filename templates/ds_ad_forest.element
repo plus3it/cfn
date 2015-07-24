@@ -327,18 +327,7 @@
                     },
                     "installADDS" : {
                         "commands" : {
-                            "10-install-prereqs" : {
-                                "command" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"Install-WindowsFeature AD-Domain-Services, rsat-adds -IncludeAllSubFeature\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "0"
-                            },
-                            "20-install-adds"    : {
+                            "10-install-adds"    : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -366,7 +355,7 @@
                                 },
                                 "waitAfterCompletion" : "forever"
                             },
-                            "30-create-adminuser" : {
+                            "20-create-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -414,7 +403,7 @@
                                     ]
                                 }
                             },
-                            "40-update-adminuser" : {
+                            "30-update-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
