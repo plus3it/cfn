@@ -251,7 +251,7 @@
                                     ]
                                 }
                             },
-                            "c:\\cfn\\scripts\\Set-StaticIP.ps1"       : {
+                            "c:\\cfn\\scripts\\Set-StaticIP.ps1" : {
                                 "content" : {
                                     "Fn::Join" : [
                                         "",
@@ -265,16 +265,16 @@
                                     ]
                                 }
                             },
-                            "c:\\cfn\\scripts\\assert-hadc.ps1"              : {
+                            "c:\\cfn\\scripts\\assert-hadc.ps1" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-hadc.ps1"
                             },
-                            "c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip"              : {
+                            "c:\\cfn\\modules\\xactivedirectory-2.4.0.0.zip" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xactivedirectory-2.4.0.0.zip"
                             },
-                            "c:\\cfn\\modules\\xnetworking_2.2.0.0.zip"              : {
+                            "c:\\cfn\\modules\\xnetworking-2.2.0.0.zip" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xnetworking-2.2.0.0.zip"
                             },
-                            "c:\\cfn\\scripts\\unzip-archive.ps1"      : {
+                            "c:\\cfn\\scripts\\unzip-archive.ps1" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/unzip-archive.ps1"
                             }
                         },
