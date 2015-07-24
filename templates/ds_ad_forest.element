@@ -305,7 +305,7 @@
                                 "waitAfterCompletion" : "0"
                             },
                             "30-unpack-ad-dsc-resource" : {
-                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip -Destination \"%ProgramFiles%\\WindowsPowerShell\\Modules\"",
+                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
                                 "waitAfterCompletion" : "0"
                             }
                         }
@@ -333,23 +333,23 @@
                                         "",
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
-                                            "c:\\cfn\\scripts\\assert-hadc.ps1 -DomainAdminUsername ",
+                                            "c:\\cfn\\scripts\\assert-hadc.ps1 -DomainAdminUsername '",
                                             {
                                                 "Ref" : "ADDomainAdminUser"
                                             },
-                                            " -DomainAdminPw (convertto-securestring '",
+                                            "' -DomainAdminPw '",
                                             {
                                                 "Ref" : "ADDomainAdminPw"
                                             },
-                                            "') -RestoreModePw (convertto-securestring '",
+                                            "' -RestoreModePw '",
                                             {
                                                 "Ref" : "ADRestoreModePw"
                                             },
-                                            "') -DomainDnsName ",
+                                            "' -DomainDnsName '",
                                             {
                                                 "Ref" : "ADDomainDNSName"
                                             },
-                                            " -DcRole 'Primary DC' -Verbose\""
+                                            "' -DcRole 'Primary DC' -Verbose\""
                                         ]
                                     ]
                                 },
@@ -366,8 +366,7 @@
                                             {
                                                 "Ref" : "ADDomainAdminUser"
                                             },
-                                            " ",
-                                            "-UserPrincipalName ",
+                                            " -UserPrincipalName ",
                                             {
                                                 "Ref" : "ADDomainAdminUser"
                                             },
@@ -375,14 +374,13 @@
                                             {
                                                 "Ref" : "ADDomainDNSName"
                                             },
-                                            " ",
-                                            "-AccountPassword (ConvertTo-SecureString ",
+                                            " -AccountPassword (ConvertTo-SecureString '",
                                             {
                                                 "Ref" : "ADDomainAdminPw"
                                             },
-                                            " -AsPlainText -Force) ",
-                                            "-Enabled $true ",
-                                            "-PasswordNeverExpires $true\""
+                                            "' -AsPlainText -Force) ",
+                                            " -Enabled $true ",
+                                            " -PasswordNeverExpires $true\""
                                         ]
                                     ]
                                 },
