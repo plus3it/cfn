@@ -99,16 +99,6 @@ Configuration AssertHADC
             SafemodeAdministratorPassword = $RestoreModeCredential
             DependsOn = '[xIPAddress]SetIP','[WindowsFeature]ADDSInstall'
         }
-
-        User FirstUser
-        {
-            UserName = $DomainAdminUsername
-            Ensure = 'Present'
-            Disabled = $false
-            Password = $DomainAdminCredential
-            PasswordNeverExpires = $true
-            DependsOn = '[xADDomain]FirstDS'
-        }
     }
 
     Node $AllNodes.Where{$_.Role -eq "Replica DC"}.Nodename

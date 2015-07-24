@@ -309,7 +309,7 @@
                             "30-unpack-ad-dsc-resource" : {
                                 "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xactivedirectory-2.4.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
                                 "waitAfterCompletion" : "0"
-                            }
+                            },
                             "40-unpack-nw-dsc-resource" : {
                                 "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xnetworking-2.2.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
                                 "waitAfterCompletion" : "0"
@@ -535,7 +535,22 @@
                                         ]
                                     ]
                                 },
-                                "waitAfterCompletion" : "0"
+                                "waitAfterCompletion" : "0",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "(Get-ADGroup -filter {Name -eq ",
+                                            "'",
+                                            {
+                                                "Ref" : "RemoteAccessUserGroup"
+                                            },
+                                            "'",
+                                            "})) { continue } else { throw 'Group already exists in AD.' }"
+                                        ]
+                                    ]
+                                }
                             },
                             "20-update-remoteaccess-group" : {
                                 "command" : {
