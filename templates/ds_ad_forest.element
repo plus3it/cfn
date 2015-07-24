@@ -270,7 +270,7 @@
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-hadc.ps1"
                             },
                             "c:\\cfn\\modules\\xactivedirectory_2.4.0.0.zip"              : {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xactivedirectory_2.4.0.0.zip"
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xactivedirectory-2.4.0.0.zip"
                             },
                             "c:\\cfn\\scripts\\unzip-archive.ps1"      : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/unzip-archive.ps1"
