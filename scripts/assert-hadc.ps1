@@ -28,6 +28,9 @@ param(
 
 #>
 
+# Location used to save dsc mof config
+$ConfigStore = "$env:systemroot\system32\DSC\AssertHADC"
+
 # Generate PS Credentials
 $SecureDomainAdminPw = ConvertTo-SecureString $DomainAdminPw -AsPlainText -Force
 $SecureRestoreModePw = ConvertTo-SecureString $RestoreModePw -AsPlainText -Force
@@ -99,6 +102,26 @@ Configuration AssertHADC
             SafemodeAdministratorPassword = $RestoreModeCredential
             DependsOn = '[xIPAddress]SetIP','[WindowsFeature]ADDSInstall'
         }
+
+        xWaitForADDomain DscForestWait
+        {
+            DomainName = $Node.DomainName
+            DomainUserCredential = $DomainAdminCredential
+            RetryCount = $Node.RetryCount
+            RetryIntervalSec = $Node.RetryIntervalSec
+            DependsOn = '[xADDomain]FirstDS'
+        }
+
+        # Remove ConfigStore as last step, as it will contain sensitive info
+        File RemoveConfigStore
+        {
+            DestinationPath = $ConfigStore
+            Ensure = 'Absent'
+            Type = 'Directory'
+            Recurse = $true
+            Force = $true
+            DependsOn '[xWaitForADDomain]DscForestWait'
+        }
     }
 
     Node $AllNodes.Where{$_.Role -eq "Replica DC"}.Nodename
@@ -147,16 +170,24 @@ Configuration AssertHADC
             SafemodeAdministratorPassword = $RestoreModeCredential
             DependsOn = '[xIPAddress]SetIP','[xWaitForADDomain]DscForestWait'
         }
+
+        # Remove ConfigStore as last step, as it will contain sensitive info
+        File RemoveConfigStore
+        {
+            DestinationPath = $ConfigStore
+            Ensure = 'Absent'
+            Type = 'Directory'
+            Recurse = $true
+            Force = $true
+            DependsOn '[xADDomainController]AdditionalDC'
+        }
     }
 }
 
 AssertHADC -ConfigurationData $ConfigData
 
 # Make sure that LCM is set to continue configuration after reboot
-Set-DSCLocalConfigurationManager -Path .\AssertHADC -Verbose
+Set-DSCLocalConfigurationManager -Path $ConfigStore -Verbose
 
 # Build the domain
-Start-DscConfiguration -Wait -Force -Path .\AssertHADC -Verbose
-
-# Delete .mof files as they contain sensitive information
-Get-ChildItem .\AssertHADC *.mof -ErrorAction SilentlyContinue | Remove-Item -Confirm:$false -ErrorAction SilentlyContinue
+Start-DscConfiguration -Wait -Force -Path $ConfigStore -Verbose
