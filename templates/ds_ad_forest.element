@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This element creates an Active Directory forest with a single site and a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
+    "Description"              : "This element creates an Active Directory forest with a single site and a single domain controller. The Domain Administrator password will be the one set by this template.",
     "Parameters"               : {
         "DcInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Domain Controller Instance",
@@ -24,14 +24,6 @@
             "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
             "NoEcho"         : "true",
             "Default"        : "Password123"
-        },
-        "ADDomainAdminUser" : {
-            "Description" : "User name for the account that will be added as Domain Administrator. This is separate from the default \"Administrator\" account",
-            "Type"        : "String",
-            "Default"     : "StackAdmin",
-            "MinLength"   : "5",
-            "MaxLength"   : "25",
-            "AllowedPattern" : "[a-zA-Z0-9]*"
         },
         "ADDomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
@@ -251,7 +243,7 @@
                                     ]
                                 }
                             },
-                            "c:\\cfn\\scripts\\Set-StaticIP.ps1" : {
+                            "c:\\cfn\\scripts\\set-staticip.ps1" : {
                                 "content" : {
                                     "Fn::Join" : [
                                         "",
@@ -323,7 +315,7 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Set-StaticIP.ps1"
+                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\set-staticip.ps1"
                                         ]
                                     ]
                                 },
@@ -349,11 +341,9 @@
                                         "",
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
-                                            "c:\\cfn\\scripts\\assert-hadc.ps1 -DomainAdminUsername '",
-                                            {
-                                                "Ref" : "ADDomainAdminUser"
-                                            },
-                                            "' -DomainAdminPw '",
+                                            "c:\\cfn\\scripts\\assert-hadc.ps1 -DomainAdminUsername ",
+                                            "'Administrator'",
+                                            " -DomainAdminPw '",
                                             {
                                                 "Ref" : "ADDomainAdminPw"
                                             },
@@ -378,19 +368,12 @@
                                         [
                                             "powershell.exe -Command ",
                                             "\"New-ADUser ",
-                                            "-Name ",
-                                            {
-                                                "Ref" : "ADDomainAdminUser"
-                                            },
-                                            " -UserPrincipalName ",
-                                            {
-                                                "Ref" : "ADDomainAdminUser"
-                                            },
-                                            "@",
+                                            "-Name 'Administrator'",
+                                            " -UserPrincipalName 'Administrator@",
                                             {
                                                 "Ref" : "ADDomainDNSName"
                                             },
-                                            " -AccountPassword (ConvertTo-SecureString '",
+                                            "' -AccountPassword (ConvertTo-SecureString '",
                                             {
                                                 "Ref" : "ADDomainAdminPw"
                                             },
@@ -407,11 +390,7 @@
                                         [
                                             "powershell.exe -Command if (-not ",
                                             "(Get-ADUser -filter {sAMAccountName -eq ",
-                                            "'",
-                                            {
-                                                "Ref" : "ADDomainAdminUser"
-                                            },
-                                            "'",
+                                            "'Administrator'",
                                             "})) { continue } else { throw 'User already exists.' }"
                                         ]
                                     ]
@@ -426,9 +405,7 @@
                                             "\"",
                                             "@('Domain Admins','Schema Admins','Enterprise Admins') | ",
                                             "ForEach-Object { Add-ADGroupMember -Identity $_ -Members ",
-                                            {
-                                                "Ref" : "ADDomainAdminUser"
-                                            },
+                                            "'Administrator'",
                                             "}\""
                                         ]
                                     ]
@@ -678,9 +655,7 @@
                             "Ref" : "ADDomainNetBIOSName"
                         },
                         "\\",
-                        {
-                            "Ref" : "ADDomainAdminUser"
-                        }
+                        "Administrator"
                     ]
                 ]
             },

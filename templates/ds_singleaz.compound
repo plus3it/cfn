@@ -39,14 +39,6 @@
             "NoEcho"         : "true",
             "Default"        : "Password123"
         },
-        "ADDomainAdminUser" : {
-            "Description" : "User name for the account that will be added as Domain Administrator. This is separate from the default \"Administrator\" account",
-            "Type"        : "String",
-            "Default"     : "StackAdmin",
-            "MinLength"   : "5",
-            "MaxLength"   : "25",
-            "AllowedPattern" : "[a-zA-Z0-9]*"
-        },
         "ADDomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
             "Type"        : "String",
@@ -119,7 +111,6 @@
            	 	"Parameters" : {
                     "DcInstanceType" : { "Ref" : "InstanceTypeDC" },
                     "ADDomainAdminPw" : { "Ref" : "ADDomainAdminPw" },
-                    "ADDomainAdminUser" : { "Ref" : "ADDomainAdminUser" },
                     "ADDomainDNSName" : { "Ref" : "ADDomainDNSName" },
                     "ADDomainNetBIOSName" : { "Ref" : "ADDomainNetBIOSName" },
                     "ADRestoreModePw" : { "Ref" : "ADRestoreModePw" },

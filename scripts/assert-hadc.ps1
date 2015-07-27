@@ -74,7 +74,17 @@ Configuration AssertHADC
             RebootNodeIfNeeded = $true
         }
 
-        xIPAddress SetIP {
+        User SetAdminPw
+        {
+            UserName = $DomainAdminUsername
+            Ensure = 'Present'
+            Password = $DomainAdminCredential
+            PasswordNeverExpires = $true
+            Disabled = $false
+        }
+
+        xIPAddress SetIP
+        {
             IPAddress = $Node.IPAddress
             InterfaceAlias = $Node.InterfaceAlias
             DefaultGateway = $Node.DefaultGateway
@@ -100,7 +110,7 @@ Configuration AssertHADC
             DomainName = $Node.DomainName
             DomainAdministratorCredential = $DomainAdminCredential
             SafemodeAdministratorPassword = $RestoreModeCredential
-            DependsOn = '[xIPAddress]SetIP','[WindowsFeature]ADDSInstall'
+            DependsOn = '[xIPAddress]SetIP','[WindowsFeature]ADDSInstall','[User]SetAdminPw'
         }
 
         xWaitForADDomain DscForestWait
@@ -120,7 +130,7 @@ Configuration AssertHADC
             Type = 'Directory'
             Recurse = $true
             Force = $true
-            DependsOn '[xWaitForADDomain]DscForestWait'
+            DependsOn = '[xWaitForADDomain]DscForestWait'
         }
     }
 
@@ -133,7 +143,8 @@ Configuration AssertHADC
             RebootNodeIfNeeded = $true
         }
 
-        xIPAddress SetIP {
+        xIPAddress SetIP
+        {
             IPAddress = $Node.IPAddress
             InterfaceAlias = $Node.InterfaceAlias
             DefaultGateway = $Node.DefaultGateway
@@ -179,12 +190,16 @@ Configuration AssertHADC
             Type = 'Directory'
             Recurse = $true
             Force = $true
-            DependsOn '[xADDomainController]AdditionalDC'
+            DependsOn = '[xADDomainController]AdditionalDC'
         }
     }
 }
 
 AssertHADC -ConfigurationData $ConfigData
+
+New-Item -Path $ConfigStore -ItemType Directory -Force
+Move-Item -Path .\AssertHADC\*.mof -Destination $ConfigStore -Force
+Remove-Item -Path .\AssertHADC -Recurse -Force
 
 # Make sure that LCM is set to continue configuration after reboot
 Set-DSCLocalConfigurationManager -Path $ConfigStore -Verbose
