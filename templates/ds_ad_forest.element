@@ -595,7 +595,7 @@
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : [ "", [
                             "DomainController-",
-                            { "Ref" : "AWS::StackName" }
+                            { "Ref" : "PrivateSubnetId" }
                         ]]}
                     }
                 ],
