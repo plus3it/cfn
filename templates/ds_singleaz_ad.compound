@@ -102,10 +102,23 @@
                     "CIDRVPC" : { "Ref" : "CIDRVPC" }
            		}
 			}
-      	},	
-    	"AdForestStack" : {
+      	},
+        "HostedZoneStack" : {
 	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "AdSecurityGroupStack",
+       	 	"Properties" : {
+           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_private_hosted_zone.element",
+           	 	"Parameters" : {
+                    "DNSName" : { "Ref" : "ADDomainDNSName" },
+                    "VPC" : { "Ref" : "VPC" }
+                }
+            }
+        },
+    	"PrimaryDcStack" : {
+	    	"Type" : "AWS::CloudFormation::Stack",
+			"DependsOn" : [
+                "AdSecurityGroupStack",
+                "HostedZoneStack"
+            ],
        	 	"Properties" : {
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_primary_dc.element",
            	 	"Parameters" : {
@@ -128,7 +141,7 @@
       	},
     	"DhcpOptionsStack" : {
 	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "AdForestStack",
+			"DependsOn" : "PrimaryDcStack",
        	 	"Properties" : {
            		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_dhcp_options.element",
            	 	"Parameters" : {
@@ -136,7 +149,7 @@
                     "DomainControllerIPs" : {
                         "Fn::Join" : [
                             ",",
-                            [ 
+                            [
                                 { "Ref" : "PrivateIpDC1" }
                             ]
                         ]
@@ -157,11 +170,15 @@
         },
         "DomainAdmin" : {
             "Description" : "Domain administrator account",
-            "Value": { "Fn::GetAtt" : [ "AdForestStack", "Outputs.DomainAdmin" ] }
+            "Value": { "Fn::GetAtt" : [ "PrimaryDcStack", "Outputs.DomainAdmin" ] }
         },
         "DomainController1ID" : {
             "Description" : "Instance ID of the Domain Controller",
-            "Value": { "Fn::GetAtt" : [ "AdForestStack", "Outputs.DomainControllerID" ] }
+            "Value": { "Fn::GetAtt" : [ "PrimaryDcStack", "Outputs.DomainControllerID" ] }
+        },
+        "HostedZoneId" : {
+            "Description" : "ID of the Route53 private hosted zone",
+            "Value" : { "Fn::GetAtt" : [ "HostedZoneStack", "Outputs.HostedZoneId" ] }
         }
     }
 }

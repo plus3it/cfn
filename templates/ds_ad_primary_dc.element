@@ -643,6 +643,29 @@
                     }
                 }
             }
+        },
+        "AdDomainRecordSet" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : { "Ref" : "ADDomainDNSName" },
+                "Name" : { 
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "DomainController", "PrivateIp" ] }
+                ],
+                "SetIdentifier" : { "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "-",
+                        { "Ref" : "AWS::StackName" }
+                ]]},
+                "Weight" : "20"
+            }
         }
     },
     "Outputs" : {

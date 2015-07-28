@@ -27,17 +27,17 @@
                 "DomainName" : {
                     "Ref" : "DomainDNSName"
                 },
-                "DomainNameServers" : {
-                    "Ref" : "DomainControllerIPs"
-                },
+                "DomainNameServers" : [
+                    "AmazonProvidedDNS"
+                ],
                 "NtpServers" : {
                     "Ref" : "DomainControllerIPs"
                 },
                 "NetbiosNameServers" : {
                     "Ref" : "DomainControllerIPs"
                 },
-                "NetbiosNodeType"    : "2",
-                "Tags"               : [
+                "NetbiosNodeType" : "2",
+                "Tags" : [
                     {
                         "Key" : "Domain",
                         "Value" : { "Ref" : "DomainDNSName" }
