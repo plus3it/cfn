@@ -647,7 +647,12 @@
         "AdDomainRecordSet" : {
             "Type" : "AWS::Route53::RecordSet",
             "Properties" : {
-                "HostedZoneName" : { "Ref" : "ADDomainDNSName" },
+                "HostedZoneName" : { 
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
                 "Name" : { 
                     "Fn::Join" : [ "", [
                         { "Ref" : "ADDomainDNSName" },
