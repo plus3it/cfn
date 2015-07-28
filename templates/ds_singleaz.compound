@@ -107,7 +107,7 @@
 	    	"Type" : "AWS::CloudFormation::Stack",
 			"DependsOn" : "AdSecurityGroupStack",
        	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_forest.element",
+           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_primary_dc.element",
            	 	"Parameters" : {
                     "DcInstanceType" : { "Ref" : "InstanceTypeDC" },
                     "ADDomainAdminPw" : { "Ref" : "ADDomainAdminPw" },
