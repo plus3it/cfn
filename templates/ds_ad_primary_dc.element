@@ -257,8 +257,14 @@
                                     ]
                                 }
                             },
+                            "c:\\cfn\\scripts\\assert-computername.ps1" : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-computername.ps1"
+                            },
                             "c:\\cfn\\scripts\\assert-hadc.ps1" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-hadc.ps1"
+                            },
+                            "c:\\cfn\\modules\\xcomputermanagement-1.3.0.zip" : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xcomputermanagement-1.3.0.zip"
                             },
                             "c:\\cfn\\modules\\xactivedirectory-2.4.0.0.zip" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/xactivedirectory-2.4.0.0.zip"
@@ -327,6 +333,29 @@
                                             "powershell.exe -Command if (-not ",
                                             "((Get-NetIPConfiguration).netipv4interface.dhcp -eq 'Disabled')) ",
                                             "{ continue } else { throw 'IP Address is already static.' }"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "20-rename" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
+                                            "c:\\cfn\\scripts\\assert-computername.ps1 -ComputerName ",
+                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/hostname).split('.')[0]"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "((invoke-restmethod -uri http://169.254.169.254/latest/meta-data/hostname).split('.')[0] -eq $env:computername)) ",
+                                            "{ continue } else { throw 'Computer name is already configured.' }"
                                         ]
                                     ]
                                 }
@@ -642,6 +671,58 @@
                         ]
                     }
                 }
+            }
+        },
+        "DcARecordSet" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : { 
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Name" : { 
+                    "Fn::Join" : [ "", [
+                        { "Fn::GetAtt" : [ "DomainController", "PrivateDnsName" ] }, ".",
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "DomainController", "PrivateIp" ] }
+                ]
+            }
+        },
+        "DcSrvRecordSet" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : { 
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Name" : { 
+                    "Fn::Join" : [ "", [
+                        { "Fn::GetAtt" : [ "DomainController", "PrivateDnsName" ] }, ".",
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Type" : "SRV",
+                "TTL" : "300",
+                "ResourceRecords" : [
+                    {
+                        "Fn::Join" : [ "", [
+                            "0 100 389 _ldap._tcp.dc._msdcs.",
+                            { "Ref" : "ADDomainDNSName" },
+                            "."
+                        ]]
+                    }
+                ]
             }
         },
         "AdDomainRecordSet" : {
