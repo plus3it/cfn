@@ -480,10 +480,10 @@
                             },
                             "30-update-dns-registration" : {
                                 "command" : "ipconfig /registerdns",
-                                "waitAfterCompletion" : "0",
+                                "waitAfterCompletion" : "0"
                             }
                         }
-                    }
+                    },
                     "configureSites" : {
                         "commands" : {
                             "10-rename-default-site" : {
@@ -732,6 +732,7 @@
         },
         "DcARecordSet" : {
             "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "DomainController",
             "Properties" : {
                 "HostedZoneName" : { 
                     "Fn::Join" : [ "", [
@@ -755,6 +756,7 @@
         },
         "DcSrvRecordSet" : {
             "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "DomainController",
             "Properties" : {
                 "HostedZoneName" : { 
                     "Fn::Join" : [ "", [
