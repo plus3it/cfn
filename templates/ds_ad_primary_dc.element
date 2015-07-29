@@ -461,7 +461,8 @@
                                             "-ServerAddresses 127.0.0.1\""
                                         ]
                                     ]
-                                }
+                                },
+                                "waitAfterCompletion" : "0"
                             },
                             "20-add-reverse-zone" : {
                                 "command" : {
