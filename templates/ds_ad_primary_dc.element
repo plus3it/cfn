@@ -364,7 +364,7 @@
                     },
                     "installADDS" : {
                         "commands" : {
-                            "10-install-adds"    : {
+                            "10-install-adds" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -390,6 +390,41 @@
                                 },
                                 "waitAfterCompletion" : "forever"
                             },
+                            "25-add-reverse-zone" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command ",
+                                            "\"Add-DnsServerPrimaryZone ",
+                                            "-NetworkId '",
+                                            {
+                                                "Ref" : "CIDRVPC"
+                                            },
+                                            "' -ReplicationScope 'Forest' ",
+                                            "-DynamicUpdate 'Secure'"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command if (-not ",
+                                            "(Get-DnsServerZone -filter {Name -eq '",
+                                            {
+                                                "Ref" : "CIDRVPC"
+                                            },
+                                            "'})) { continue } else { throw 'Reverse zone already exists.' }"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "26-update-dns-registration" : {
+                                "command" : "ipconfig /registerdns",
+                                "waitAfterCompletion" : "0",
+                            }
                             "20-create-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
