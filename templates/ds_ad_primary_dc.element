@@ -786,7 +786,15 @@
                             "."
                         ]]
                     }
-                ]
+                ],
+                "SetIdentifier" : {
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "DcComputerName" }, ".",
+                        { "Ref" : "AWS::StackName" },
+                        "."
+                    ]]
+                },
+                "Weight" : "20"
             }
         }
     },
