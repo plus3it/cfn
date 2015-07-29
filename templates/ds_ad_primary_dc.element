@@ -61,7 +61,7 @@
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
         "DcComputerName" : {
-            "Description" : "NetBIOS computer name of the Domain Controller(upto 15 characters)",
+            "Description" : "NetBIOS computer name of the Domain Controller(Example: dc001, dc002, dc003, etc...)",
             "Type"        : "String",
             "Default"     : "dc001",
             "MinLength"   : "1",
