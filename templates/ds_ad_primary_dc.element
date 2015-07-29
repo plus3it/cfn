@@ -780,13 +780,7 @@
                             "."
                         ]]
                     }
-                ],
-                "SetIdentifier" : { "Fn::Join" : [ "", [
-                        { "Ref" : "ADDomainDNSName" },
-                        "-",
-                        { "Ref" : "AWS::StackName" }
-                ]]},
-                "Weight" : "20"
+                ]
             }
         },
         "AdDomainRecordSet" : {
