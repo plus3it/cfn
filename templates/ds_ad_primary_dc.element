@@ -456,9 +456,9 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command ",
+                                            "powershell.exe -Command \"",
                                             "Get-NetAdapter | Set-DnsClientServerAddress ",
-                                            "-ServerAddresses 127.0.0.1"
+                                            "-ServerAddresses 127.0.0.1\""
                                         ]
                                     ]
                                 }
@@ -468,15 +468,15 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command ",
-                                            "\"Add-DnsServerPrimaryZone ",
+                                            "powershell.exe -Command \"",
+                                            "Add-DnsServerPrimaryZone ",
                                             "-NetworkId '",
                                             {
                                                 "Ref" : "CIDRVPC"
                                             },
                                             "' -ReplicationScope 'Forest' ",
                                             "-DynamicUpdate 'Secure' ",
-                                            "-ErrorAction SilentlyContinue"
+                                            "-ErrorAction SilentlyContinue\""
                                         ]
                                     ]
                                 },
