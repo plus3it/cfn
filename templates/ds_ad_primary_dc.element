@@ -567,7 +567,7 @@
                                     ]
                                 }
                             },
-                            "40-create-private-subnet" : {
+                            "40-move-ad-server" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
