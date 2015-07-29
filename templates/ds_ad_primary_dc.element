@@ -312,6 +312,10 @@
                             "40-unpack-nw-dsc-resource" : {
                                 "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xnetworking-2.2.0.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
                                 "waitAfterCompletion" : "0"
+                            },
+                            "50-unpack-cm-dsc-resource" : {
+                                "command" : "powershell.exe -command c:\\cfn\\scripts\\unzip-archive.ps1 -Source c:\\cfn\\modules\\xcomputermanagement-1.3.0.zip -Destination '%ProgramFiles%\\WindowsPowerShell\\Modules'",
+                                "waitAfterCompletion" : "0"
                             }
                         }
                     },
