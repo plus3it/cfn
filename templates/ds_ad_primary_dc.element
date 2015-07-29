@@ -33,14 +33,6 @@
             "MaxLength"   : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "ADDomainNetBIOSName" : {
-            "Description" : "NetBIOS name of the domain (upto 15 characters) for users of earlier versions of Windows e.g. EXAMPLE",
-            "Type"        : "String",
-            "Default"     : "EXAMPLE",
-            "MinLength"   : "1",
-            "MaxLength"   : "15",
-            "AllowedPattern" : "[a-zA-Z0-9]+"
-        },
         "ADRestoreModePw" : {
             "Description" : "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
             "Type"        : "String",
@@ -67,6 +59,14 @@
             "Type"           : "String",
             "Default"        : "10.0.32.0/20",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "DcComputerName" : {
+            "Description" : "NetBIOS computer name of the Domain Controller(upto 15 characters)",
+            "Type"        : "String",
+            "Default"     : "dc001",
+            "MinLength"   : "1",
+            "MaxLength"   : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
         },
         "DcPrivateIp" : {
             "Description" : "Fixed private IP for the Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...)",
@@ -190,6 +190,7 @@
                             "setup",
                             "init",
                             "installADDS",
+                            "configureDns",
                             "configureSites",
                             "createRemoteAccessGroup",
                             "finalize"
@@ -344,7 +345,7 @@
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
                                             "c:\\cfn\\scripts\\assert-computername.ps1 -ComputerName ",
-                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/hostname).split('.')[0]"
+                                            { "Ref" : "DcComputerName" }
                                         ]
                                     ]
                                 },
@@ -353,8 +354,9 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command if (-not ",
-                                            "((invoke-restmethod -uri http://169.254.169.254/latest/meta-data/hostname).split('.')[0] -eq $env:computername)) ",
+                                            "powershell.exe -Command if (-not ('",
+                                            { "Ref" : "DcComputerName" },
+                                            "' -eq $env:computername)) ",
                                             "{ continue } else { throw 'Computer name is already configured.' }"
                                         ]
                                     ]
@@ -390,41 +392,6 @@
                                 },
                                 "waitAfterCompletion" : "forever"
                             },
-                            "25-add-reverse-zone" : {
-                                "command" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "powershell.exe -Command ",
-                                            "\"Add-DnsServerPrimaryZone ",
-                                            "-NetworkId '",
-                                            {
-                                                "Ref" : "CIDRVPC"
-                                            },
-                                            "' -ReplicationScope 'Forest' ",
-                                            "-DynamicUpdate 'Secure'"
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "0",
-                                "test" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "powershell.exe -Command if (-not ",
-                                            "(Get-DnsServerZone -filter {Name -eq '",
-                                            {
-                                                "Ref" : "CIDRVPC"
-                                            },
-                                            "'})) { continue } else { throw 'Reverse zone already exists.' }"
-                                        ]
-                                    ]
-                                }
-                            },
-                            "26-update-dns-registration" : {
-                                "command" : "ipconfig /registerdns",
-                                "waitAfterCompletion" : "0",
-                            }
                             "20-create-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
@@ -478,6 +445,45 @@
                             }
                         }
                     },
+                    "configureDns" : {
+                        "commands" : {
+                            "10-set-dns-serveraddress" : {
+                                "command" : { 
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command ",
+                                            "Get-NetAdapter | Set-DnsClientServerAddress ",
+                                            "-ServerAddresses 127.0.0.1"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "20-add-reverse-zone" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command ",
+                                            "\"Add-DnsServerPrimaryZone ",
+                                            "-NetworkId '",
+                                            {
+                                                "Ref" : "CIDRVPC"
+                                            },
+                                            "' -ReplicationScope 'Forest' ",
+                                            "-DynamicUpdate 'Secure' ",
+                                            "-ErrorAction SilentlyContinue"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-update-dns-registration" : {
+                                "command" : "ipconfig /registerdns",
+                                "waitAfterCompletion" : "0",
+                            }
+                        }
+                    }
                     "configureSites" : {
                         "commands" : {
                             "10-rename-default-site" : {
@@ -556,6 +562,22 @@
                                         ]
                                     ]
                                 }
+                            },
+                            "40-create-private-subnet" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command Move-ADDirectoryServer -Identity ",
+                                            {
+                                                "Ref" : "DcComputerName"
+                                            },
+                                            " -Site ",
+                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
                             }
                         }
                     },
@@ -719,7 +741,7 @@
                 },
                 "Name" : { 
                     "Fn::Join" : [ "", [
-                        { "Fn::GetAtt" : [ "DomainController", "PrivateDnsName" ] }, ".",
+                        { "Ref" : "DcComputerName" }, ".",
                         { "Ref" : "ADDomainDNSName" },
                         "."
                     ]]
@@ -742,7 +764,7 @@
                 },
                 "Name" : { 
                     "Fn::Join" : [ "", [
-                        { "Fn::GetAtt" : [ "DomainController", "PrivateDnsName" ] }, ".",
+                        "_ldap._tcp.dc._msdcs.",
                         { "Ref" : "ADDomainDNSName" },
                         "."
                     ]]
@@ -752,12 +774,19 @@
                 "ResourceRecords" : [
                     {
                         "Fn::Join" : [ "", [
-                            "0 100 389 _ldap._tcp.dc._msdcs.",
+                            "0 100 389 ",
+                            { "Ref" : "DcComputerName" }, ".",
                             { "Ref" : "ADDomainDNSName" },
                             "."
                         ]]
                     }
-                ]
+                ],
+                "SetIdentifier" : { "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "-",
+                        { "Ref" : "AWS::StackName" }
+                ]]},
+                "Weight" : "20"
             }
         },
         "AdDomainRecordSet" : {
@@ -795,11 +824,11 @@
                 "Fn::Join" : [
                     "",
                     [
+                        "Administrator",
+                        "@",
                         {
-                            "Ref" : "ADDomainNetBIOSName"
-                        },
-                        "\\",
-                        "Administrator"
+                            "Ref" : "ADDomainDNSName"
+                        }
                     ]
                 ]
             },
