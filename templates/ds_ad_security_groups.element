@@ -268,6 +268,16 @@
                 "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
             }
         },
+        "DC2DCIngressTcp5985to5986" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" : {
+                "GroupId" : { "Ref": "DomainControllerSG" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "5985",
+                "ToPort"     : "5986",
+                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+            }
+        },
         "DomainMember2DCIngressTcp389" : {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" : {
