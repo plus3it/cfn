@@ -378,52 +378,6 @@
                                 },
                                 "waitAfterCompletion" : "0"
                             },
-                            "10-remove-computer-record" : {
-                                "command" : { 
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"",
-                                            "Get-ADComputer -Filter { DNSHostName -eq ", "'",
-                                            { "Ref" : "DcComputerName" }, ".",
-                                            { "Ref" : "ADDomainDNSName" }, "'",
-                                            "} -Credential (",
-                                            "New-Object System.Management.Automation.PSCredential ",
-                                            "-ArgumentList 'Administrator@",
-                                            { "Ref" : "ADDomainDNSName" }, "',",
-                                            "(ConvertTo-SecureString ", "'",
-                                            { "Ref" : "ADDomainAdminPw" }, "'",
-                                            " -AsPlainText -Force)) ",
-                                            " -Server ",
-                                            { "Ref" : "ADDomainDNSName" },
-                                            " | Remove-ADObject -Recursive ",
-                                            " -Confirm:$false",
-                                            "\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "0",
-                                "test" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"",
-                                            "try { get-addomain -Server ",
-                                            { "Ref" : "ADDomainDNSName" },
-                                            " -Credential (",
-                                            "New-Object System.Management.Automation.PSCredential ",
-                                            "-ArgumentList 'Administrator@",
-                                            { "Ref" : "ADDomainDNSName" }, "',",
-                                            "(ConvertTo-SecureString ", "'",
-                                            { "Ref" : "ADDomainAdminPw" }, "'",
-                                            " -AsPlainText -Force)) ",
-                                            "} catch { throw 'Domain does not exist, ",
-                                            "skipping account removal.' }",
-                                            "\""
-                                        ]
-                                    ]
-                                }
-                            },
                             "20-install-adds" : {
                                 "command" : {
                                     "Fn::Join" : [
