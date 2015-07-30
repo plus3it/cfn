@@ -357,7 +357,64 @@
                     },
                     "installADDS" : {
                         "commands" : {
-                            "10-install-adds" : {
+                            "05-install-prereqs" : {
+                                "command" : { 
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"Install-WindowsFeature rsat-adds -IncludeAllSubFeature\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "10-remove-computer-record" : {
+                                "command" : { 
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"",
+                                            "Get-ADComputer -Filter { DNSHostName -eq ", "'",
+                                            { "Ref" : "DcComputerName" }, ".",
+                                            { "Ref" : "ADDomainDNSName" }, "'",
+                                            "} -Credential (",
+                                            "New-Object System.Management.Automation.PSCredential ",
+                                            "-ArgumentList 'Administrator@",
+                                            { "Ref" : "ADDomainDNSName" }, "',",
+                                            "(ConvertTo-SecureString ", "'",
+                                            { "Ref" : "ADDomainAdminPw" }, "'",
+                                            " -AsPlainText -Force)) ",
+                                            " -Server ",
+                                            { "Ref" : "ADDomainDNSName" },
+                                            " | Remove-ADObject -Recursive ",
+                                            " -Confirm:$false",
+                                            "\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"",
+                                            "try { get-addomain -Server ",
+                                            { "Ref" : "ADDomainDNSName" },
+                                            " -Credential (",
+                                            "New-Object System.Management.Automation.PSCredential ",
+                                            "-ArgumentList 'Administrator@",
+                                            { "Ref" : "ADDomainDNSName" }, "',",
+                                            "(ConvertTo-SecureString ", "'",
+                                            { "Ref" : "ADDomainAdminPw" }, "'",
+                                            " -AsPlainText -Force)) ",
+                                            "} catch { throw 'Domain does not exist, ",
+                                            "skipping account removal.' }",
+                                            "\""
+                                        ]
+                                    ]
+                                }
+                            },
+                            "20-install-adds" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -663,6 +720,41 @@
                             { "Ref" : "DcComputerName" }, ".",
                             { "Ref" : "ADDomainDNSName" },
                             "."
+                        ]]
+                    }
+                ],
+                "SetIdentifier" : {
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "DcComputerName" }, ".",
+                        { "Ref" : "AWS::StackName" },
+                        "."
+                    ]]
+                },
+                "Weight" : "20"
+            }
+        },
+        "DomainARecordSet" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "DomainController",
+            "Properties" : {
+                "HostedZoneName" : { 
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Name" : { 
+                    "Fn::Join" : [ "", [
+                        { "Ref" : "ADDomainDNSName" },
+                        "."
+                    ]]
+                },
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [
+                    {
+                        "Fn::Join" : [ "", [
+                            { "Ref" : "DcPrivateIp" }
                         ]]
                     }
                 ],
