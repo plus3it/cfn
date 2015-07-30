@@ -427,7 +427,7 @@
                                     ]
                                 }
                             },
-                            "20-install-adds" : {
+                            "20-create-domain" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -451,9 +451,31 @@
                                         ]
                                     ]
                                 },
-                                "waitAfterCompletion" : "forever"
+                                "waitAfterCompletion" : "forever",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"",
+                                            "try { $addomain = get-addomain -Server ",
+                                            { "Ref" : "ADDomainDNSName" },
+                                            " -Credential (",
+                                            "New-Object System.Management.Automation.PSCredential ",
+                                            "-ArgumentList 'Administrator@",
+                                            { "Ref" : "ADDomainDNSName" }, "',",
+                                            "(ConvertTo-SecureString ", "'",
+                                            { "Ref" : "ADDomainAdminPw" }, "'",
+                                            " -AsPlainText -Force)) ",
+                                            "} catch { continue } finally { ",
+                                            "if ($addomain) { ",
+                                            "throw 'Domain already exists, ",
+                                            "skipping domain creation' } }",
+                                            "\""
+                                        ]
+                                    ]
+                                }
                             },
-                            "20-create-adminuser" : {
+                            "30-create-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -488,7 +510,7 @@
                                     ]
                                 }
                             },
-                            "30-update-adminuser" : {
+                            "40-update-adminuser" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
