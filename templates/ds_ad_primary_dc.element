@@ -554,14 +554,16 @@
                                         "",
                                         [
                                             "powershell.exe -Command \"",
-                                            "Add-DnsServerPrimaryZone ",
+                                            "try { Add-DnsServerPrimaryZone ",
                                             "-NetworkId '",
                                             {
                                                 "Ref" : "CIDRVPC"
                                             },
                                             "' -ReplicationScope 'Forest' ",
                                             "-DynamicUpdate 'Secure' ",
-                                            "-ErrorAction SilentlyContinue\""
+                                            "-ErrorAction Stop ",
+                                            "} catch { exit 0 }",
+                                            "\""
                                         ]
                                     ]
                                 },
