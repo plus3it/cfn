@@ -245,6 +245,9 @@
                                     ]
                                 }
                             },
+                            "c:\\cfn\\scripts\\assert-joindomain.ps1" : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-joindomain.ps1"
+                            },
                             "c:\\cfn\\scripts\\assert-computername.ps1" : {
                                 "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/assert-computername.ps1"
                             },
@@ -329,14 +332,21 @@
                                     ]
                                 }
                             },
-                            "20-rename" : {
+                            "30-join-domain" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
                                         [
                                             "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
-                                            "c:\\cfn\\scripts\\assert-computername.ps1 -ComputerName ",
-                                            { "Ref" : "DcComputerName" }
+                                            "c:\\cfn\\scripts\\assert-joindomain.ps1 ",
+                                            " -ComputerName ", "'",
+                                            { "Ref" : "DcComputerName" }, "'",
+                                            " -DomainAdminUsername ",
+                                            "'Administrator'",
+                                            " -DomainAdminPw ", "'",
+                                            { "Ref" : "ADDomainAdminPw" }, "'",
+                                            " -DomainDnsName ", "'",
+                                            { "Ref" : "ADDomainDNSName" }, "'"
                                         ]
                                     ]
                                 },
@@ -345,9 +355,9 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe -Command if (-not ('",
-                                            { "Ref" : "DcComputerName" },
-                                            "' -eq $env:computername)) ",
+                                            "powershell.exe -Command if (-not (", "'",
+                                            { "Ref" : "DcComputerName" }, "'",
+                                            " -eq $env:computername)) ",
                                             "{ continue } else { throw 'Computer name is already configured.' }"
                                         ]
                                     ]
