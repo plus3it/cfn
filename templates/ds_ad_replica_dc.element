@@ -534,6 +534,23 @@
                                     ]
                                 },
                                 "waitAfterCompletion" : "0"
+                            },
+                            "50-set-site-link"       : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"",
+                                            "Get-ADReplicationSiteLink -Filter * | ",
+                                            "Set-ADReplicationSiteLink -SitesIncluded ",
+                                            "@{add=",
+                                            "(invoke-restmethod -uri http://169.254.169.254/latest/meta-data/placement/availability-zone)",
+                                            "} -ReplicationFrequencyInMinutes 15",
+                                            "\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
                             }
                         }
                     },
