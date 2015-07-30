@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]
-    $ComputerName
+    $ComputerName,
 
     [string]
     $DomainDnsName,
@@ -10,7 +10,7 @@ param(
     $DomainAdminUsername,
 
     [string]
-    $DomainAdminPw,
+    $DomainAdminPw
 )
 
 <#
@@ -35,6 +35,7 @@ $ConfigData = @{
             ComputerName = $ComputerName
             DomainName = $DomainDnsName
             Credential = $DomainAdminCredential
+            PsDscAllowPlainTextPassword = $true
         }
     )
 }
