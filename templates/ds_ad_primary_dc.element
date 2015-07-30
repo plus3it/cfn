@@ -423,7 +423,58 @@
                                             "} catch { continue } finally { ",
                                             "if ($addomain) { ",
                                             "throw 'Domain already exists, ",
-                                            "skipping domain creation' } }",
+                                            "skipping domain creation.' } }",
+                                            "\""
+                                        ]
+                                    ]
+                                }
+                            },
+                            "20-install-adds" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -ExecutionPolicy RemoteSigned -Command \"",
+                                            "c:\\cfn\\scripts\\assert-hadc.ps1 -DomainAdminUsername ",
+                                            "'Administrator'",
+                                            " -DomainAdminPw '",
+                                            {
+                                                "Ref" : "ADDomainAdminPw"
+                                            },
+                                            "' -RestoreModePw '",
+                                            {
+                                                "Ref" : "ADRestoreModePw"
+                                            },
+                                            "' -DomainDnsName '",
+                                            {
+                                                "Ref" : "ADDomainDNSName"
+                                            },
+                                            "' -DcRole 'Replica DC' -Verbose\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever",
+                                "test" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"",
+                                            "try { $addomain = get-addomain -Server ",
+                                            { "Ref" : "ADDomainDNSName" },
+                                            " -Credential (",
+                                            "New-Object System.Management.Automation.PSCredential ",
+                                            "-ArgumentList 'Administrator@",
+                                            { "Ref" : "ADDomainDNSName" }, "',",
+                                            "(ConvertTo-SecureString ", "'",
+                                            { "Ref" : "ADDomainAdminPw" }, "'",
+                                            " -AsPlainText -Force)) ",
+                                            "} catch { continue } finally { ",
+                                            "if (", "'",
+                                            { "Ref" : "DcComputerName" }, ".",
+                                            { "Ref" : "ADDomainDNSName" }, "'",
+                                            " -in $addomain.ReplicaDomainControllers) { ",
+                                            "throw 'Instance is already a DC, ",
+                                            "no additional configuration required.' } }",
                                             "\""
                                         ]
                                     ]
