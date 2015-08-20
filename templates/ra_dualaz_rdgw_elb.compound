@@ -104,7 +104,7 @@
 	    	"Type" : "AWS::CloudFormation::Stack",
 			"DependsOn" : "RdgwSecurityGroupStack",
        	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_elb_public_ssl_443.element",
+           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_elb_public_ssl_443.element",
            	 	"Parameters" : {
 					"SslCertificateName" : { "Ref" : "ElbSslCertificateName" },
 					"PublicSubnetIDs" : {
