@@ -95,10 +95,18 @@ then
    fi
 fi
 
-# Create stub config files
-if [[ $(mkdir -p /etc/guacamole)$? -ne 0 ]]
+# Create /etc/guacamole as necessary
+if [[ ! -d /etc/guacamole ]]
 then
-   cd /etc/guacamole
+   if [[ $(mkdir -p /etc/guacamole)$? -ne 0 ]]
+   then
+      echo "Cannot populate /etc/guacamole" > /dev/stderr
+      exit 1
+   fi
+fi
+
+# Create basic config files in /etc/guacamole
+cd /etc/guacamole
 (  echo "# Hostname and port of guacamole proxy"
    echo "guacd-hostname: localhost"
    echo "guacd-port:     4822"
@@ -138,18 +146,14 @@ then
    printf "\n"
    printf "</configuration>\n"
 ) > /etc/guacamole/logback.xml
-else
-   echo "Unable to create /etc/guacamole" > /dev/stderr
-   exit 1
-fi
-
-# Set SEL contexts on shell-init files
-chcon system_u:object_r:bin_t:s0 /etc/profile.d/guacamole.*
 
 
 # Create shell-init files
 echo "export GUACAMOLE_HOME=/etc/guacamole" > /etc/profile.d/guacamole.sh
 echo "setenv GUACAMOLE_HOME /etc/guacamole" > /etc/profile.d/guacamole.csh
+
+# Set SEL contexts on shell-init files
+chcon system_u:object_r:bin_t:s0 /etc/profile.d/guacamole.*
 
 # Add a proxy-directive to Apache
 (
