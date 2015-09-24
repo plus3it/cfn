@@ -86,8 +86,7 @@ curl -s -L ${GBINSRC}/guacamole-${GVERS}.war/download \
 # Gotta make SELinux happy...
 if [[ $(getenforce) = "Enforcing" ]] || [[ $(getenforce) = "Permissive" ]]
 then
-   chcon -R --reference=/var/lib/tomcat6/webapps \ 
-      /var/lib/tomcat6/webapps/guacamole.war
+   chcon -R --reference=/var/lib/tomcat6/webapps /var/lib/tomcat6/webapps/guacamole.war
    if [[ $(getsebool httpd_can_network_relay | \
            cut -d ">" -f 2 | sed 's/[ ]*//g') = "off" ]]
    then
