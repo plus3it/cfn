@@ -38,7 +38,7 @@ if [[ $(${ADDUSER} ${SSHUSER})$? -ne 0 ]]
 then
    (
       printf "Failed to create ssh user account "
-      printf "[${SSHUSER}]. Aborting..." 
+      printf "[${SSHUSER}]. Aborting...\n"
    ) > /dev/stderr
    exit 1
 fi
@@ -48,7 +48,7 @@ if  [[ $(${MODUSER} -p "${PWCRYPT}" ${SSHUSER}) -ne 0 ]]
 then
    (
       printf "Failed to set password for ssh user account. "
-      printf "Aborting..." 
+      printf "Aborting...\n"
    ) > /dev/stderr
    exit 1
 fi
