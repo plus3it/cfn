@@ -171,3 +171,13 @@ for FILE in /etc/guacamole/*
 do
    ln -s ${FILE} 
 done
+
+# Start services
+echo "Attempting to start proxy-related services"
+for SVC in guacd tomcat6 httpd
+do
+   if [[ $(/sbin/service ${SVC} start) -ne 0 ]]
+   then
+      echo "Failed to start ${SVC}" > /dev/stderr
+   fi
+done
