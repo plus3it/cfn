@@ -22,9 +22,43 @@
 #      have been granted passwordless sudoers access to root
 #
 #################################################################
-/usr/sbin/useradd sshuser
-/usr/sbin/usermod -p $(python -c "import random,string,crypt,getpass,pwd; randomsalt = ''.join(random.sample(string.ascii_letters,8)); print crypt.crypt('P@ssw0rd', '\$6\$%s))\$' % randomsalt)"
-) sshuser
-printf "sshuser\tALL=(root)\tNOPASSWD:ALL\n" > /etc/sudoers.d/user_sshuser
+GUACUSER="admin"
+GUACPASS="PASWORD"
+SSHUSER="sshuser"
+SSHPASS="P@ssw0rd"
+PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
+           randomsalt = ''.join(random.sample(string.ascii_letters,8)); \
+           print crypt.crypt('${SSHPASS}', '\$6\$%s))\$' % randomsalt)" )
+ADDUSER="/usr/sbin/useradd"
+MODUSER="/usr/sbin/usermod"
 
+# Create our SSH login-user
+if [[ $(${ADDUSER} ${SSHUSER})$? -ne 0 ]]
+then
+   (
+      printf "Failed to create ssh user account "
+      printf "[${SSHUSER}]. Aborting..." 
+   ) > /dev/stderr
+   exit 1
+fi
+
+# Set password for our SSH login-user
+if  [[ $(${MODUSER} -p "${PWCRYPT}" ${SSHUSER}) -ne 0 ]]
+then
+   (
+      printf "Failed to set password for ssh user account. "
+      printf "Aborting..." 
+   ) > /dev/stderr
+   exit 1
+fi
+
+# Add SSH login-user to sudoers list
+printf "${SSHUSER}\tALL=(root)\tNOPASSWD:ALL\n" > /etc/sudoers.d/user_${SSHUSER}
+if [[ $? -ne 0 ]]
+then
+   echo "Failed to add ${SSHUSER} to sudoers" > /dev/stderr
+   exit 1
+fi
+
+# Get/run Guacamole setup tasks
 curl -s -L "https://docs.google.com/uc?export=download&id=0B1UCEMO4lPv8NFdqU3VTUGFKa1k" | bash
