@@ -183,5 +183,6 @@ do
     if [[ $? -ne 0 ]]
     then
       echo "Failed to start ${SVC}" > /dev/stderr
+      exit 1
     fi
 done
