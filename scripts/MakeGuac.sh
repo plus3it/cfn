@@ -172,7 +172,7 @@ mkdir /usr/share/tomcat6/.guacamole && \
    cd /usr/share/tomcat6/.guacamole
 for FILE in /etc/guacamole/*
 do
-   ln -s ${FILE} 
+   ln -s ${FILE}
 done
 
 # Start services
