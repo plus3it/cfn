@@ -22,8 +22,8 @@
 #      have been granted passwordless sudoers access to root
 #
 #################################################################
-GUACUSER="$1:-admin"
-GUACPASS="$2:-PASSWORD"
+GUACUSER="{$1:-admin}"
+GUACPASS="{$2:-PASSWORD}"
 SSHUSER="sshuser"
 SSHPASS="P@ssw0rd"
 PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
@@ -32,6 +32,13 @@ PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
 GBINSRC="http://sourceforge.net/projects/guacamole/files/current/binary/"
 ADDUSER="/usr/sbin/useradd"
 MODUSER="/usr/sbin/usermod"
+
+__md5sum() {
+    local pass="${1}"
+    echo -n "${pass}" | /usr/bin/md5sum | awk -F' ' '{print $1}'
+}
+
+GUACPASS_MD5=$(__md5sum "${GUACPASS}")
 
 # Create our SSH login-user
 if [[ $(${ADDUSER} ${SSHUSER})$? -ne 0 ]]
@@ -127,7 +134,7 @@ cd /etc/guacamole
 (
     printf "<user-mapping>\n"
     printf "\t<!-- Per-user authentication and config information -->\n"
-    printf "\t<authorize username=\"${GUACUSER}\" password=\"${GUACPASS}\">\n"
+    printf "\t<authorize username=\"%s\" password=\"%s\" encoding=\"%s\">\n" "${GUACUSER}" "${GUACPASS_MD5}" "md5"
     printf "\t\t<protocol>ssh</protocol>\n"
     printf "\t\t\t<param name=\"hostname\">localhost</param>\n"
     printf "\t\t\t<param name=\"port\">22</param>\n"
