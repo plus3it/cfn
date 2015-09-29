@@ -22,8 +22,8 @@
 #      have been granted passwordless sudoers access to root
 #
 #################################################################
-GUACUSER="{$1:-admin}"
-GUACPASS="{$2:-PASSWORD}"
+GUACUSER="${1:-admin}"
+GUACPASS="${2:-PASSWORD}"
 SSHUSER="sshuser"
 SSHPASS="P@ssw0rd"
 PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
