@@ -27,12 +27,18 @@
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
+                "LBCookieStickinessPolicy" : [
+                    {
+                        "PolicyName" : "guac-lb-cookie-policy"
+                    }
+                ],
                 "Listeners" : [
                     {
                         "InstancePort" : "80",
                         "InstanceProtocol" : "HTTP",
                         "LoadBalancerPort" : "443",
                         "PolicyNames" : [
+                            "guac-lb-cookie-policy"
                         ],
                         "Protocol" : "HTTPS",
                         "SSLCertificateId" : {
@@ -51,8 +57,6 @@
                             ]
                         }
                     }
-                ],
-                "Policies" : [
                 ],
                 "Scheme" : "internet-facing",
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupId" } ],
