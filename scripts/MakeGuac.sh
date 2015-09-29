@@ -35,7 +35,7 @@ MODUSER="/usr/sbin/usermod"
 
 __md5sum() {
     local pass="${1}"
-    echo -n "${pass}" | /usr/bin/md5sum | awk -F' ' '{print $1}'
+    echo -n "${pass}" | /usr/bin/md5sum - | cut -d ' ' -f 1
 }
 
 GUACPASS_MD5=$(__md5sum "${GUACPASS}")
