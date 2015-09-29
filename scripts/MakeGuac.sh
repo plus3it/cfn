@@ -41,7 +41,11 @@ __md5sum() {
 GUACPASS_MD5=$(__md5sum "${GUACPASS}")
 
 # Create our SSH login-user
-if [[ $(${ADDUSER} ${SSHUSER})$? -ne 0 ]]
+getent passwd ${SSHUSER} > /dev/null
+if [[ $? -eq 0 ]]
+then
+    printf "User account already exists [${SSHUSER}].\n"
+elif [[ $(${ADDUSER} ${SSHUSER})$? -ne 0 ]]
 then
     (
         printf "Failed to create ssh user account "
