@@ -25,6 +25,20 @@
             "Type" : "String",
             "MinLength" : "1"
         },
+        "GuacUserName" : {
+            "Description" : "Name of the Guacamole user to create",
+            "Type" : "String",
+            "Default" : "admin",
+            "MinLength" : "1"
+        },
+        "GuacUserPassword" : {
+            "Description" : "Password for the Guacamole user. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type" : "String",
+            "Default" : "Password123",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho" : "true",
+            "MinLength" : "8"
+        },
         "PrivateSubnetIDs" : {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
             "Type"        : "List<AWS::EC2::Subnet::Id>"
@@ -172,7 +186,10 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "/etc/cfn/scripts/MakeGuac.sh"
+                                            "/etc/cfn/scripts/MakeGuac.sh ",
+                                            { "Ref" : "GuacUserName" },
+                                            " ",
+                                            { "Ref" : "GuacUserPassword" }
                                         ]
                                     ]
                                 }
