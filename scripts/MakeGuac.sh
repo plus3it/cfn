@@ -70,7 +70,7 @@ yum install -y \
     http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 
 # Install guacamole components from EPEL
-yum -y install guacd libguac-client-*
+yum -y install guacd libguac-client-* dejavu-sans-mono-fonts
 
 # Enable Web components to start at next boot
 for SVC in httpd tomcat6 guacd
@@ -131,6 +131,8 @@ cd /etc/guacamole
     printf "\t\t<protocol>ssh</protocol>\n"
     printf "\t\t\t<param name=\"hostname\">localhost</param>\n"
     printf "\t\t\t<param name=\"port\">22</param>\n"
+    printf "\t\t\t<param name=\"font-name\">DejaVu Sans Mono</param>\n"
+    printf "\t\t\t<param name=\"font-size\">10</param>\n"
     printf "\t</authorize>\n"
     printf "</user-mapping>\n"
 ) > /etc/guacamole/user-mapping.xml
