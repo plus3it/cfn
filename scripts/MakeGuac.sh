@@ -22,8 +22,8 @@
 #      have been granted passwordless sudoers access to root
 #
 #################################################################
-GUACUSER="admin"
-GUACPASS="PASWORD"
+GUACUSER="$1:-admin"
+GUACPASS="$2:-PASSWORD"
 SSHUSER="sshuser"
 SSHPASS="P@ssw0rd"
 PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
@@ -127,7 +127,7 @@ cd /etc/guacamole
 (
     printf "<user-mapping>\n"
     printf "\t<!-- Per-user authentication and config information -->\n"
-    printf "\t<authorize username=\"admin\" password=\"PASSWORD\">\n"
+    printf "\t<authorize username=\"${GUACUSER}\" password=\"${GUACPASS}\">\n"
     printf "\t\t<protocol>ssh</protocol>\n"
     printf "\t\t\t<param name=\"hostname\">localhost</param>\n"
     printf "\t\t\t<param name=\"port\">22</param>\n"
