@@ -87,10 +87,18 @@
     "Resources" : {
         "GuacAutoScalingGroup" : {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "UpdatePolicy" : {
+                "AutoScalingRollingUpdate" : {
+                    "MinInstancesInService" : "1",
+                    "MaxBatchSize" : "2",
+                    "WaitOnResourceSignals" : "true",
+                    "PauseTime" : "PT15M"
+                }
+            },
             "CreationPolicy" : {
                 "ResourceSignal" : {
                     "Count" : "1",
-                    "Timeout" : "PT30M"
+                    "Timeout" : "PT15M"
                 }
             },
             "Properties" : {
