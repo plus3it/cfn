@@ -113,7 +113,7 @@
             "Value" : {
                 "Ref" : "GuacSecurityGroup"
             },
-            "Description" : "Security Group ID for Guacmole instances"
+            "Description" : "Security Group ID for Guacamole instances"
         },
         "GuacElbSecurityGroupId" : {
             "Condition" : "UseELB",

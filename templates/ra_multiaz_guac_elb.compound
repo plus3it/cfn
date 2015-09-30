@@ -1,0 +1,129 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description"              : "This template creates a Multi-AZ (one-or-more AZs) remote access solution using Guacamole, fronted by an Elastic Load Balancer.",
+    "Parameters"               : {
+        "VPC" : {
+            "Description" : "VPC ID",
+            "Type"        : "AWS::EC2::VPC::Id"
+        },
+        "SslCertificateName" : {
+            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have been loaded into AWS previously (via the command line).",
+            "Type" : "String"
+        },
+        "PublicSubnetIDs" : {
+            "Description" : "A list of Public subnet IDs to attach to the load balancer.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "KeyPairName" : {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type"        : "AWS::EC2::KeyPair::KeyName"
+        },
+        "GuacUserName" : {
+            "Description" : "Name of the Guacamole user to create",
+            "Type" : "String",
+            "Default" : "admin",
+            "MinLength" : "1"
+        },
+        "GuacUserPassword" : {
+            "Description" : "Password for the Guacamole user. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type" : "String",
+            "Default" : "Password123",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho" : "true",
+            "MinLength" : "8"
+        },
+        "InstanceType" : {
+            "Description" : "Amazon EC2 instance type for the Guacamole Instances",
+            "Type"        : "String",
+            "Default"     : "t2.micro",
+            "AllowedValues" : [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ]
+        },
+        "PrivateSubnetIDs" : {
+            "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
+            "Type"        : "List<AWS::EC2::Subnet::Id>"
+        }
+    },
+	"Resources" : {
+    	"GuacSecurityGroupStack" : {
+	    	"Type" : "AWS::CloudFormation::Stack",
+       	 	"Properties" : {
+           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_security_group.element",
+           	 	"Parameters" : {
+					"VPC" : { "Ref" : "VPC" },
+                    "UseELB" : "true"
+           		}
+			}
+      	},	
+    	"GuacElbStack" : {
+	    	"Type" : "AWS::CloudFormation::Stack",
+			"DependsOn" : "GuacSecurityGroupStack",
+       	 	"Properties" : {
+           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_elb_public_ssl_443.element",
+           	 	"Parameters" : {
+					"SslCertificateName" : { "Ref" : "SslCertificateName" },
+					"PublicSubnetIDs" : {
+                        "Fn::Join" : [
+                            ",",
+                            { "Ref" : "PublicSubnetIDs" }
+                        ]
+                    },
+					"SecurityGroupId" : { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacElbSecurityGroupId" ] }
+           		}
+			}
+      	},
+    	"GuacStack" : {
+	    	"Type" : "AWS::CloudFormation::Stack",
+			"DependsOn" : "GuacElbStack",
+       	 	"Properties" : {
+           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_private_autoscale_elb.element",
+           	 	"Parameters" : {
+					"KeyPairName" : {"Ref" : "KeyPairName"},
+					"InstanceType" : {"Ref" : "InstanceType"},
+					"ElbName" : { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] },
+                    "GuacUserName" : {"Ref" : "GuacUserName"},
+                    "GuacUserPassword" : {"Ref" : "GuacUserPassword"},
+					"PrivateSubnetIDs" : {
+                        "Fn::Join" : [
+                            ",",
+                            { "Ref" : "PrivateSubnetIDs" }
+                        ]
+                    },
+					"SecurityGroupIDs" : {
+                        "Fn::Join" : [
+                            ",",
+                            [ 
+                                { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacSecurityGroupId" ] }
+                            ]
+                        ]
+                    }
+           		}
+			}
+      	}
+    },
+    "Outputs" : {
+        "GuacLoadBalancerName" : {
+            "Description": "Name of the Guacamole Elastic Load Balancer",
+            "Value": { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] }
+        },
+        "GuacLoadBalancerDns" : {
+            "Description": "DNS name for the Guacamole ELB",
+            "Value": { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerDns" ] }
+        },
+        "GuacSecurityGroupId" : {
+            "Description" : "Security Group ID for the Guacamole instances",
+            "Value": { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacSecurityGroupId" ] }
+        },
+        "GuacElbSecurityGroupId" : {
+            "Description" : "Security Group ID for the Guacamole Elastic Load Balancer",
+            "Value": { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacElbSecurityGroupId" ] }
+        }
+    }
+}
