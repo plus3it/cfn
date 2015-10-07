@@ -37,7 +37,7 @@
 #        }
 # 5. The `awscli` package must be installed.
 
-function log { logger -i -t "configure-nat-eni" -s -- $1 2> /dev/console; }
+function log { logger -i -t "configure-nat-eni" -s -- "$1" 2> /dev/console; }
 
 function die {
     [ -n "$1" ] && log "$1"
@@ -85,10 +85,10 @@ log "Determining the ENI to attach to the instance..."
 ENI=$(aws ec2 describe-network-interfaces \
     --filters "Name=tag:${TAG_KEY},Values=${TAG_VALUE}" \
               "Name=availability-zone,Values=${AVAILABILITY_ZONE}" \
-    --query 'NetworkInterfaces[0].{ \
+    --query "NetworkInterfaces[0].{ \
               NetworkInterfaceId: NetworkInterfaceId, \
               InstanceId: Attachment.InstanceId, \
-              AttachmentId: Attachment.AttachmentId}')
+              AttachmentId: Attachment.AttachmentId}")
 if [ -z "${ENI}" ]; then
     die "Could not find a matching ENI."
 fi
@@ -115,8 +115,8 @@ if [ -n "${ENI_ATTACHMENT}" ]; then
 fi
 
 log "Attaching the network interface to this instance..."
-aws ec2 attach-network-interface --network-interface-id ${ENI_ID} \
-    --instance-id ${INSTANCE_ID} --device-index ${DEVICE_INDEX} || \
+aws ec2 attach-network-interface --network-interface-id "${ENI_ID}" \
+    --instance-id "${INSTANCE_ID}" --device-index "${DEVICE_INDEX}" || \
         die "ENI attachment failed."
 
 ETH="${DEVICE_TYPE}${DEVICE_INDEX}"
@@ -130,7 +130,7 @@ while true; do
     ETH_MAC=$(cat /sys/class/net/"${ETH}"/address 2> /dev/null) && break  # break loop if MAC was found
     log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
     sleep $delay
-    timer=$[$timer-$delay]
+    timer=$(( timer-delay ))
 done
 
 log "Found ${ETH} MAC '${ETH_MAC}'."
@@ -148,7 +148,7 @@ while true; do
     fi  
     log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
     sleep $delay
-    timer=$[$timer-$delay]
+    timer=$(( timer-delay ))
 done
 
 log "Got IP '${IP_ADDRESS}' on ${ETH}."
@@ -158,8 +158,8 @@ log "Got IP '${IP_ADDRESS}' on ${ETH}."
 RTABLE=$(( 10000 + DEVICE_INDEX ))
 METADATA_IP="169.254.169.254"
 log "Adding route to ${METADATA_IP} via device ${ETH}..."
-ip route add "${METADATA_IP}" dev ${ETH} table ${RTABLE} 2>&1 | log
-ip route add "${METADATA_IP}" dev ${ETH} metric ${RTABLE} 2>&1 | log
+ip route add "${METADATA_IP}" dev "${ETH}" table "${RTABLE}" 2>&1 | log
+ip route add "${METADATA_IP}" dev "${ETH}" metric "${RTABLE}" 2>&1 | log
 
 log "ENI attachment successful"'!'
 exit 0
