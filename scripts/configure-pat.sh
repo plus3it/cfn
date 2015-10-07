@@ -12,7 +12,7 @@
 # * Die if unable to read the VPC_CIDR_RANGE from metadata
 #
 
-function log { logger -i -t "configure-pat" -s -- $1 2> /dev/console; }
+function log { logger -i -t "configure-pat" -s -- "$1" 2> /dev/console; }
 
 function die {
     [ -n "$1" ] && log "$1"
@@ -29,7 +29,7 @@ RETRY_DELAY=1   # retry every <delay> seconds
 TIMER_NIC_DISCOVERY=20  # wait this many seconds before failing
 
 log "Determining the MAC address on ${ETH}..."
-ETH_MAC=$(cat /sys/class/net/${ETH}/address) ||
+ETH_MAC=$(cat /sys/class/net/"${ETH}"/address) ||
     die "Unable to determine MAC address on ${ETH}."
 log "Found MAC ${ETH_MAC} for ${ETH}."
 
@@ -43,20 +43,20 @@ while true; do
     if [[ $timer -le 0 ]]; then
         die "Timer expired before retrieving VPC CIDR range from metadata."
     fi
-    VPC_CIDR_RANGE=$(curl --retry 3 --silent --fail ${VPC_CIDR_URI}) && break  # break loop if successful
+    VPC_CIDR_RANGE=$(curl --retry 3 --silent --fail "${VPC_CIDR_URI}") && break  # break loop if successful
     log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
     sleep $delay
-    timer=$[$timer-$delay]
+    timer=$(( timer-delay ))
 done
 log "Retrieved VPC CIDR range ${VPC_CIDR_RANGE} from meta-data."
 
 log "Enabling PAT..."
-sysctl -q -w net.ipv4.ip_forward=1 net.ipv4.conf.${ETH}.send_redirects=0 && (
-   iptables -t nat -C POSTROUTING -o ${ETH} -s ${VPC_CIDR_RANGE} -j MASQUERADE 2> /dev/null ||
-   iptables -t nat -A POSTROUTING -o ${ETH} -s ${VPC_CIDR_RANGE} -j MASQUERADE ) ||
+sysctl -q -w net.ipv4.ip_forward=1 net.ipv4.conf."${ETH}".send_redirects=0 && (
+   iptables -t nat -C POSTROUTING -o "${ETH}" -s "${VPC_CIDR_RANGE}" -j MASQUERADE 2> /dev/null ||
+   iptables -t nat -A POSTROUTING -o "${ETH}" -s "${VPC_CIDR_RANGE}" -j MASQUERADE ) ||
        die "Failed to configure either sysctl or iptables."
 
-sysctl net.ipv4.ip_forward net.ipv4.conf.${ETH}.send_redirects | log
+sysctl net.ipv4.ip_forward net.ipv4.conf."${ETH}".send_redirects | log
 iptables -n -t nat -L POSTROUTING | log
 
 log "Configuration of PAT complete."
