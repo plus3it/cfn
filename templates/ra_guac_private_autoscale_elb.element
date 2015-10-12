@@ -221,8 +221,8 @@
                                 "owner"   : "root",
                                 "group"   : "root"
                             },
-                            "/etc/cfn/scripts/MakeGuac.sh" : {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/MakeGuac.sh",
+                            "/etc/cfn/scripts/make-guac.sh" : {
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/make-guac.sh",
                                 "mode"    : "000700",
                                 "owner"   : "root",
                                 "group"   : "root"
@@ -241,14 +241,14 @@
                             }
                         }
                     },
-                    "MakeGuac" : {
+                    "make-guac" : {
                         "commands" : {
-                            "10-MakeGuac" : {
+                            "10-make-guac" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "/etc/cfn/scripts/MakeGuac.sh ",
+                                            "/etc/cfn/scripts/make-guac.sh ",
                                             { "Ref" : "GuacUserName" },
                                             " ",
                                             { "Ref" : "GuacUserPassword" }
