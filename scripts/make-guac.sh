@@ -195,6 +195,10 @@ chcon system_u:object_r:bin_t:s0 /etc/profile.d/guacamole.*
 
 log "Adding a proxy-directive to Apache, /etc/httpd/conf.d/Guacamole-proxy.conf"
 (
+    printf "RewriteEngine on\n"
+    printf "RewriteCond %%{REQUEST_URI} ^/+$\n"
+    printf "RewriteRule (.*) /guacamole/ [R=301]\n"
+    printf "\n"
     printf "<Location /guacamole/>\n"
     printf "\tOrder allow,deny\n"
     printf "\tAllow from all\n"
