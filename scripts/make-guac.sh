@@ -123,15 +123,18 @@ then
     fi
 fi
 
-# Create /etc/guacamole as necessary
-if [[ ! -d /etc/guacamole ]]
-then
-    log "Creating /etc/guacamole directory"
-    if [[ $(mkdir -p /etc/guacamole)$? -ne 0 ]]
+# Create guacamole directories as necessary
+for GUAC_DIR in "/etc/guacamole" "/etc/guacamole/extensions" "/etc/guacamole/lib"
+do
+    if [[ ! -d "${GUAC_DIR}" ]]
     then
-        die "Cannot populate /etc/guacamole"
+        log "Creating ${GUAC_DIR} directory"
+        if [[ $(mkdir -p "${GUAC_DIR}")$? -ne 0 ]]
+        then
+            die "Cannot populate ${GUAC_DIR}"
+        fi
     fi
-fi
+done
 
 # Create basic config files in /etc/guacamole
 cd /etc/guacamole
