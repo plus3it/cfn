@@ -25,19 +25,17 @@
             "Type" : "String",
             "MinLength" : "1"
         },
-        "GuacUserName" : {
-            "Description" : "Name of the Guacamole user to create",
+        "GuacLdapServer" : {
+            "Description" : "Name of LDAP server Guacamole will authenticate against",
             "Type" : "String",
-            "Default" : "admin",
+            "Default" : "",
             "MinLength" : "1"
         },
-        "GuacUserPassword" : {
-            "Description" : "Password for the Guacamole user. Must be at least 8 characters containing letters, numbers and symbols",
+        "GuacLdapDN" : {
+            "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
-            "Default" : "Password123",
-            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "NoEcho" : "true",
-            "MinLength" : "8"
+            "Default" : "",
+            "MinLength" : "1"
         },
         "PrivateSubnetIDs" : {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
@@ -248,10 +246,11 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "/etc/cfn/scripts/make-guac.sh ",
-                                            { "Ref" : "GuacUserName" },
-                                            " ",
-                                            { "Ref" : "GuacUserPassword" }
+                                            "/etc/cfn/scripts/make-guac.sh",
+                                            " -H ",
+                                            { "Ref" : "GuacLdapServer" },
+                                            " -D ",
+                                            { "Ref" : "GuacLdapDN" }
                                         ]
                                     ]
                                 }
