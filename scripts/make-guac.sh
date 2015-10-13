@@ -198,17 +198,23 @@ log "Installing EPEL repo"
 yum -y install \
     http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 
+log "Ensuring the CentOS Base repo is available"
+curl -s -L "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/CentOS-Base.repo" \
+    -o "/etc/yum.repos.d/CentOS-Base.repo"
 
-log "Enabling the EPEL repo"
-yum-config-manager --enable epel
+curl -s -L "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
+    -o "/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6"
+
+log "Enabling the EPEL and base repos"
+yum-config-manager --enable epel base
 
 log "Installing OS standard Tomcat and Apache"
 yum install -y httpd24 tomcat7
 
 log "Installing libraries to build guacamole from source"
-yum -y install gcc libjpeg-turbo-devel libjpeg-devel uuid-devel libpng-devel \
-    cairo-devel freerdp-devel pango-devel libssh2-devel openssl-devel \
-    pulseaudio-libs-devel libvorbis-devel dejavu-sans-mono-fonts
+yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
+    uuid-devel freerdp-devel pango-devel libssh2-devel pulseaudio-libs-devel \
+    openssl-devel libvorbis-devel dejavu-sans-mono-fonts freerdp-plugins
 
 # Build guacamole-server
 cd /root
