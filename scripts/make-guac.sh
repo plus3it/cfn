@@ -194,12 +194,16 @@ MODUSER="/usr/sbin/usermod"
 
 
 # Start the real work
-log "Installing OS standard Tomcat and Apache"
-yum install -y httpd24 tomcat7
-
 log "Installing EPEL repo"
 yum -y install \
     http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+
+
+log "Enabling the EPEL repo"
+yum-config-manager --enable epel
+
+log "Installing OS standard Tomcat and Apache"
+yum install -y httpd24 tomcat7
 
 log "Installing libraries to build guacamole from source"
 yum -y install gcc libjpeg-turbo-devel libjpeg-devel uuid-devel libpng-devel \
