@@ -5,12 +5,12 @@
 #    setting up a baseline configuration of the Guacamole
 #    management-protocol HTTP-tunneling service. When the script
 #    exits successfully:
-#    * The Tomcat6 servlet-service will have been downloaded and
+#    * The Tomcat7 servlet-service will have been downloaded and
 #      enabled
 #    * The Guacamole service will have been configured to tunnel
 #      SSH based connections to the Guacamole host to a remote,
 #      HTML 5 compliant web browser.
-#    * Apache will have been configured to provide a proxy of
+#    * Apache 2.4 will have been configured to provide a proxy of
 #      all public-facing port 80/tcp traffic to the Guacamole
 #      servlet listening at localhost port 8080/tcp
 #
@@ -194,17 +194,27 @@ MODUSER="/usr/sbin/usermod"
 
 
 # Start the real work
-log "Installing OS standard Tomcat and Apache"
-yum install -y httpd tomcat6
-
 log "Installing EPEL repo"
 yum -y install \
     http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 
+log "Ensuring the CentOS Base repo is available"
+curl -s -L "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/CentOS-Base.repo" \
+    -o "/etc/yum.repos.d/CentOS-Base.repo"
+
+curl -s -L "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
+    -o "/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6"
+
+log "Enabling the EPEL and base repos"
+yum-config-manager --enable epel base
+
+log "Installing OS standard Tomcat and Apache"
+yum install -y httpd24 tomcat7
+
 log "Installing libraries to build guacamole from source"
-yum -y install gcc libjpeg-turbo-devel libjpeg-devel uuid-devel libpng-devel \
-    cairo-devel freerdp-devel pango-devel libssh2-devel openssl-devel \
-    pulseaudio-libs-devel libvorbis-devel dejavu-sans-mono-fonts
+yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
+    uuid-devel freerdp-devel pango-devel libssh2-devel pulseaudio-libs-devel \
+    openssl-devel libvorbis-devel dejavu-sans-mono-fonts freerdp-plugins
 
 # Build guacamole-server
 cd /root
@@ -220,7 +230,7 @@ make
 make install
 
 log "Enabling services to start at next boot"
-for SVC in httpd tomcat6 guacd
+for SVC in httpd tomcat7 guacd
 do
     chkconfig ${SVC} on
 done
@@ -242,14 +252,14 @@ done
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
 curl -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
-    -o /var/lib/tomcat6/webapps/guacamole.war
+    -o /var/lib/tomcat7/webapps/guacamole.war
 
 
 # Gotta make SELinux happy...
 if [[ $(getenforce) = "Enforcing" ]] || [[ $(getenforce) = "Permissive" ]]
 then
-    chcon -R --reference=/var/lib/tomcat6/webapps \
-        /var/lib/tomcat6/webapps/guacamole.war
+    chcon -R --reference=/var/lib/tomcat7/webapps \
+        /var/lib/tomcat7/webapps/guacamole.war
     if [[ $(getsebool httpd_can_network_relay | \
         cut -d ">" -f 2 | sed 's/[ ]*//g') = "off" ]]
     then
@@ -273,7 +283,7 @@ log "Writing /etc/guacamole/logback.xml"
     printf "\n"
     printf "\t<!-- Appender for debugging -->\n"
     printf "\t<appender name=\"GUAC-DEBUG\" class=\"ch.qos.logback.core.FileAppender\">\n"
-    printf "\t\t<file>/var/log/tomcat6/guacamole.log</file>\n"
+    printf "\t\t<file>/var/log/tomcat7/guacamole.log</file>\n"
     printf "\t\t<encoder>\n"
     printf "\t\t\t<pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>\n"
     printf "\t\t</encoder>\n"
@@ -391,17 +401,35 @@ log "Adding a proxy-directive to Apache, /etc/httpd/conf.d/Guacamole-proxy.conf"
     printf " flushpackets=on\n"
     printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
     printf "\tProxyPassReverseCookiePath /guacamole/ /guacamole/\n"
+    printf "\n"
+    printf "<Location /guacamole/websocket-tunnel>\n"
+    printf "\tOrder allow,deny\n"
+    printf "\tAllow from all\n"
+    printf "\tProxyPass ws://localhost:8080//guacamole/websocket-tunnel\n"
+    printf "\tProxyPassReverse ws://localhost:8080//guacamole/websocket-tunnel\n"
     printf "</Location>\n"
 ) > /etc/httpd/conf.d/Guacamole-proxy.conf
 
 
 log "Link guacamole to /etc/guacamole"
-if [[ ! -d /usr/share/tomcat6/.guacamole ]]
+if [[ ! -d /usr/share/tomcat7/.guacamole ]]
 then
-    mkdir /usr/share/tomcat6/.guacamole
+    mkdir /usr/share/tomcat7/.guacamole
 fi
-cd /usr/share/tomcat6/.guacamole
+cd /usr/share/tomcat7/.guacamole
 for FILE in /etc/guacamole/*
+do
+    ln -sf ${FILE}
+done
+
+
+log "Ensuring freerdp plugins are linked properly"
+if [[ ! -d /usr/lib64/freerdp ]]
+then
+    mkdir /usr/lib64/freerdp
+fi
+cd /usr/lib64/freerdp
+for FILE in /usr/local/lib/freerdp/*
 do
     ln -sf ${FILE}
 done
@@ -409,7 +437,7 @@ done
 
 # Start services
 log "Attempting to start proxy-related services"
-for SVC in guacd tomcat6 httpd
+for SVC in guacd tomcat7 httpd
 do
     log "Stopping and starting ${SVC}"
     /sbin/service ${SVC} stop && /sbin/service ${SVC} start
