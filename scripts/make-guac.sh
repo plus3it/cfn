@@ -413,6 +413,18 @@ do
 done
 
 
+log "Ensuring freerdp plugins are linked properly"
+if [[ ! -d /usr/lib64/freerdp ]]
+then
+    mkdir /usr/lib64/freerdp
+fi
+cd /usr/lib64/freerdp
+for FILE in /usr/local/lib/freerdp/*
+do
+    ln -sf ${FILE}
+done
+
+
 # Start services
 log "Attempting to start proxy-related services"
 for SVC in guacd tomcat7 httpd
