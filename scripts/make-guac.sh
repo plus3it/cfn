@@ -391,6 +391,12 @@ log "Adding a proxy-directive to Apache, /etc/httpd/conf.d/Guacamole-proxy.conf"
     printf " flushpackets=on\n"
     printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
     printf "\tProxyPassReverseCookiePath /guacamole/ /guacamole/\n"
+    printf "\n"
+    printf "<Location /guacamole/websocket-tunnel>\n"
+    printf "\tOrder allow,deny\n"
+    printf "\tAllow from all\n"
+    printf "\tProxyPass ws://localhost:8080//guacamole/websocket-tunnel\n"
+    printf "\tProxyPassReverse ws://localhost:8080//guacamole/websocket-tunnel\n"
     printf "</Location>\n"
 ) > /etc/httpd/conf.d/Guacamole-proxy.conf
 
