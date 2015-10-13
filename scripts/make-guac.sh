@@ -436,6 +436,13 @@ do
 done
 
 
+log "Creating directory for file transfers"
+if [[ ! -d /var/tmp/guacamole ]]
+then
+    mkdir /var/tmp/guacamole
+fi
+
+
 # Start services
 log "Attempting to start proxy-related services"
 for SVC in guacd tomcat7 httpd
