@@ -20,6 +20,24 @@
                 "m4.xlarge"
             ]
         },
+        "DesiredCapacity" : {
+            "Description" : "The number of instances the autoscale group will spin up initially",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" : {
+            "Description" : "The minimum number of instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" : {
+            "Description" : "The maximum number of instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
         "ElbName" : {
             "Description" : "Name of the Guacamole Elastic Load Balancer",
             "Type" : "String",
@@ -28,13 +46,13 @@
         "GuacLdapServer" : {
             "Description" : "Name of LDAP server Guacamole will authenticate against",
             "Type" : "String",
-            "Default" : "",
+            "Default" : "ad.example.com",
             "MinLength" : "1"
         },
         "GuacLdapDN" : {
             "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
-            "Default" : "",
+            "Default" : "DC=ad,DC=example,DC=com",
             "MinLength" : "1"
         },
         "PrivateSubnetIDs" : {
@@ -149,7 +167,7 @@
             },
             "CreationPolicy" : {
                 "ResourceSignal" : {
-                    "Count" : "1",
+                    "Count" : { "Ref" : "DesiredCapacity" },
                     "Timeout" : "PT15M"
                 }
             },
@@ -157,9 +175,9 @@
                 "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
                 "LaunchConfigurationName" : { "Ref" : "GuacLaunchConfig" },
                 "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
-                "MinSize" : "1",
-                "MaxSize" : "3",
-                "DesiredCapacity" : "1",
+                "MinSize" : { "Ref" : "MinCapacity" },
+                "MaxSize" : { "Ref" : "MaxCapacity" },
+                "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
                 "Tags" : [

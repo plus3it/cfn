@@ -1,10 +1,10 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a Multi-AZ (one-or-more AZs) remote access solution using Guacamole, fronted by an Elastic Load Balancer.",
-    "Parameters"               : {
+    "Description" : "This template creates a Multi-AZ (one-or-more AZs) remote access solution using Guacamole, fronted by an Elastic Load Balancer.",
+    "Parameters" : {
         "VPC" : {
             "Description" : "VPC ID",
-            "Type"        : "AWS::EC2::VPC::Id"
+            "Type" : "AWS::EC2::VPC::Id"
         },
         "SslCertificateName" : {
             "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have been loaded into AWS previously (via the command line).",
@@ -16,26 +16,42 @@
         },
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
+            "Type" : "AWS::EC2::KeyPair::KeyName"
         },
-        "GuacUserName" : {
-            "Description" : "Name of the Guacamole user to create",
+        "DesiredCapacity" : {
+            "Description" : "The number of Guacamole instances the autoscale group will spin up initially",
             "Type" : "String",
-            "Default" : "admin",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" : {
+            "Description" : "The minimum number of Guacamole instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" : {
+            "Description" : "The maximum number of Guacamole instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "GuacLdapServer" : {
+            "Description" : "Name of LDAP server Guacamole will authenticate against",
+            "Type" : "String",
+            "Default" : "ad.example.com",
             "MinLength" : "1"
         },
-        "GuacUserPassword" : {
-            "Description" : "Password for the Guacamole user. Must be at least 8 characters containing letters, numbers and symbols",
+        "GuacLdapDN" : {
+            "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
-            "Default" : "Password123",
-            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "NoEcho" : "true",
-            "MinLength" : "8"
+            "Default" : "DC=ad,DC=example,DC=com",
+            "MinLength" : "1"
         },
         "InstanceType" : {
             "Description" : "Amazon EC2 instance type for the Guacamole Instances",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
+            "Type" : "String",
+            "Default" : "t2.micro",
             "AllowedValues" : [
                 "t2.micro",
                 "t2.small",
@@ -48,64 +64,67 @@
         },
         "PrivateSubnetIDs" : {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
-            "Type"        : "List<AWS::EC2::Subnet::Id>"
+            "Type" : "List<AWS::EC2::Subnet::Id>"
         }
     },
-	"Resources" : {
-    	"GuacSecurityGroupStack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_security_group.element",
-           	 	"Parameters" : {
-					"VPC" : { "Ref" : "VPC" },
+    "Resources" : {
+        "GuacSecurityGroupStack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_security_group.element",
+                "Parameters" : {
+                    "VPC" : { "Ref" : "VPC" },
                     "UseELB" : "true"
-           		}
-			}
-      	},	
-    	"GuacElbStack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "GuacSecurityGroupStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_elb_public_ssl_443.element",
-           	 	"Parameters" : {
-					"SslCertificateName" : { "Ref" : "SslCertificateName" },
-					"PublicSubnetIDs" : {
+                }
+            }
+        },
+        "GuacElbStack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "GuacSecurityGroupStack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_elb_public_ssl_443.element",
+                "Parameters" : {
+                    "SslCertificateName" : { "Ref" : "SslCertificateName" },
+                    "PublicSubnetIDs" : {
                         "Fn::Join" : [
                             ",",
                             { "Ref" : "PublicSubnetIDs" }
                         ]
                     },
-					"SecurityGroupId" : { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacElbSecurityGroupId" ] }
-           		}
-			}
-      	},
-    	"GuacStack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "GuacElbStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_private_autoscale_elb.element",
-           	 	"Parameters" : {
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"InstanceType" : {"Ref" : "InstanceType"},
-					"ElbName" : { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] },
-                    "GuacUserName" : {"Ref" : "GuacUserName"},
-                    "GuacUserPassword" : {"Ref" : "GuacUserPassword"},
-					"PrivateSubnetIDs" : {
+                    "SecurityGroupId" : { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacElbSecurityGroupId" ] }
+                }
+            }
+        },
+        "GuacStack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "GuacElbStack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_private_autoscale_elb.element",
+                "Parameters" : {
+                    "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "InstanceType" : {"Ref" : "InstanceType"},
+                    "MinCapacity" : {"Ref" : "MinCapacity"},
+                    "MaxCapacity" : {"Ref" : "MaxCapacity"},
+                    "DesiredCapacity" : {"Ref" : "DesiredCapacity"},
+                    "ElbName" : { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] },
+                    "GuacLdapServer" : {"Ref" : "GuacLdapServer"},
+                    "GuacLdapDN" : {"Ref" : "GuacLdapDN"},
+                    "PrivateSubnetIDs" : {
                         "Fn::Join" : [
                             ",",
                             { "Ref" : "PrivateSubnetIDs" }
                         ]
                     },
-					"SecurityGroupIDs" : {
+                    "SecurityGroupIDs" : {
                         "Fn::Join" : [
                             ",",
-                            [ 
+                            [
                                 { "Fn::GetAtt" : [ "GuacSecurityGroupStack", "Outputs.GuacSecurityGroupId" ] }
                             ]
                         ]
                     }
-           		}
-			}
+                }
+            }
       	}
     },
     "Outputs" : {
