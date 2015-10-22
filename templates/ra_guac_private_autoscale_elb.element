@@ -351,9 +351,10 @@
 
                                 "# Get cfn scripts\n",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
-                                "chmod 775 /usr/init/redhat/cfn-hup\n",
-                                "ln -f -s /usr/init/redhat/cfn-hup /etc/init.d/cfn-hup\n",
+                                "chmod 775 /opt/aws/apitools/cfn-init/init/redhat/cfn-hup\n",
+                                "ln -f -s /opt/aws/apitools/cfn-init/init/redhat/cfn-hup /etc/rc.d/init.d/cfn-hup\n",
                                 "chkconfig --add cfn-hup\n",
+                                "chkconfig cfn-hup on\n",
                                 "mkdir -p /opt/aws/bin\n",
                                 "for SCRIPT in cfn-elect-cmd-leader cfn-get-metadata cfn-hup",
                                 " cfn-init cfn-send-cmd-event cfn-send-cmd-result cfn-signal\n",
