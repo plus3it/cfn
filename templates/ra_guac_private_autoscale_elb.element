@@ -321,7 +321,7 @@
                 },
                 "BlockDeviceMappings" : [
                     {
-                        "DeviceName" : "/dev/sda1",
+                        "DeviceName" : "/dev/xvda",
                         "Ebs"        : {
                             "VolumeType" : "gp2",
                             "DeleteOnTermination" : "true"
