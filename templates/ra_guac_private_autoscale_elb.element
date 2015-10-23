@@ -199,12 +199,12 @@
                     "configSets" : {
                         "config" : [
                             "setup",
-                            "MakeGuac",
+                            "make-guac",
                             "finalize"
                         ],
                         "update" : [
                             "setup",
-                            "MakeGuac",
+                            "make-guac",
                             "finalize"
                         ]
                     },
