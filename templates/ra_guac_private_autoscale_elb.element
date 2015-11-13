@@ -238,7 +238,7 @@
                                 "group"   : "root"
                             },
                             "/etc/cfn/scripts/make-guac.sh" : {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/make-guac.sh",
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/make-guac.sh",
                                 "mode"    : "000700",
                                 "owner"   : "root",
                                 "group"   : "root"

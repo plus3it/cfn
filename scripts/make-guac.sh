@@ -199,10 +199,10 @@ yum -y install \
     http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 
 log "Ensuring the CentOS Base repo is available"
-curl -s -L "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/CentOS-Base.repo" \
+curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
     -o "/etc/yum.repos.d/CentOS-Base.repo"
 
-curl -s -L "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
+curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
     -o "/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6"
 
 log "Enabling the EPEL and base repos"
