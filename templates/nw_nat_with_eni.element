@@ -277,13 +277,13 @@
                                 "group"   : "root"
                             },
                             "/etc/cfn/scripts/configure-nat-eni.sh" : {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/configure-nat-eni.sh",
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-nat-eni.sh",
                                 "mode"    : "000700",
                                 "owner"   : "root",
                                 "group"   : "root"
                             },
                             "/etc/cfn/scripts/configure-pat.sh" : {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/master/scripts/configure-pat.sh",
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-pat.sh",
                                 "mode"    : "000700",
                                 "owner"   : "root",
                                 "group"   : "root"

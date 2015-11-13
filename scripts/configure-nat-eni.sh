@@ -6,7 +6,7 @@
 # a NAT instance.
 #
 # Written by Loren Gordon, hosted at:
-# * https://www.github.com/lorengordon/cfn/scripts/configure-nat-eni.sh
+# * https://github.com/plus3it/cfn/blob/master/scripts/configure-nat-eni.sh
 #
 # Inspired by:
 # * http://www.cakesolutions.net/teamblogs/making-aws-nat-instances-highly-available-without-the-compromises

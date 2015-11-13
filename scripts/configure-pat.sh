@@ -5,7 +5,7 @@
 #
 # This script is based on the Amazon AWS script embedded in their NAT AMIs.
 # Modified by Loren Gordon, hosted at:
-# * https://github.com/lorengordon/cfn/scripts/configure-path.sh
+# * https://github.com/plus3it/cfn/blob/master/scripts/configure-pat.sh
 #
 # Changes from original:
 # * Pass the eth interface as a parameter (but continue to default to eth0)
