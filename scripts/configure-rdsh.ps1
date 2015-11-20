@@ -1,8 +1,7 @@
 [CmdLetBinding()]
 Param(
     $ServerFQDN,
-    $DomainNetBiosName="DICELAB",
-    $GroupName="Dicelab Remote Access Users"
+    $DomainNetBiosName="DICELAB"
     )
 
 #Based on:
@@ -14,11 +13,18 @@ if (-not $ServerFQDN) {
         $name = [System.Net.DNS]::GetHostByName('').HostName
     }
     $ServerFQDN = $name 
-}
+} 
 
 $null = Install-WindowsFeature RDS-RD-Server
-$null = Import-Module remotedesktopservices
-
-([ADSI]"WinNT://$env:COMPUTERNAME/Remote Desktop Users,group").Add("WinNT://$DomainNetBiosName/$GroupName,group")
-
-Powershell -command Restart-Computer
+$null = Import-Module remotedesktopservices 
+                  
+if ($DomainNetBiosName -and $GroupName) {
+   $group = [ADSI]"WinNT://$env:COMPUTERNAME/Remote Desktop Users,group"
+   $groupmembers = @(@($group.Invoke("Members")) | `
+    foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)})
+    
+if ($groupmembers -notcontains $GroupName) {
+    group.Add("WinNT://$DomainNetBiosName/$GroupName,group")
+    
+   }
+}
