@@ -1,7 +1,8 @@
 [CmdLetBinding()]
 Param(
     $ServerFQDN,
-    $DomainNetBiosName="DICELAB"
+    $DomainNetBiosName,
+    $GroupName
     )
 
 #Based on:
@@ -22,9 +23,12 @@ if ($DomainNetBiosName -and $GroupName) {
    $group = [ADSI]"WinNT://$env:COMPUTERNAME/Remote Desktop Users,group"
    $groupmembers = @(@($group.Invoke("Members")) | `
     foreach {$_.GetType().InvokeMember("Name", 'GetProperty', $null, $_, $null)})
-    
+
 if ($groupmembers -notcontains $GroupName) {
     group.Add("WinNT://$DomainNetBiosName/$GroupName,group")
     
    }
+
 }
+
+Powershell -command Restart-Computer
