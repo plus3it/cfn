@@ -1,0 +1,58 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template creates a internal Elastic Load Balancer using TCP on port 3389",
+    "Parameters" : {
+        "PrivateSubnetIDs" : {
+            "Description" : "A list of Private subnet IDs to attach to the load balancer.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "SecurityGroupId" : {
+            "Description" : "ID of the security group for the ELB",
+            "Type" : "AWS::EC2::SecurityGroup::Id"
+        }
+    },
+    "Resources" : {
+        "ELB" : {
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "CrossZone" : "false",
+                "HealthCheck" : {
+                    "HealthyThreshold" : "5",
+                    "Interval" : "60",
+                    "Target" : "TCP:3389",
+                    "Timeout" : "5",
+                    "UnhealthyThreshold" : "10"
+                },
+                "Listeners" : [
+                    {
+                        "InstancePort" : "3389",
+                        "InstanceProtocol" : "TCP",
+                        "LoadBalancerPort" : "3389",
+                        "Protocol" : "TCP"
+                    }
+                ],
+                "Policies" : [
+                ],
+                "Scheme" : "internal",
+                "SecurityGroups" : [ { "Ref" : "SecurityGroupId" } ],
+                "Subnets" : { "Ref" : "PrivateSubnetIDs" },
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        }
+    },
+    "Outputs" : {
+        "LoadBalancerName" : {
+            "Description" : "Name of the Elastic Load Balancer",
+            "Value" : { "Ref" : "ELB" }
+        },
+        "LoadBalancerDns" : {
+            "Description" : "DNS name for the ELB",
+            "Value" : { "Fn::GetAtt" : ["ELB", "DNSName"] }
+        }
+    }
+}
