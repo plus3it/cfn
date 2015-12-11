@@ -397,7 +397,7 @@ then
             log "Enabling custom RBAC jar for 0.9.7"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar
+            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || die "Unable to download 0.9.7 custom plugin from s3 bucket" 
         else
             log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7!"
         fi
