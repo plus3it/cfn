@@ -63,6 +63,10 @@ usage()
   -U  The base of the DN for all Guacamole users. This is prepended to the
       directory DN (-D) to create the full DN to the user container. This will
       be appended to the username when a user logs in. Default is "CN=Users".
+  -R  The base of the DN for all Guacamole roles. This is used by the LDAP 
+      plugin to search for groups the user is a member of. Using this option
+      will enable Roles Based Access Control (RBAC) support. This is prepended 
+      to the directory DN (-D) to create the full DN to the RBAC container.    
   -A  The attribute which contains the username and which is part of the DN
       for all Guacamole users. Usually, this will be "uid" or "cn". This is
       used together with the user base DN (-U) to derive the full DN of each
@@ -96,6 +100,7 @@ LDAP_DOMAIN_DN=
 LDAP_USER_BASE="CN=Users"
 LDAP_USER_ATTRIBUTE="cn"
 LDAP_CONFIG_BASE="CN=GuacConfigGroups"
+LDAP_GROUP_BASE="CN=Users"
 LDAP_PORT="389"
 GUAC_VERSION="${__GuacVersion}"
 GUAC_USERNAME=
@@ -121,6 +126,9 @@ do
         U)
             LDAP_USER_BASE="${OPTARG}"
             ;;
+        R)
+            LDAP_GROUP_BASE="${OPTARG}"
+            ;;            
         A)
             LDAP_USER_ATTRIBUTE="${OPTARG}"
             ;;
@@ -376,6 +384,24 @@ then
         echo "ldap-username-attribute: ${LDAP_USER_ATTRIBUTE}"
         echo "ldap-config-base-dn:     ${LDAP_CONFIG_BASE},${LDAP_DOMAIN_DN}"
     ) >> /etc/guacamole/guacamole.properties
+    
+    if [ -n "$LDAP_GROUP_BASE" ]
+    then
+        log "Adding the LDAP group base DN, RBAC is enabled."
+        (
+            echo "ldap-group-base-dn       ${LDAP_GROUP_BASE},${LDAP_DOMAIN_DN}"
+        ) >> /etc/guacamole/guacamole.properties
+        
+        if [ "$GUAC_VERSION" == "0.9.7" ]
+        then
+            log "Enabling custom RBAC jar for 0.9.7"
+            rm -rf "/etc/guacamole/extensions/*"
+            cd "/etc/guacamole/extensions/"
+            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || die "Unable to download 0.9.7 custom plugin from s3 bucket" 
+        else
+            log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7!"
+        fi
+    fi    	
 fi
 
 
