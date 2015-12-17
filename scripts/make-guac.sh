@@ -110,7 +110,7 @@ SSH_PASSWORD=
 
 
 # Parse command-line parameters
-while getopts :hH:D:U:A:C:P:v:G:g:S:s: opt
+while getopts :hH:D:U:R:A:C:P:v:G:g:S:s: opt
 do
     case "${opt}" in
         h)
