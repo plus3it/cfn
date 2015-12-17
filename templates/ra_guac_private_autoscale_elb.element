@@ -244,6 +244,11 @@
                                 "group"   : "root"
                             }
                         },
+                        "commands" : {
+                            "10-yum-update" : {
+                                "command" : "yum -y update"
+                            }
+                        },
                         "services" : {
                             "sysvinit" : {
                                 "cfn-hup" : {
@@ -361,7 +366,7 @@
                                 "#do\n",
                                 "#    ln -f -s /usr/bin/${SCRIPT} /opt/aws/bin/${SCRIPT}\n",
                                 "#done\n",
-                                
+
                                 "yum -y install aws-cfn-bootstrap\n",
 
                                 "# Execute cfn-init\n",
