@@ -1,15 +1,15 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This templates deploys a Remote Desktop Session Host (RDSH) instance in an autoscale group behind an ELB, and joins the instance to a domain.",
-    "Parameters"               : {
+    "Description" : "This templates deploys a Remote Desktop Session Host (RDSH) instance in an autoscale group behind an ELB, and joins the instance to a domain.",
+    "Parameters" : {
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
+            "Type" : "AWS::EC2::KeyPair::KeyName"
         },
         "RdshInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
+            "Type" : "String",
+            "Default" : "t2.micro",
             "AllowedValues" : [
                 "t2.micro",
                 "t2.small",
@@ -23,6 +23,12 @@
         "RdshElbName" : {
             "Description" : "Name of the RDSH Elastic Load Balancer",
             "Type" : "String",
+            "MinLength" : "1"
+        },
+        "RdshLdapContainerOU" : {
+            "Description" : "DN of the LDAP container or OU in which the RDSH instance will be placed",
+            "Type" : "String",
+            "Default" : "CN=Users,DC=example,DC=com",
             "MinLength" : "1"
         },
         "DomainAccessUserGroup" : {
@@ -56,11 +62,6 @@
             "MaxLength"   : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "DomainDNSServers" : {
-            "Description" : "Comma-separated list of IP addresses of DNS Servers. Commonly the Domain Controllers. (e.g. 10.0.0.10,10.0.64.10)",
-            "Type"        : "CommaDelimitedList",
-            "Default"     : "10.0.0.10"
-        },
         "DomainNetBIOSName" : {
             "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
             "Type"        : "String",
@@ -72,10 +73,6 @@
         "PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the RDSH instance will run.",
             "Type"        : "AWS::EC2::Subnet::Id"
-        },
-        "SecurityGroupIdDomainMember" : {
-            "Description" : "ID of the security group for Active Directory domain members",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
         },
         "SecurityGroupIdRDSH" : {
             "Description" : "ID of the security group for RDSH instances",
@@ -112,31 +109,31 @@
         },
         "AWSRegionArch2AMI" : {
             "us-east-1" : {
-                "64" : "ami-1df0ac78"
+                "64" : "ami-e4034a8e"
             },
             "us-west-2" : {
-                "64" : "ami-f8f715cb"
+                "64" : "ami-b25e42d3"
             },
             "us-west-1" : {
-                "64" : "ami-91f93ad5"
+                "64" : "ami-a99df5c9"
             },
             "eu-west-1" : {
-                "64" : "ami-2fcbf458"
+                "64" : "ami-1ffa5a6c"
             },
             "eu-central-1" : {
-                "64" : "ami-f2f5f9ef"
+                "64" : "ami-c64559aa"
             },
             "ap-southeast-1" : {
-                "64" : "ami-faedfea8"
+                "64" : "ami-1992517a"
             },
             "ap-northeast-1" : {
-                "64" : "ami-3e93fe3e"
-            },
-            "sa-east-1" : {
-                "64" : "ami-02952d6e"
+                "64" : "ami-fe436b90"
             },
             "ap-southeast-2" : {
-                "64" : "ami-7bda9041"
+                "64" : "ami-cec69ead"
+            },
+            "sa-east-1" : {
+                "64" : "ami-0abd3966"
             }
         }
     },
@@ -243,29 +240,6 @@
                     },
                     "join" : {
                         "commands" : {
-                            "10-set-dns-servers" : {
-                                "command" : {
-                                    "Fn::Join" : 
-                                    [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"",
-                                            "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
-                                            {
-                                                "Fn::Join" : 
-                                                [
-                                                    ",",
-                                                    {
-                                                        "Ref" : "DomainDNSServers"
-                                                    }
-                                                ]
-                                            },
-                                            " -Verbose\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "30"
-                            },
                             "20-join-domain" : {
                                 "command" : {
                                     "Fn::Join" : [
@@ -286,12 +260,16 @@
                                                 "Ref" : "DomainJoinUser"
                                             },
                                             "',",
-                                            "(ConvertTo-SecureString ",
+                                            "(ConvertTo-SecureString '",
                                             {
                                                 "Ref" : "DomainJoinPassword"
                                             },
-                                            " -AsPlainText -Force))) ",
-                                            " -Restart -Verbose\""
+                                            "' -AsPlainText -Force))) ",
+                                            " -OUPath '",
+                                            {
+                                                "Ref": "RdshLdapContainerOU"
+                                            },
+                                            "' -Restart -Verbose\""
                                         ]
                                     ]
                                 },
@@ -380,17 +358,14 @@
                 "BlockDeviceMappings" : [
                     {
                         "DeviceName" : "/dev/sda1",
-                        "Ebs"        : {
+                        "Ebs" : {
                             "VolumeSize" : "50",
-							"VolumeType" : "gp2",
+                            "VolumeType" : "gp2",
                             "DeleteOnTermination" : "true"
                         }
                     }
                 ],
-				"SecurityGroups" : [ 
-                    {
-                        "Ref" : "SecurityGroupIdDomainMember"
-                    },
+                "SecurityGroups" : [
                     {
                         "Ref" : "SecurityGroupIdRDSH"
                     }
