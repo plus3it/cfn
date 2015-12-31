@@ -24,7 +24,7 @@ if (-not $ServerFQDN)
     $ServerFQDN = $name
 }
 
-$null = Install-WindowsFeature RDS-RD-Server,Search-Service
+$null = Install-WindowsFeature RDS-RD-Server,Search-Service,InkAndHandwritingServices,Desktop-Experience
 $null = Import-Module RemoteDesktop
 
 if ($DomainNetBiosName -and $GroupName)
