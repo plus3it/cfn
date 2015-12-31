@@ -21,23 +21,15 @@
         "RdshSecurityGroup" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" : {
-                "GroupDescription" : "Enable RDSH hosts access to the RDGW",
+                "GroupDescription" : "Allow Remote Access to the RDSH instances",
                 "VpcId" : {
                     "Ref" : "VPC"
                 },
-                "SecurityGroupIngress" : [
-                    {
-                        "IpProtocol" : "icmp",
-                        "FromPort"   : "-1",
-                        "ToPort"     : "-1",
-                        "CidrIp"     : "0.0.0.0/0"
-                    }
-                ],
                 "Tags" : [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["ad.dice.lab", [
-                            "RDSH-",
+                        "Value" : { "Fn::Join" : [ "", [
+                            "ra-rdsh-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
                     }
@@ -70,36 +62,41 @@
             "Type" : "AWS::EC2::SecurityGroup",
             "Condition" : "UseELB",
             "Properties" : {
-                "GroupDescription" : "Enable RDSH hosts internal access to the RDGW",
+                "GroupDescription" : "Allow connectivity through the RDSH ELB to RDSH instances",
                 "VpcId" : {
                     "Ref" : "VPC"
                 },
-                "SecurityGroupIngress" : [
-                    {
-                        "IpProtocol" : "tcp",
-                        "FromPort"   : "3389",
-                        "ToPort"     : "3389",
-                        "CidrIp"     : "0.0.0.0/0"
-                    }
-					
-                ],
-                "SecurityGroupEgress" : [
-                    {
-                        "IpProtocol" : "tcp",
-                        "FromPort"   : "3389",
-                        "ToPort"     : "3389",
-                        "CidrIp"     : "0.0.0.0/0"
-                    }
-                ],
                 "Tags" : [
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
-                            "RDSH-ELB-",
+                            "ra-rdsh-elb-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
                     }
                 ]
+            }
+        },
+        "PublicToElbIngressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Condition" : "UseELB",
+            "Properties" : {
+                "GroupId" :  { "Ref": "RdshElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
+        "ElbToRdshEgressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Condition" : "UseELB",
+            "Properties" : {
+                "GroupId" :  { "Ref": "RdshElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "DestinationSecurityGroupId" : { "Ref": "RdshSecurityGroup" }
             }
         }
     },
@@ -108,7 +105,7 @@
             "Value" : {
                 "Ref" : "RdshSecurityGroup"
             },
-            "Description" : "Security Group ID for the RDSH"
+            "Description" : "Security Group ID for RDSH instances"
         },
         "RdshElbSecurityGroupId" : {
             "Condition" : "UseELB",
