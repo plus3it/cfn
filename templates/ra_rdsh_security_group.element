@@ -1,0 +1,118 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This templates creates one security group for RDSH instances, and one for their load balancer",
+    "Parameters" : {
+        "UseELB" : {
+            "Description" : "Set to true if using an ELB in front of the RDSH; otherwise set to false",
+            "Type"        : "String",
+            "Default"     : "true",
+            "AllowedValues" : [ "true", "false" ]
+        },
+        "VPC" : {
+            "Description" : "VPC ID",
+            "Type"        : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Conditions" : {
+        "UseELB" : { "Fn::Equals" : [ { "Ref" : "UseELB" }, "true" ] },
+        "NoELB": { "Fn::Equals" : [ { "Ref" : "UseELB" }, "false" ] }
+    },
+    "Resources" : {
+        "RdshSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Allow Remote Access to the RDSH instances",
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : [ "", [
+                            "ra-rdsh-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PrivateToRdshIngressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Condition" : "NoELB",
+            "Properties" : {
+                "GroupId" :  { "Ref": "RdshSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
+        "ElbToRdshIngressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Condition" : "UseELB",
+            "Properties" : {
+                "GroupId" :  { "Ref": "RdshSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "SourceSecurityGroupId" : { "Ref": "RdshElbSecurityGroup" }
+            }
+        },
+        "RdshElbSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Condition" : "UseELB",
+            "Properties" : {
+                "GroupDescription" : "Allow connectivity through the RDSH ELB to RDSH instances",
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "ra-rdsh-elb-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PublicToElbIngressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Condition" : "UseELB",
+            "Properties" : {
+                "GroupId" :  { "Ref": "RdshElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
+        "ElbToRdshEgressTcp3389" : {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Condition" : "UseELB",
+            "Properties" : {
+                "GroupId" :  { "Ref": "RdshElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort"   : "3389",
+                "ToPort"     : "3389",
+                "DestinationSecurityGroupId" : { "Ref": "RdshSecurityGroup" }
+            }
+        }
+    },
+    "Outputs" : {
+        "RdshSecurityGroupId" : {
+            "Value" : {
+                "Ref" : "RdshSecurityGroup"
+            },
+            "Description" : "Security Group ID for RDSH instances"
+        },
+        "RdshElbSecurityGroupId" : {
+            "Condition" : "UseELB",
+            "Value" : {
+                "Ref" : "RdshElbSecurityGroup"
+            },
+            "Description" : "Security Group ID for the RDSH Elastic Load Balancer"
+        }
+    }
+}
