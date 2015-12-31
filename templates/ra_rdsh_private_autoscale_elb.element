@@ -159,7 +159,7 @@
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
-                            "RDSH-",
+                            "ra-rdsh-",
                             { "Ref" : "AWS::StackName" }
                         ]]},
                         "PropagateAtLaunch" : "true"
