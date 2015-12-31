@@ -1,0 +1,391 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This templates deploys a Remote Desktop Session Host (RDSH) instance in an autoscale group behind an ELB, and joins the instance to a domain.",
+    "Parameters" : {
+        "KeyPairName" : {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type" : "AWS::EC2::KeyPair::KeyName"
+        },
+        "RdshInstanceType" : {
+            "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" : [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ]
+        },
+        "RdshElbName" : {
+            "Description" : "Name of the RDSH Elastic Load Balancer",
+            "Type" : "String",
+            "MinLength" : "1"
+        },
+        "RdshLdapContainerOU" : {
+            "Description" : "DN of the LDAP container or OU in which the RDSH instance will be placed",
+            "Type" : "String",
+            "Default" : "CN=Users,DC=example,DC=com",
+            "MinLength" : "1"
+        },
+        "DomainAccessUserGroup" : {
+            "Description" : "Domain group of users authorized to use the RDSH",
+            "Type" : "String",
+            "Default" : "Domain Users",
+            "MinLength" : "1"
+        },
+        "DomainJoinPassword" : {
+            "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type"        : "String",
+            "MinLength"   : "8",
+            "MaxLength"   : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho"         : "true",
+            "Default"        : "Password123"
+        },
+        "DomainJoinUser" : {
+            "Description" : "User name for the account that will join the instance to the domain",
+            "Type"        : "String",
+            "Default"     : "StackAdmin",
+            "MinLength"   : "5",
+            "MaxLength"   : "25",
+            "AllowedPattern" : "[a-zA-Z0-9_]*"
+        },
+        "DomainDNSName" : {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+            "Type"        : "String",
+            "Default"     : "example.com",
+            "MinLength"   : "3",
+            "MaxLength"   : "25",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "DomainNetBIOSName" : {
+            "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
+            "Type"        : "String",
+            "Default"     : "EXAMPLE",
+            "MinLength"   : "1",
+            "MaxLength"   : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "PrivateSubnetID" : {
+            "Description" : "Private Subnet ID where the RDSH instance will run.",
+            "Type"        : "AWS::EC2::Subnet::Id"
+        },
+        "SecurityGroupIdRDSH" : {
+            "Description" : "ID of the security group for RDSH instances",
+            "Type"        : "AWS::EC2::SecurityGroup::Id"
+        },
+        "VPC" : {
+            "Description" : "VPC ID",
+            "Type"        : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Mappings" : {
+        "AWSInstanceType2Arch" : {
+            "t2.micro" : {
+                "Arch" : "64"
+            },
+            "t2.small" : {
+                "Arch" : "64"
+            },
+            "t2.medium" : {
+                "Arch" : "64"
+            },
+            "c4.large" : {
+                "Arch" : "64"
+            },
+            "c4.xlarge" : {
+                "Arch" : "64"
+            },
+            "m4.large" : {
+                "Arch" : "64"
+            },
+            "m4.xlarge" : {
+                "Arch" : "64"
+            }
+        },
+        "AWSRegionArch2AMI" : {
+            "us-east-1" : {
+                "64" : "ami-e4034a8e"
+            },
+            "us-west-2" : {
+                "64" : "ami-b25e42d3"
+            },
+            "us-west-1" : {
+                "64" : "ami-a99df5c9"
+            },
+            "eu-west-1" : {
+                "64" : "ami-1ffa5a6c"
+            },
+            "eu-central-1" : {
+                "64" : "ami-c64559aa"
+            },
+            "ap-southeast-1" : {
+                "64" : "ami-1992517a"
+            },
+            "ap-northeast-1" : {
+                "64" : "ami-fe436b90"
+            },
+            "ap-southeast-2" : {
+                "64" : "ami-cec69ead"
+            },
+            "sa-east-1" : {
+                "64" : "ami-0abd3966"
+            }
+        }
+    },
+    "Resources" : {
+        "RdshAutoScalingGroup" : {
+            "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "CreationPolicy" : {
+                "ResourceSignal" : {
+                    "Count" : "1",
+                    "Timeout" : "PT30M"
+                }
+            },
+            "Properties" : {
+                "VPCZoneIdentifier" : [ { "Ref" : "PrivateSubnetID" } ],
+                "LaunchConfigurationName" : { "Ref" : "RdshLaunchConfig" },
+                "LoadBalancerNames" : [ { "Ref" : "RdshElbName" } ],
+                "MinSize" : "1",
+                "MaxSize" : "1",
+                "DesiredCapacity" : "1",
+                "HealthCheckGracePeriod" : "3600",
+                "HealthCheckType" : "ELB",
+                "Tags" : [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "RDSH-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]},
+                        "PropagateAtLaunch" : "true"
+                    }
+                ]
+            }
+        },
+        "RdshLaunchConfig" : {
+            "Type" : "AWS::AutoScaling::LaunchConfiguration",
+            "Metadata" : {
+                "AWS::CloudFormation::Init" : {
+                    "configSets" : {
+                        "config" : [
+                            "setup",
+                            "join",
+                            "installRDS",
+                            "finalize"
+                        ],
+                        "update" : [
+                            "setup",
+                            "finalize"
+                        ]
+                    },
+                    "setup" : {
+                        "files" : {
+                            "c:\\cfn\\cfn-hup.conf" : {
+                                "content" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "[main]\n",
+                                            "stack=",
+                                            {
+                                                "Ref" : "AWS::StackName"
+                                            },
+                                            "\n",
+                                            "region=",
+                                            {
+                                                "Ref" : "AWS::Region"
+                                            },
+                                            "\n"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" : {
+                                "content" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "[cfn-auto-reloader-hook]\n",
+                                            "triggers=post.update\n",
+                                            "path=Resources.RdshLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                            "action=cfn-init.exe -v -c update ",
+                                            "   --stack ", { "Ref" : "AWS::StackName" },
+                                            "   --resource RdshLaunchConfig ",
+                                            "   --region ", { "Ref" : "AWS::Region"}, "\n"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "c:\\cfn\\scripts\\configure-rdsh.ps1" : {
+                                "source" : "https://s3.amazonaws.com/app-chemistry/scripts/configure-rdsh.ps1"
+                            }
+                        },
+                        "services" : {
+                            "windows" : {
+                                "cfn-hup" : {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files"         : [
+                                        "c:\\cfn\\cfn-hup.conf",
+                                        "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "join" : {
+                        "commands" : {
+                            "20-join-domain" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -Command \"",
+                                            "Add-Computer -DomainName ",
+                                            {
+                                                "Ref" : "DomainDNSName"
+                                            },
+                                            " -Credential ",
+                                            "(New-Object System.Management.Automation.PSCredential('",
+                                            {
+                                                "Ref" : "DomainNetBIOSName"
+                                            },
+                                            "\\",
+                                            {
+                                                "Ref" : "DomainJoinUser"
+                                            },
+                                            "',",
+                                            "(ConvertTo-SecureString '",
+                                            {
+                                                "Ref" : "DomainJoinPassword"
+                                            },
+                                            "' -AsPlainText -Force))) ",
+                                            " -OUPath '",
+                                            {
+                                                "Ref": "RdshLdapContainerOU"
+                                            },
+                                            "' -Restart -Verbose\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "installRDS" : {
+                        "commands" : {
+                            "10-install-rds" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe \"Install-WindowsFeature RDS-RD-Server -Verbose\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-configure-rdsh" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe -ExecutionPolicy Bypass",
+                                            " C:\\cfn\\scripts\\configure-rdsh.ps1 ",
+                                            " -DomainNetBiosName ", { "Ref" : "DomainNetBIOSName" },
+                                            " -GroupName ",
+                                            "'",
+                                            { "Ref" : "DomainAccessUserGroup" },
+                                            "'",
+                                            " -Verbose"
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "finalize" : {
+                        "commands" : {
+                            "10-signal-success" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "cfn-signal.exe -e 0 ",
+                                            "   --stack ", { "Ref" : "AWS::StackName" },
+                                            "   --resource RdshAutoScalingGroup ",
+                                            "   --region ", { "Ref" : "AWS::Region"}
+                                        ]
+                                    ]
+                                },
+                                "ignoreErrors" : "true",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" : {
+                "ImageId" : {
+                    "Fn::FindInMap" : [
+                        "AWSRegionArch2AMI",
+                        {
+                            "Ref" : "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap" : [
+                                "AWSInstanceType2Arch",
+                                {
+                                    "Ref" : "RdshInstanceType"
+                                },
+                                "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType" : {
+                    "Ref" : "RdshInstanceType"
+                },
+                "KeyName" : {
+                    "Ref" : "KeyPairName"
+                },
+                "BlockDeviceMappings" : [
+                    {
+                        "DeviceName" : "/dev/sda1",
+                        "Ebs" : {
+                            "VolumeSize" : "50",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    }
+                ],
+                "SecurityGroups" : [
+                    {
+                        "Ref" : "SecurityGroupIdRDSH"
+                    }
+                ],
+                "UserData" : {
+                    "Fn::Base64" : {
+                        "Fn::Join" : [
+                            "",
+                            [
+                                "<script>\n",
+                                "cfn-init.exe -v -c config ",
+                                "   --stack ", { "Ref" : "AWS::StackName" },
+                                "   --resource RdshLaunchConfig ",
+                                "   --region ", { "Ref" : "AWS::Region"}, "\n",
+                                "</script>\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
