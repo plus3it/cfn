@@ -42,7 +42,7 @@
                         "Value" : { "Fn::Join" : ["", [
                             "ra-rdsh-",
                             { "Ref" : "AWS::StackName" }
-                        ]]},
+                        ]]}
                     }
                 ]
             }
