@@ -39,4 +39,12 @@ if ($DomainNetBiosName -and $GroupName)
     }
 }
 
+$WindowsSecurityPath = "${env:SYSTEMDRIVE}\Users\Public\Desktop\Windows Security.lnk"
+$WindowsSecurityShortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("${WindowsSecurityPath}")
+$WindowsSecurityShortcut.TargetPath = "Powershell"
+$WindowsSecurityShortcut.Arguments = '-noprofile -nologo -noninteractive -command "(new-object -ComObject shell.application).WindowsSecurity()"'
+$WindowsSecurityShortcut.Description = "Windows Security"
+$WindowsSecurityShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,1"
+$WindowsSecurityShortcut.Save()
+
 Restart-Computer -Force
