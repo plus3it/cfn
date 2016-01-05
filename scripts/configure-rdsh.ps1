@@ -69,4 +69,7 @@ $WindowsSecurityShortcut.Save()
 
 Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name SmartScreenEnabled -ErrorAction Stop -Value "RequireAdmin" -Force
 
+$adapters = get-wmiobject -class Win32_NetworkAdapterConfiguration -filter "IPEnabled=TRUE"
+$null = $adapters | foreach-object { $_.SetDynamicDNSRegistration($TRUE, $TRUE) }
+
 Restart-Computer -Force
