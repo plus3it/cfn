@@ -53,4 +53,6 @@ $WindowsSecurityShortcut.Description = "Windows Security"
 $WindowsSecurityShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,1"
 $WindowsSecurityShortcut.Save()
 
+Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name SmartScreenEnabled -ErrorAction Stop -Value "RequireAdmin" -Force
+
 Restart-Computer -Force
