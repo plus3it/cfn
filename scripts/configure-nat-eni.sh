@@ -114,10 +114,21 @@ if [ -n "${ENI_ATTACHMENT}" ]; then
     log "Successfully detached the network interface. Proceeding..."
 fi
 
-log "Attaching the network interface to this instance..."
-aws ec2 attach-network-interface --network-interface-id "${ENI_ID}" \
-    --instance-id "${INSTANCE_ID}" --device-index "${DEVICE_INDEX}" || \
-        die "ENI attachment failed."
+log "Attaching ENI '${ENI_ID}' to this instance..."
+delay=15
+timer=180
+while true; do
+    if [[ $timer -le 0 ]]; then
+        die "Timer expired before ENI attached successfully."
+    fi
+    aws ec2 attach-network-interface --network-interface-id "${ENI_ID}" \
+        --instance-id "${INSTANCE_ID}" --device-index "${DEVICE_INDEX}"  && break  # break if ENI attached successfully
+    log "ENI attachment failed. Trying again in $delay second(s). Will timeout if not attached within $timer second(s)."
+    sleep $delay
+    timer=$(( timer-delay ))
+done
+
+log "ENI '${ENI_ID}' is attached to this instance."
 
 ETH="${DEVICE_TYPE}${DEVICE_INDEX}"
 log "Waiting for '${ETH}' network interface to be discovered by the system..."
