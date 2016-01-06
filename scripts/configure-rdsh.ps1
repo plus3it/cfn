@@ -34,18 +34,20 @@ $null = Install-WindowsFeature @(
 )
 $null = Import-Module RemoteDesktop,RemoteDesktopServices
 
-$obj = gwmi -namespace "Root/CIMV2/TerminalServices" Win32_TerminalServiceSetting
-$null = $obj.SetSpecifiedLicenseServerList("localhost")
-$null = $obj.ChangeMode(2)
 Set-Item -path RDS:\LicenseServer\Configuration\Firstname -value "End" -Force
 Set-Item -path RDS:\LicenseServer\Configuration\Lastname -value "User" -Force
 Set-Item -path RDS:\LicenseServer\Configuration\Company -value "Company" -Force
-Set-Item -path RDS:\LicenseServer\Configuration\CountryRegion -value "United States"
+Set-Item -path RDS:\LicenseServer\Configuration\CountryRegion -value "United States" -Force
+
 $ActivationStatus = Get-Item -Path RDS:\LicenseServer\ActivationStatus
 if ($ActivationStatus.CurrentValue -eq 0)
 {
-    Set-Item -Path RDS:\LicenseServer\ActivationStatus -Value 1 -ConnectionMethod AUTO -Reason 5
+    Set-Item -Path RDS:\LicenseServer\ActivationStatus -Value 1 -ConnectionMethod AUTO -Reason 5 -ErrorAction Stop
 }
+
+$obj = gwmi -namespace "Root/CIMV2/TerminalServices" Win32_TerminalServiceSetting
+$null = $obj.SetSpecifiedLicenseServerList("localhost")
+$null = $obj.ChangeMode(2)
 
 if ($DomainNetBiosName -and $GroupName)
 {

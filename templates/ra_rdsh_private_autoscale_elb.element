@@ -284,11 +284,22 @@
                                     "Fn::Join" : [
                                         "",
                                         [
-                                            "powershell.exe \"Install-WindowsFeature RDS-RD-Server -Verbose\""
+                                            "powershell.exe \"Install-WindowsFeature RDS-RD-Server,RDS-Licensing -Verbose\""
                                         ]
                                     ]
                                 },
                                 "waitAfterCompletion" : "0"
+                            },
+                            "15-reboot-rds" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "",
+                                        [
+                                            "powershell.exe \"Restart-Computer -Force -Verbose\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion" : "forever"
                             },
                             "20-configure-rdsh" : {
                                 "command" : {
