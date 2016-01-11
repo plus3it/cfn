@@ -24,6 +24,7 @@ if (-not $ServerFQDN)
     $ServerFQDN = $name
 }
 
+# Add Windows features
 $null = Install-WindowsFeature @(
     "RDS-RD-Server"
     "RDS-Licensing"
@@ -34,21 +35,21 @@ $null = Install-WindowsFeature @(
 )
 $null = Import-Module RemoteDesktop,RemoteDesktopServices
 
+# Configure RDS Licensing
 Set-Item -path RDS:\LicenseServer\Configuration\Firstname -value "End" -Force
 Set-Item -path RDS:\LicenseServer\Configuration\Lastname -value "User" -Force
 Set-Item -path RDS:\LicenseServer\Configuration\Company -value "Company" -Force
 Set-Item -path RDS:\LicenseServer\Configuration\CountryRegion -value "United States" -Force
-
 $ActivationStatus = Get-Item -Path RDS:\LicenseServer\ActivationStatus
 if ($ActivationStatus.CurrentValue -eq 0)
 {
     Set-Item -Path RDS:\LicenseServer\ActivationStatus -Value 1 -ConnectionMethod AUTO -Reason 5 -ErrorAction Stop
 }
-
 $obj = gwmi -namespace "Root/CIMV2/TerminalServices" Win32_TerminalServiceSetting
 $null = $obj.SetSpecifiedLicenseServerList("localhost")
 $null = $obj.ChangeMode(2)
 
+# Grant remote access privileges to domain group
 if ($DomainNetBiosName -and $GroupName)
 {
     $group = [ADSI]"WinNT://$env:COMPUTERNAME/Remote Desktop Users,group"
@@ -61,6 +62,14 @@ if ($DomainNetBiosName -and $GroupName)
     }
 }
 
+# Configure DNS registration
+$adapters = get-wmiobject -class Win32_NetworkAdapterConfiguration -filter "IPEnabled=TRUE"
+$null = $adapters | foreach-object { $_.SetDynamicDNSRegistration($TRUE, $TRUE) }
+
+# Enable SmartScreen
+Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name SmartScreenEnabled -ErrorAction Stop -Value "RequireAdmin" -Force
+
+# Create public desktop shortcut for Windows Security
 $WindowsSecurityPath = "${env:SYSTEMDRIVE}\Users\Public\Desktop\Windows Security.lnk"
 $WindowsSecurityShortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("${WindowsSecurityPath}")
 $WindowsSecurityShortcut.TargetPath = "Powershell"
@@ -69,9 +78,13 @@ $WindowsSecurityShortcut.Description = "Windows Security"
 $WindowsSecurityShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,1"
 $WindowsSecurityShortcut.Save()
 
-Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name SmartScreenEnabled -ErrorAction Stop -Value "RequireAdmin" -Force
+# Create public desktop shortcut for Sign Off
+$SignoffPath = "${env:SYSTEMDRIVE}\Users\Public\Desktop\Sign Off.lnk"
+$SignOffShortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("${SignoffPath}")
+$SignOffShortcut.TargetPath = "logoff.exe"
+$SignOffShortcut.Description = "Sign Off"
+$SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
+$SignOffShortcut.Save()
 
-$adapters = get-wmiobject -class Win32_NetworkAdapterConfiguration -filter "IPEnabled=TRUE"
-$null = $adapters | foreach-object { $_.SetDynamicDNSRegistration($TRUE, $TRUE) }
-
+# Restart
 Restart-Computer -Force
