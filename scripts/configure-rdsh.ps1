@@ -78,11 +78,11 @@ $WindowsSecurityShortcut.Description = "Windows Security"
 $WindowsSecurityShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,1"
 $WindowsSecurityShortcut.Save()
 
-# Create public desktop shortcut for Sign Off
-$SignoffPath = "${env:SYSTEMDRIVE}\Users\Public\Desktop\Sign Off.lnk"
+# Create public desktop shortcut for Sign Out
+$SignoffPath = "${env:SYSTEMDRIVE}\Users\Public\Desktop\Sign Out.lnk"
 $SignOffShortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("${SignoffPath}")
 $SignOffShortcut.TargetPath = "logoff.exe"
-$SignOffShortcut.Description = "Sign Off"
+$SignOffShortcut.Description = "Sign Out"
 $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 
