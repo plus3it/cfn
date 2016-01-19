@@ -48,6 +48,12 @@
             "Default" : "DC=ad,DC=example,DC=com",
             "MinLength" : "1"
         },
+        "GuacVersion" : {
+            "Description" : "Version of Guacamole to install",
+            "Type" : "String",
+            "Default" : "0.9.7",
+            "MinLength" : "1"
+        },
         "InstanceType" : {
             "Description" : "Amazon EC2 instance type for the Guacamole Instances",
             "Type" : "String",
@@ -109,6 +115,7 @@
                     "ElbName" : { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] },
                     "GuacLdapServer" : {"Ref" : "GuacLdapServer"},
                     "GuacLdapDN" : {"Ref" : "GuacLdapDN"},
+                    "GuacVersion" : {"Ref" : "GuacVersion"},
                     "PrivateSubnetIDs" : {
                         "Fn::Join" : [
                             ",",
