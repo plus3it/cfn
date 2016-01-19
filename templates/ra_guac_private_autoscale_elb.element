@@ -55,6 +55,12 @@
             "Default" : "DC=ad,DC=example,DC=com",
             "MinLength" : "1"
         },
+        "GuacVersion" : {
+            "Description" : "Version of Guacamole to install",
+            "Type" : "String",
+            "Default" : "0.9.7",
+            "MinLength" : "1"
+        },
         "PrivateSubnetIDs" : {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
             "Type"        : "List<AWS::EC2::Subnet::Id>"
@@ -273,7 +279,9 @@
                                             " -H ",
                                             { "Ref" : "GuacLdapServer" },
                                             " -D ",
-                                            { "Ref" : "GuacLdapDN" }
+                                            { "Ref" : "GuacLdapDN" },
+                                            " -v ",
+                                            { "Ref" : "GuacVersion" }
                                         ]
                                     ]
                                 }
