@@ -3,7 +3,7 @@
     "Description" : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
     "Parameters" : {
         "SslCertificateName" : {
-            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have previously been loaded in AWS (via the command line).",
+            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have been loaded previously in AWS ACM.",
             "Type" : "String"
         },
         "PublicSubnetIDs" : {
@@ -34,17 +34,19 @@
                         "LoadBalancerPort" : "443",
                         "Protocol" : "SSL",
                         "SSLCertificateId" : {
-                            "Fn::Join": [
-                                "",
+                            "Fn::Join" : [
+                                ":",
                                 [
-                                    "arn:aws:iam::",
-                                    {
-                                        "Ref":"AWS::AccountId"
-                                    },
-                                    ":server-certificate/",
-                                    {
-                                        "Ref":"SslCertificateName"
-                                    }
+                                    "arn:aws:acm",
+                                    { "Ref" : "AWS::Region" },
+                                    { "Ref":"AWS::AccountId" },
+                                    { "Fn::Join" : [
+                                        "",
+                                        [
+                                            "certificate/",
+                                            { "Ref":"SslCertificateName" }
+                                        ]
+                                    ] }
                                 ]
                             ]
                         }
@@ -71,7 +73,7 @@
         },
         "LoadBalancerDns" : {
           "Description": "DNS name for the ELB",
-          "Value": { "Fn::GetAtt" : ["ELB", "DNSName"] }
+          "Value": { "Fn::GetAtt" : [ "ELB", "DNSName" ] }
         }
     }
 }
