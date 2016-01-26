@@ -79,10 +79,6 @@
         "Rdgw2PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the second RDGW instance will run.",
             "Type" : "AWS::EC2::Subnet::Id"
-        },
-        "SecurityGroupIdDomainMember" : {
-            "Description" : "ID of the security group for Active Directory domain members",
-            "Type" : "AWS::EC2::SecurityGroup::Id"
         }
     },
     "Resources" : {
@@ -95,7 +91,7 @@
                     "UseELB" : "true"
                 }
             }
-        },	
+        },
         "RdgwElbStack" : {
             "Type" : "AWS::CloudFormation::Stack",
             "DependsOn" : "RdgwSecurityGroupStack",
@@ -128,7 +124,6 @@
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw1PrivateSubnetID" },
-                    "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
                     "SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
                     "VPC" : { "Ref" : "VPC" }
                 }
@@ -149,7 +144,6 @@
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw2PrivateSubnetID" },
-                    "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
                     "SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
                     "VPC" : { "Ref" : "VPC" }
                 }
