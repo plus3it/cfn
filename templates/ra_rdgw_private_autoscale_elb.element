@@ -14,6 +14,7 @@
                 "t2.micro",
                 "t2.small",
                 "t2.medium",
+                "t2.large",
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
@@ -46,7 +47,7 @@
             "Default" : "StackAdmin",
             "MinLength" : "5",
             "MaxLength" : "25",
-            "AllowedPattern" : "[a-zA-Z0-9]*"
+            "AllowedPattern" : "[a-zA-Z0-9_]*"
         },
         "DomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
@@ -55,11 +56,6 @@
             "MinLength" : "3",
             "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
-        "DomainDNSServers" : {
-            "Description" : "Comma-separated list of IP addresses of DNS Servers. Commonly the Domain Controllers. (e.g. 10.0.0.10,10.0.64.10)",
-            "Type" : "CommaDelimitedList",
-            "Default" : "10.0.0.10"
         },
         "DomainNetBIOSName" : {
             "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
@@ -72,10 +68,6 @@
         "PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the RDGW instance will run.",
             "Type" : "AWS::EC2::Subnet::Id"
-        },
-        "SecurityGroupIdDomainMember" : {
-            "Description" : "ID of the security group for Active Directory domain members",
-            "Type" : "AWS::EC2::SecurityGroup::Id"
         },
         "SecurityGroupIdRDGW" : {
             "Description" : "ID of the security group for RDGW instances",
@@ -97,6 +89,9 @@
             "t2.medium" : {
                 "Arch" : "64"
             },
+            "t2.large" : {
+                "Arch" : "64"
+            },
             "c4.large" : {
                 "Arch" : "64"
             },
@@ -112,31 +107,34 @@
         },
         "AWSRegionArch2AMI" : {
             "us-east-1" : {
-                "64" : "ami-5b9e6b30"
-            },
-            "us-west-2" : {
-                "64" : "ami-67c7ff57"
+                "64" : "ami-9a0558f0"
             },
             "us-west-1" : {
-                "64" : "ami-c5688281"
+                "64" : "ami-e7e78d87"
+            },
+            "us-west-2" : {
+                "64" : "ami-83a5bce2"
             },
             "eu-west-1" : {
-                "64" : "ami-c1740ab6"
+                "64" : "ami-7943ec0a"
             },
             "eu-central-1" : {
-                "64" : "ami-2e87be33"
-            },
-            "ap-southeast-1" : {
-                "64" : "ami-e0d1ebb2"
+                "64" : "ami-8a918ee6"
             },
             "ap-northeast-1" : {
-                "64" : "ami-c6b46dc6"
+                "64" : "ami-482a1b26"
             },
-            "sa-east-1" : {
-                "64" : "ami-b93bbba4"
+            "ap-northeast-2" : {
+                "64" : "ami-a2a06ecc"
+            },
+            "ap-southeast-1" : {
+                "64" : "ami-5869ab3b"
             },
             "ap-southeast-2" : {
-                "64" : "ami-f9760dc3"
+                "64" : "ami-9b4f15f8"
+            },
+            "sa-east-1" : {
+                "64" : "ami-6a981e06"
             }
         }
     },
@@ -162,7 +160,7 @@
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
-                            "RDGW-",
+                            "ra-rdgw-",
                             { "Ref" : "AWS::StackName" }
                         ]]},
                         "PropagateAtLaunch" : "true"
@@ -243,30 +241,7 @@
                     },
                     "join" : {
                         "commands" : {
-                            "10-set-dns-servers" : {
-                                "command" : {
-                                    "Fn::Join" : 
-                                    [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"",
-                                            "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
-                                            {
-                                                "Fn::Join" : 
-                                                [
-                                                    ",",
-                                                    {
-                                                        "Ref" : "DomainDNSServers"
-                                                    }
-                                                ]
-                                            },
-                                            " -Verbose\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "30"
-                            },
-                            "20-join-domain" : {
+                            "10-join-domain" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -286,11 +261,11 @@
                                                 "Ref" : "DomainJoinUser"
                                             },
                                             "',",
-                                            "(ConvertTo-SecureString ",
+                                            "(ConvertTo-SecureString '",
                                             {
                                                 "Ref" : "DomainJoinPassword"
                                             },
-                                            " -AsPlainText -Force))) ",
+                                            "' -AsPlainText -Force))) ",
                                             " -Restart -Verbose\""
                                         ]
                                     ]
@@ -387,8 +362,7 @@
                         }
                     }
                 ],
-				"SecurityGroups" : [ 
-                    { "Ref" : "SecurityGroupIdDomainMember" },
+                "SecurityGroups" : [
                     { "Ref" : "SecurityGroupIdRDGW" }
                 ],
                 "UserData" : {
