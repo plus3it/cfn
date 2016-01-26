@@ -26,6 +26,7 @@
                 "t2.micro",
                 "t2.small",
                 "t2.medium",
+                "t2.large",
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
@@ -62,11 +63,6 @@
             "MinLength" : "3",
             "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
-        "DomainDNSServers" : {
-            "Description" : "Comma-separated list of IP addresses of DNS Servers. Commonly the Domain Controllers. (e.g. 10.0.0.10,10.0.64.10)",
-            "Type" : "CommaDelimitedList",
-            "Default" : "10.0.0.10"
         },
         "DomainNetBIOSName" : {
             "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
@@ -134,12 +130,6 @@
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
-                    "DomainDNSServers" : {
-                        "Fn::Join" : [
-                            ",",
-                            { "Ref" : "DomainDNSServers" }
-                        ]
-                    },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw1PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
@@ -161,12 +151,6 @@
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
-                    "DomainDNSServers" : {
-                        "Fn::Join" : [
-                            ",",
-                            { "Ref" : "DomainDNSServers" }
-                        ]
-                    },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw2PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
@@ -188,12 +172,6 @@
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
-                    "DomainDNSServers" : {
-                        "Fn::Join" : [
-                            ",",
-                            { "Ref" : "DomainDNSServers" }
-                        ]
-                    },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw3PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
