@@ -136,7 +136,7 @@
         },
         "Rdgw2Stack" : {
             "Type" : "AWS::CloudFormation::Stack",
-            "DependsOn" : "RdgwElbStack",
+            "DependsOn" : "Rdgw1Stack",
             "Properties" : {
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
                 "Parameters" : {
