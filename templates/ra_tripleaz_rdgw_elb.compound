@@ -1,10 +1,10 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates an HA remote access solution across three AZs using Remote Desktop Gateway, fronted by an Elastic Load Balancer.",
-    "Parameters"               : {
+    "Description" : "This template creates an HA remote access solution across three AZs using Remote Desktop Gateway, fronted by an Elastic Load Balancer.",
+    "Parameters" : {
         "VPC" : {
             "Description" : "VPC ID",
-            "Type"        : "AWS::EC2::VPC::Id"
+            "Type" : "AWS::EC2::VPC::Id"
         },
         "ElbSslCertificateName" : {
             "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have previously been loaded in AWS (via the command line).",
@@ -16,12 +16,12 @@
         },
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
+            "Type" : "AWS::EC2::KeyPair::KeyName"
         },
         "InstanceTypeRdgw" : {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
+            "Type" : "String",
+            "Default" : "t2.micro",
             "AllowedValues" : [
                 "t2.micro",
                 "t2.small",
@@ -40,96 +40,96 @@
         },
         "DomainJoinPassword" : {
             "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
-            "Type"        : "String",
-            "MinLength"   : "8",
-            "MaxLength"   : "32",
+            "Type" : "String",
+            "MinLength" : "8",
+            "MaxLength" : "32",
             "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "NoEcho"         : "true",
-            "Default"        : "Password123"
+            "NoEcho" : "true",
+            "Default" : "Password123"
         },
         "DomainJoinUser" : {
             "Description" : "User name for the account that will join the instance to the domain",
-            "Type"        : "String",
-            "Default"     : "StackAdmin",
-            "MinLength"   : "5",
-            "MaxLength"   : "25",
+            "Type" : "String",
+            "Default" : "StackAdmin",
+            "MinLength" : "5",
+            "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]*"
         },
         "DomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
-            "Type"        : "String",
-            "Default"     : "example.com",
-            "MinLength"   : "3",
-            "MaxLength"   : "25",
+            "Type" : "String",
+            "Default" : "example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
         "DomainDNSServers" : {
             "Description" : "Comma-separated list of IP addresses of DNS Servers. Commonly the Domain Controllers. (e.g. 10.0.0.10,10.0.64.10)",
-            "Type"        : "CommaDelimitedList",
-            "Default"     : "10.0.0.10"
+            "Type" : "CommaDelimitedList",
+            "Default" : "10.0.0.10"
         },
         "DomainNetBIOSName" : {
             "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
-            "Type"        : "String",
-            "Default"     : "EXAMPLE",
-            "MinLength"   : "1",
-            "MaxLength"   : "15",
+            "Type" : "String",
+            "Default" : "EXAMPLE",
+            "MinLength" : "1",
+            "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
         "Rdgw1PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the first RDGW instance will run.",
-            "Type"        : "AWS::EC2::Subnet::Id"
+            "Type" : "AWS::EC2::Subnet::Id"
         },
         "Rdgw2PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the second RDGW instance will run.",
-            "Type"        : "AWS::EC2::Subnet::Id"
+            "Type" : "AWS::EC2::Subnet::Id"
         },
         "Rdgw3PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the third RDGW instance will run.",
-            "Type"        : "AWS::EC2::Subnet::Id"
+            "Type" : "AWS::EC2::Subnet::Id"
         },
         "SecurityGroupIdDomainMember" : {
             "Description" : "ID of the security group for Active Directory domain members",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
+            "Type" : "AWS::EC2::SecurityGroup::Id"
         }
     },
-	"Resources" : {
-    	"RdgwSecurityGroupStack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_security_group.element",
-           	 	"Parameters" : {
-					"VPC" : { "Ref" : "VPC" },
+    "Resources" : {
+        "RdgwSecurityGroupStack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_security_group.element",
+                "Parameters" : {
+                    "VPC" : { "Ref" : "VPC" },
                     "UseELB" : "true"
-           		}
-			}
-      	},	
-    	"RdgwElbStack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "RdgwSecurityGroupStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_elb_public_ssl_443.element",
-           	 	"Parameters" : {
-					"SslCertificateName" : { "Ref" : "ElbSslCertificateName" },
-					"PublicSubnetIDs" : {
+                }
+            }
+        },	
+        "RdgwElbStack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "RdgwSecurityGroupStack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_elb_public_ssl_443.element",
+                "Parameters" : {
+                    "SslCertificateName" : { "Ref" : "ElbSslCertificateName" },
+                    "PublicSubnetIDs" : {
                         "Fn::Join" : [
                             ",",
                             { "Ref" : "ElbPublicSubnetIDs" }
                         ]
                     },
-					"SecurityGroupId" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwElbSecurityGroupId" ] }
-           		}
-			}
-      	},
-    	"Rdgw1Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "RdgwElbStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
-           	 	"Parameters" : {
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
-					"RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
+                    "SecurityGroupId" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwElbSecurityGroupId" ] }
+                }
+            }
+        },
+        "Rdgw1Stack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "RdgwElbStack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
+                "Parameters" : {
+                    "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
+                    "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
@@ -143,20 +143,20 @@
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw1PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
-					"SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
-					"VPC" : { "Ref" : "VPC" }
-           		}
-			}
-      	},
-    	"Rdgw2Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "RdgwElbStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
-           	 	"Parameters" : {
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
-					"RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
+                    "SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
+                    "VPC" : { "Ref" : "VPC" }
+                }
+            }
+        },
+        "Rdgw2Stack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "RdgwElbStack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
+                "Parameters" : {
+                    "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
+                    "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
@@ -170,20 +170,20 @@
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw2PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
-					"SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
-					"VPC" : { "Ref" : "VPC" }
-           		}
-			}
-      	},
-    	"Rdgw3Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "RdgwElbStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
-           	 	"Parameters" : {
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
-					"RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
+                    "SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
+                    "VPC" : { "Ref" : "VPC" }
+                }
+            }
+        },
+        "Rdgw3Stack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "RdgwElbStack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
+                "Parameters" : {
+                    "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
+                    "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
@@ -197,11 +197,11 @@
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw3PrivateSubnetID" },
                     "SecurityGroupIdDomainMember" : { "Ref" : "SecurityGroupIdDomainMember" },
-					"SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
-					"VPC" : { "Ref" : "VPC" }
-           		}
-			}
-      	}
+                    "SecurityGroupIdRDGW" : { "Fn::GetAtt" : [ "RdgwSecurityGroupStack", "Outputs.RdgwSecurityGroupId" ] },
+                    "VPC" : { "Ref" : "VPC" }
+                }
+            }
+        }
     },
     "Outputs" : {
         "RdgwLoadBalancerName" : {

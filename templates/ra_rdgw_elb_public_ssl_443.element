@@ -1,7 +1,7 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
-    "Parameters"               : {
+    "Description" : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
+    "Parameters" : {
         "SslCertificateName" : {
             "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have previously been loaded in AWS (via the command line).",
             "Type" : "String"
@@ -12,7 +12,7 @@
         },
         "SecurityGroupId" : {
             "Description" : "ID of the security group for ELB",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
+            "Type" : "AWS::EC2::SecurityGroup::Id"
         }
     },
     "Resources" : {
