@@ -7,7 +7,7 @@
             "Type" : "AWS::EC2::VPC::Id"
         },
         "ElbSslCertificateName" : {
-            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have previously been loaded in AWS (via the command line).",
+            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have been loaded previously in AWS ACM.",
             "Type" : "String"
         },
         "ElbPublicSubnetIDs" : {
@@ -54,7 +54,7 @@
             "Default" : "StackAdmin",
             "MinLength" : "5",
             "MaxLength" : "25",
-            "AllowedPattern" : "[a-zA-Z0-9]*"
+            "AllowedPattern" : "[a-zA-Z0-9_]*"
         },
         "DomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
