@@ -52,6 +52,9 @@ $ekuoids.add($serverauthoid)
 $ekuext = new-object -com "X509Enrollment.CX509ExtensionEnhancedKeyUsage.1"
 $ekuext.InitializeEncode($ekuoids)
 
+$sigoid = New-Object -ComObject X509Enrollment.CObjectId
+$sigoid.InitializeFromValue(([Security.Cryptography.Oid]"SHA256").Value)
+
 $cert = new-object -com "X509Enrollment.CX509CertificateRequestCertificate.1"
 $cert.InitializeFromPrivateKey(2, $key, "")
 $cert.Subject = $name
@@ -59,6 +62,7 @@ $cert.Issuer = $cert.Subject
 $cert.NotBefore = get-date
 $cert.NotAfter = $cert.NotBefore.AddDays(730)
 $cert.X509Extensions.Add($ekuext)
+$cert.SignatureInformation.HashAlgorithm = $sigoid
 $cert.Encode()
 
 $enrollment = new-object -com "X509Enrollment.CX509Enrollment.1"
