@@ -1,19 +1,20 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This templates deploys a Remote Desktop Gateway (RDGW) instance in an autoscale group behind an ELB, and joins the instance to a domain.",
-    "Parameters"               : {
+    "Description" : "This templates deploys a Remote Desktop Gateway (RDGW) instance in an autoscale group behind an ELB, and joins the instance to a domain.",
+    "Parameters" : {
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
+            "Type" : "AWS::EC2::KeyPair::KeyName"
         },
         "RdgwInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
+            "Type" : "String",
+            "Default" : "t2.micro",
             "AllowedValues" : [
                 "t2.micro",
                 "t2.small",
                 "t2.medium",
+                "t2.large",
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
@@ -33,57 +34,48 @@
         },
         "DomainJoinPassword" : {
             "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
-            "Type"        : "String",
-            "MinLength"   : "8",
-            "MaxLength"   : "32",
+            "Type" : "String",
+            "MinLength" : "8",
+            "MaxLength" : "32",
             "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "NoEcho"         : "true",
-            "Default"        : "Password123"
+            "NoEcho" : "true",
+            "Default" : "Password123"
         },
         "DomainJoinUser" : {
             "Description" : "User name for the account that will join the instance to the domain",
-            "Type"        : "String",
-            "Default"     : "StackAdmin",
-            "MinLength"   : "5",
-            "MaxLength"   : "25",
-            "AllowedPattern" : "[a-zA-Z0-9]*"
+            "Type" : "String",
+            "Default" : "StackAdmin",
+            "MinLength" : "5",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9_]*"
         },
         "DomainDNSName" : {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
-            "Type"        : "String",
-            "Default"     : "example.com",
-            "MinLength"   : "3",
-            "MaxLength"   : "25",
+            "Type" : "String",
+            "Default" : "example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
-        },
-        "DomainDNSServers" : {
-            "Description" : "Comma-separated list of IP addresses of DNS Servers. Commonly the Domain Controllers. (e.g. 10.0.0.10,10.0.64.10)",
-            "Type"        : "CommaDelimitedList",
-            "Default"     : "10.0.0.10"
         },
         "DomainNetBIOSName" : {
             "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
-            "Type"        : "String",
-            "Default"     : "EXAMPLE",
-            "MinLength"   : "1",
-            "MaxLength"   : "15",
+            "Type" : "String",
+            "Default" : "EXAMPLE",
+            "MinLength" : "1",
+            "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
         "PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the RDGW instance will run.",
-            "Type"        : "AWS::EC2::Subnet::Id"
-        },
-        "SecurityGroupIdDomainMember" : {
-            "Description" : "ID of the security group for Active Directory domain members",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
+            "Type" : "AWS::EC2::Subnet::Id"
         },
         "SecurityGroupIdRDGW" : {
             "Description" : "ID of the security group for RDGW instances",
-            "Type"        : "AWS::EC2::SecurityGroup::Id"
+            "Type" : "AWS::EC2::SecurityGroup::Id"
         },
         "VPC" : {
             "Description" : "VPC ID",
-            "Type"        : "AWS::EC2::VPC::Id"
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
     "Mappings" : {
@@ -95,6 +87,9 @@
                 "Arch" : "64"
             },
             "t2.medium" : {
+                "Arch" : "64"
+            },
+            "t2.large" : {
                 "Arch" : "64"
             },
             "c4.large" : {
@@ -112,31 +107,34 @@
         },
         "AWSRegionArch2AMI" : {
             "us-east-1" : {
-                "64" : "ami-5b9e6b30"
-            },
-            "us-west-2" : {
-                "64" : "ami-67c7ff57"
+                "64" : "ami-9a0558f0"
             },
             "us-west-1" : {
-                "64" : "ami-c5688281"
+                "64" : "ami-e7e78d87"
+            },
+            "us-west-2" : {
+                "64" : "ami-83a5bce2"
             },
             "eu-west-1" : {
-                "64" : "ami-c1740ab6"
+                "64" : "ami-7943ec0a"
             },
             "eu-central-1" : {
-                "64" : "ami-2e87be33"
-            },
-            "ap-southeast-1" : {
-                "64" : "ami-e0d1ebb2"
+                "64" : "ami-8a918ee6"
             },
             "ap-northeast-1" : {
-                "64" : "ami-c6b46dc6"
+                "64" : "ami-482a1b26"
             },
-            "sa-east-1" : {
-                "64" : "ami-b93bbba4"
+            "ap-northeast-2" : {
+                "64" : "ami-a2a06ecc"
+            },
+            "ap-southeast-1" : {
+                "64" : "ami-5869ab3b"
             },
             "ap-southeast-2" : {
-                "64" : "ami-f9760dc3"
+                "64" : "ami-9b4f15f8"
+            },
+            "sa-east-1" : {
+                "64" : "ami-6a981e06"
             }
         }
     },
@@ -162,7 +160,7 @@
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
-                            "RDGW-",
+                            "ra-rdgw-",
                             { "Ref" : "AWS::StackName" }
                         ]]},
                         "PropagateAtLaunch" : "true"
@@ -243,30 +241,7 @@
                     },
                     "join" : {
                         "commands" : {
-                            "10-set-dns-servers" : {
-                                "command" : {
-                                    "Fn::Join" : 
-                                    [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"",
-                                            "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
-                                            {
-                                                "Fn::Join" : 
-                                                [
-                                                    ",",
-                                                    {
-                                                        "Ref" : "DomainDNSServers"
-                                                    }
-                                                ]
-                                            },
-                                            " -Verbose\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion" : "30"
-                            },
-                            "20-join-domain" : {
+                            "10-join-domain" : {
                                 "command" : {
                                     "Fn::Join" : [
                                         "",
@@ -286,11 +261,11 @@
                                                 "Ref" : "DomainJoinUser"
                                             },
                                             "',",
-                                            "(ConvertTo-SecureString ",
+                                            "(ConvertTo-SecureString '",
                                             {
                                                 "Ref" : "DomainJoinPassword"
                                             },
-                                            " -AsPlainText -Force))) ",
+                                            "' -AsPlainText -Force))) ",
                                             " -Restart -Verbose\""
                                         ]
                                     ]
@@ -382,18 +357,13 @@
                         "DeviceName" : "/dev/sda1",
                         "Ebs"        : {
                             "VolumeSize" : "50",
-							"VolumeType" : "gp2",
+                            "VolumeType" : "gp2",
                             "DeleteOnTermination" : "true"
                         }
                     }
                 ],
-				"SecurityGroups" : [ 
-                    {
-                        "Ref" : "SecurityGroupIdDomainMember"
-                    },
-                    {
-                        "Ref" : "SecurityGroupIdRDGW"
-                    }
+                "SecurityGroups" : [
+                    { "Ref" : "SecurityGroupIdRDGW" }
                 ],
                 "UserData" : {
                     "Fn::Base64" : {
