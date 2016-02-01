@@ -131,7 +131,7 @@
       	},
         "Rdsh2Stack" : {
             "Type" : "AWS::CloudFormation::Stack",
-            "DependsOn" : "RdshElbStack",
+            "DependsOn" : "Rdsh1Stack",
             "Properties" : {
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdsh_private_autoscale_elb.element",
                 "Parameters" : {
@@ -152,7 +152,7 @@
       	},
         "Rdsh3Stack" : {
             "Type" : "AWS::CloudFormation::Stack",
-            "DependsOn" : "RdshElbStack",
+            "DependsOn" : "Rdsh1Stack",
             "Properties" : {
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdsh_private_autoscale_elb.element",
                 "Parameters" : {

@@ -149,6 +149,14 @@
                     "Timeout" : "PT30M"
                 }
             },
+            "UpdatePolicy" : {
+                "AutoScalingRollingUpdate" : {
+                    "MaxBatchSize" : "1",
+                    "MinInstancesInService" : "0",
+                    "WaitOnResourceSignals" : "true"
+                    "PauseTime" : "PT30M"
+                },
+            },
             "Properties" : {
                 "VPCZoneIdentifier" : [ { "Ref" : "PrivateSubnetID" } ],
                 "LaunchConfigurationName" : { "Ref" : "RdshLaunchConfig" },
