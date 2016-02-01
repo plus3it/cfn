@@ -3,8 +3,17 @@
     "Description" : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
     "Parameters" : {
         "SslCertificateName" : {
-            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have been loaded previously in AWS ACM.",
+            "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB. The cert must already exist in the service.",
             "Type" : "String"
+        },
+        "SslCertificateService" : {
+            "Description" : "The service hosting the SSL certificate. Must be ACM or IAM.",
+            "Type" : "String",
+            "Default" : "ACM",
+            "AllowedValues" : [
+                "ACM",
+                "IAM"
+            ]
         },
         "PublicSubnetIDs" : {
             "Description" : "A list of Public subnet IDs to attach to the load balancer.",
@@ -14,6 +23,9 @@
             "Description" : "ID of the security group for ELB",
             "Type" : "AWS::EC2::SecurityGroup::Id"
         }
+    },
+    "Conditions" : {
+        "UseACM" : { "Fn::Equals" : [ { "Ref" : "SslCertificateService" }, "ACM" ] }
     },
     "Resources" : {
         "ELB" : {
@@ -34,20 +46,40 @@
                         "LoadBalancerPort" : "443",
                         "Protocol" : "SSL",
                         "SSLCertificateId" : {
-                            "Fn::Join" : [
-                                ":",
-                                [
-                                    "arn:aws:acm",
-                                    { "Ref" : "AWS::Region" },
-                                    { "Ref":"AWS::AccountId" },
-                                    { "Fn::Join" : [
+                            "Fn::If" : [
+                                "UseACM",
+                                {
+                                    "Fn::Join" : [
+                                        ":",
+                                        [
+                                            "arn:aws:acm",
+                                            { "Ref" : "AWS::Region" },
+                                            { "Ref":"AWS::AccountId" },
+                                            { "Fn::Join" : [
+                                                "",
+                                                [
+                                                    "certificate/",
+                                                    { "Ref":"SslCertificateName" }
+                                                ]
+                                            ] }
+                                        ]
+                                    ]
+                                },
+                                {
+                                    "Fn::Join": [
                                         "",
                                         [
-                                            "certificate/",
-                                            { "Ref":"SslCertificateName" }
+                                            "arn:aws:iam::",
+                                            {
+                                                "Ref":"AWS::AccountId"
+                                            },
+                                            ":server-certificate/",
+                                            {
+                                                "Ref":"SslCertificateName"
+                                            }
                                         ]
-                                    ] }
-                                ]
+                                    ]
+                                }
                             ]
                         }
                     }

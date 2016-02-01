@@ -7,8 +7,17 @@
             "Type" : "AWS::EC2::VPC::Id"
         },
         "ElbSslCertificateName" : {
-            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have been loaded previously in AWS ACM.",
+            "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB. The cert must already exist in the service.",
             "Type" : "String"
+        },
+        "ElbSslCertificateService" : {
+            "Description" : "The service hosting the SSL certificate. Must be ACM or IAM.",
+            "Type" : "String",
+            "Default" : "ACM",
+            "AllowedValues" : [
+                "ACM",
+                "IAM"
+            ]
         },
         "ElbPublicSubnetIDs" : {
             "Description" : "A list of Public subnet IDs to attach to the load balancer.",
@@ -103,6 +112,7 @@
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_elb_public_ssl_443.element",
                 "Parameters" : {
                     "SslCertificateName" : { "Ref" : "ElbSslCertificateName" },
+                    "SslCertificateService" : { "Ref" : "ElbSslCertificateService" },
                     "PublicSubnetIDs" : {
                         "Fn::Join" : [
                             ",",
