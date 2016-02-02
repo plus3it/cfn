@@ -86,5 +86,12 @@ $SignOffShortcut.Description = "Sign Out"
 $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 
+# Install Chrome
+$ChromeUrl = "https://s3.amazonaws.com/app-chemistry/scripts/googlechromestandaloneenterprise64.msi"
+$ChromeInstaller = "${Env:Temp}\googlechromestandaloneenterprise64.msi"
+(new-object net.webclient).DownloadFile("${ChromeUrl}","${ChromeInstaller}")
+$ChromeParams = "/i `"${ChromeInstaller}`" /quiet /qn /norestart"
+$null = Start-Process -FilePath msiexec -ArgumentList ${ChromeParams} -NoNewWindow -PassThru -Wait
+
 # Restart
 Restart-Computer -Force
