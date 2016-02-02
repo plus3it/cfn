@@ -58,6 +58,11 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
+        "RdshAmiNameSearchString" : {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
+        },
         "Rdsh1PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the first RDSH instance will run.", 
             "Type"        : "AWS::EC2::Subnet::Id"
@@ -117,6 +122,7 @@
                 "Parameters" : {
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "AmiNameSearchString" : {"Ref" : "RdshAmiNameSearchString"},
                     "RdshInstanceType" : {"Ref" : "RdshInstanceType"},
                     "RdshElbName" : { "Fn::GetAtt" : [ "RdshElbStack", "Outputs.LoadBalancerName" ] },
                     "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },

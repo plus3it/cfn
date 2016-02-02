@@ -15,6 +15,11 @@
                 "B"
             ]
         },
+        "AmiNameSearchString" : {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
+        },
         "RdgwInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
             "Type" : "String",
@@ -87,67 +92,25 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
-    "Mappings" : {
-        "AWSInstanceType2Arch" : {
-            "t2.micro" : {
-                "Arch" : "64"
-            },
-            "t2.small" : {
-                "Arch" : "64"
-            },
-            "t2.medium" : {
-                "Arch" : "64"
-            },
-            "t2.large" : {
-                "Arch" : "64"
-            },
-            "c4.large" : {
-                "Arch" : "64"
-            },
-            "c4.xlarge" : {
-                "Arch" : "64"
-            },
-            "m4.large" : {
-                "Arch" : "64"
-            },
-            "m4.xlarge" : {
-                "Arch" : "64"
+    "Resources" : {
+        "AmiIdLookup": {
+            "Type": "Custom::AmiIdLookup",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::Join" : [
+                        ":",
+                        [
+                            "arn:aws:lambda",
+                            { "Ref" : "AWS::Region" },
+                            { "Ref" : "AWS::AccountId" },
+                            "function:cfn-look-up-ami-ids"
+                        ]
+                    ]
+                },
+                "Region": { "Ref" : "AWS::Region" },
+                "AmiNameSearchString": { "Ref" : "AmiNameSearchString" }
             }
         },
-        "AWSRegionArch2AMI" : {
-            "us-east-1" : {
-                "64" : "ami-9a0558f0"
-            },
-            "us-west-1" : {
-                "64" : "ami-e7e78d87"
-            },
-            "us-west-2" : {
-                "64" : "ami-83a5bce2"
-            },
-            "eu-west-1" : {
-                "64" : "ami-7943ec0a"
-            },
-            "eu-central-1" : {
-                "64" : "ami-8a918ee6"
-            },
-            "ap-northeast-1" : {
-                "64" : "ami-482a1b26"
-            },
-            "ap-northeast-2" : {
-                "64" : "ami-a2a06ecc"
-            },
-            "ap-southeast-1" : {
-                "64" : "ami-5869ab3b"
-            },
-            "ap-southeast-2" : {
-                "64" : "ami-9b4f15f8"
-            },
-            "sa-east-1" : {
-                "64" : "ami-6a981e06"
-            }
-        }
-    },
-    "Resources" : {
         "RdgwAutoScalingGroup" : {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "CreationPolicy" : {
@@ -346,23 +309,7 @@
                 }
             },
             "Properties" : {
-                "ImageId" : {
-                    "Fn::FindInMap" : [
-                        "AWSRegionArch2AMI",
-                        {
-                            "Ref" : "AWS::Region"
-                        },
-                        {
-                            "Fn::FindInMap" : [
-                                "AWSInstanceType2Arch",
-                                {
-                                    "Ref" : "RdgwInstanceType"
-                                },
-                                "Arch"
-                            ]
-                        }
-                    ]
-                },
+                "ImageId": { "Fn::GetAtt": [ "AmiIdLookup", "Id" ] },
                 "InstanceType" : {
                     "Ref" : "RdgwInstanceType"
                 },
