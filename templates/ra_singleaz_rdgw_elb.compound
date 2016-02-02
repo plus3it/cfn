@@ -23,6 +23,15 @@
             "Description" : "A list of Public subnet IDs to attach to the load balancer.",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
+        "ForceUpdateToggle" : {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" : [
+                "A",
+                "B"
+            ]
+        },
         "KeyPairName" : {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
@@ -121,6 +130,7 @@
             "Properties" : {
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_private_autoscale_elb.element",
                 "Parameters" : {
+                    "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
                     "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
                     "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
