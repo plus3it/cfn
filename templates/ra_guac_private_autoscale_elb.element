@@ -20,6 +20,15 @@
                 "m4.xlarge"
             ]
         },
+        "ForceUpdateToggle" : {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" : [
+                "A",
+                "B"
+            ]
+        },
         "DesiredCapacity" : {
             "Description" : "The number of instances the autoscale group will spin up initially",
             "Type" : "String",
@@ -350,6 +359,10 @@
                             "",
                             [
                                 "#!/bin/bash -xe\n",
+
+                                "# CFN LaunchConfig Update Toggle: ",
+                                { "Ref" : "ForceUpdateToggle" },
+                                "\n",
 
                                 "# Get pip\n",
                                 "curl https://bootstrap.pypa.io/get-pip.py | python\n",

@@ -6,6 +6,15 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
+        "ForceUpdateToggle" : {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" : [
+                "A",
+                "B"
+            ]
+        },
         "RdshInstanceType" : {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
             "Type" : "String",
@@ -398,6 +407,9 @@
                             "",
                             [
                                 "<script>\n",
+                                "REM CFN LaunchConfig Update Toggle: ",
+                                { "Ref" : "ForceUpdateToggle" },
+                                "\n",
                                 "cfn-init.exe -v -c config ",
                                 "   --stack ", { "Ref" : "AWS::StackName" },
                                 "   --resource RdshLaunchConfig ",

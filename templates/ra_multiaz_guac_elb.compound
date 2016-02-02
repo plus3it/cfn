@@ -27,6 +27,15 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
+        "ForceUpdateToggle" : {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" : [
+                "A",
+                "B"
+            ]
+        },
         "DesiredCapacity" : {
             "Description" : "The number of Guacamole instances the autoscale group will spin up initially",
             "Type" : "String",
@@ -117,6 +126,7 @@
             "Properties" : {
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_private_autoscale_elb.element",
                 "Parameters" : {
+                    "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
                     "InstanceType" : {"Ref" : "InstanceType"},
                     "MinCapacity" : {"Ref" : "MinCapacity"},
