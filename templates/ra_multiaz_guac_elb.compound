@@ -54,6 +54,11 @@
             "MinLength" : "1",
             "Default" : "1"
         },
+        "GuacAmiNameSearchString" : {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "amzn-ami-hvm-*.x86_64-gp2"
+        },
         "GuacLdapServer" : {
             "Description" : "Name of LDAP server Guacamole will authenticate against",
             "Type" : "String",
@@ -128,6 +133,7 @@
                 "Parameters" : {
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "AmiNameSearchString" : {"Ref" : "GuacAmiNameSearchString"},
                     "InstanceType" : {"Ref" : "InstanceType"},
                     "MinCapacity" : {"Ref" : "MinCapacity"},
                     "MaxCapacity" : {"Ref" : "MaxCapacity"},

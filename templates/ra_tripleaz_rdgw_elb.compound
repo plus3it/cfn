@@ -90,6 +90,11 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
+        "RdgwAmiNameSearchString" : {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
+        },
         "Rdgw1PrivateSubnetID" : {
             "Description" : "Private Subnet ID where the first RDGW instance will run.",
             "Type" : "AWS::EC2::Subnet::Id"
@@ -140,6 +145,7 @@
                 "Parameters" : {
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "AmiNameSearchString" : {"Ref" : "RdgwAmiNameSearchString"},
                     "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
                     "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
@@ -161,6 +167,7 @@
                 "Parameters" : {
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "AmiNameSearchString" : {"Ref" : "RdgwAmiNameSearchString"},
                     "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
                     "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
@@ -182,6 +189,7 @@
                 "Parameters" : {
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "AmiNameSearchString" : {"Ref" : "RdgwAmiNameSearchString"},
                     "RdgwInstanceType" : {"Ref" : "InstanceTypeRdgw"},
                     "RdgwElbName" : { "Fn::GetAtt" : [ "RdgwElbStack", "Outputs.LoadBalancerName" ] },
                     "RemoteAccessUserGroup" : { "Ref" : "RemoteAccessUserGroup" },
