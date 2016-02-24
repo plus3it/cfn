@@ -440,16 +440,29 @@ log "Adding a proxy-directive to Apache, /etc/httpd/conf.d/Guacamole-proxy.conf"
     printf "\tProxyPass http://localhost:8080/guacamole/"
     printf " flushpackets=on\n"
     printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
-    printf "\tProxyPassReverseCookiePath /guacamole/ /guacamole/\n"
+    printf "</Location>\n"
+    printf "\n"
+    printf "<Location /websocket-tunnel>\n"
+    printf "\tOrder allow,deny\n"
+    printf "\tAllow from all\n"
+    printf "\tProxyPass ws://localhost:8080/guacamole/websocket-tunnel\n"
+    printf "\tProxyPassReverse ws://localhost:8080/guacamole/websocket-tunnel\n"
     printf "</Location>\n"
     printf "\n"
     printf "<Location /guacamole/websocket-tunnel>\n"
     printf "\tOrder allow,deny\n"
     printf "\tAllow from all\n"
-    printf "\tProxyPass ws://localhost:8080//guacamole/websocket-tunnel\n"
-    printf "\tProxyPassReverse ws://localhost:8080//guacamole/websocket-tunnel\n"
+    printf "\tProxyPass ws://localhost:8080/guacamole/websocket-tunnel\n"
+    printf "\tProxyPassReverse ws://localhost:8080/guacamole/websocket-tunnel\n"
     printf "</Location>\n"
 ) > /etc/httpd/conf.d/Guacamole-proxy.conf
+
+
+log "Adding websocket proxy to Apache"
+(
+    printf "LoadModule proxy_module modules/mod_proxy.so\n"
+    printf "LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so\n"
+) > /etc/httpd/conf.modules.d/00-guacamole.conf
 
 
 log "Link guacamole to /etc/guacamole"
