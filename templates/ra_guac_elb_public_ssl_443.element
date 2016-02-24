@@ -39,6 +39,9 @@
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
+                "ConnectionSettings" : {
+                    "IdleTimeout" : "900"
+                },
                 "LBCookieStickinessPolicy" : [
                     {
                         "PolicyName" : "guac-lb-cookie-policy"
