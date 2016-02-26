@@ -35,7 +35,7 @@
                 "HealthCheck" : {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
-                    "Target" : "HTTP:8080/guacamole/",
+                    "Target" : "HTTP:8080/",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },

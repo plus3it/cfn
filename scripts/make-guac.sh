@@ -291,14 +291,14 @@ done
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
 curl -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
-    -o /var/lib/tomcat7/webapps/guacamole.war
+    -o /var/lib/tomcat7/webapps/ROOT.war
 
 
 # Gotta make SELinux happy...
 if [[ $(getenforce) = "Enforcing" ]] || [[ $(getenforce) = "Permissive" ]]
 then
     chcon -R --reference=/var/lib/tomcat7/webapps \
-        /var/lib/tomcat7/webapps/guacamole.war
+        /var/lib/tomcat7/webapps/ROOT.war
     if [[ $(getsebool httpd_can_network_relay | \
         cut -d ">" -f 2 | sed 's/[ ]*//g') = "off" ]]
     then
@@ -464,18 +464,6 @@ echo "setenv GUACAMOLE_HOME /etc/guacamole" > /etc/profile.d/guacamole.csh
 
 log "Setting SEL contexts on shell-init files"
 chcon system_u:object_r:bin_t:s0 /etc/profile.d/guacamole.*
-
-
-log "Link guacamole to /etc/guacamole"
-if [[ ! -d /usr/share/tomcat7/.guacamole ]]
-then
-    mkdir /usr/share/tomcat7/.guacamole
-fi
-cd /usr/share/tomcat7/.guacamole
-for FILE in /etc/guacamole/*
-do
-    ln -sf ${FILE}
-done
 
 
 log "Ensuring freerdp plugins are linked properly"
