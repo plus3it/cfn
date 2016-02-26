@@ -197,6 +197,7 @@ GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
 GUAC_SOURCE="http://sourceforge.net/projects/guacamole/files/current/source"
 GUAC_BINARY="http://sourceforge.net/projects/guacamole/files/current/binary"
 GUAC_EXTENSIONS="http://sourceforge.net/projects/guacamole/files/current/extensions"
+FREERDP_SOURCE="http://pub.freerdp.com/releases/freerdp-1.1.0-beta+2013071101.tar.gz"
 ADDUSER="/usr/sbin/useradd"
 MODUSER="/usr/sbin/usermod"
 
@@ -219,15 +220,43 @@ yum-config-manager --enable epel base
 log "Installing OS standard Tomcat and Apache"
 yum install -y httpd24 tomcat7
 
+log "Installing libraries to build freerdp from source"
+yum install gcc cmake openssl-devel libX11-devel libXext-devel \
+    libXinerama-devel libXcursor-devel libXi-devel libXdamage-devel \
+    libXv-devel libxkbfile-devel alsa-lib-devel cups-devel ffmpeg-devel \
+    glib2-devel
+
+# Build freerdp
+cd /root
+FREERDP_FILENAME=$(echo ${FREERDP_SOURCE} | awk -F'/' '{ print ( $(NF) ) }')
+FREERDP_FILEBASE=$(basename -s .tar.gz ${FREERDP_FILENAME})
+rm -rf "${FREERDP_BASENAME}"
+log "Downloading and extracting ${FREERDP_FILENAME}"
+(curl -s -L "${FREERDP_SOURCE}" | tar -xzv) || \
+    die "Could not download and extract ${FREERDP_FILENAME}"
+cd "${FREERDP_FILEBASE}"
+log "Building ${FREERDP_FILEBASE} from source"
+cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_SSE2=ON -DWITH_DEBUG_ALL=ON .
+make
+make install
+(
+    printf "/usr/local/lib/freerdp\n"
+    printf "/usr/local/lib64/freerdp\n"
+    printf "/usr/local/lib\n"
+    printf "/usr/local/lib64\n"
+) > /etc/ld.so.conf.d/freerdp.conf
+ldconfig
+
+
 log "Installing libraries to build guacamole from source"
 yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
-    uuid-devel freerdp-devel pango-devel libssh2-devel pulseaudio-libs-devel \
-    openssl-devel libvorbis-devel dejavu-sans-mono-fonts freerdp-plugins \
-    libwebp-devel
+    uuid-devel pango-devel libssh2-devel pulseaudio-libs-devel openssl-devel \
+    libvorbis-devel dejavu-sans-mono-fonts libwebp-devel \
 
 # Build guacamole-server
 cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
+rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
 (curl -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz/download" | tar -xzv) || \
     die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
@@ -237,6 +266,7 @@ log "Building ${GUAC_FILEBASE} from source"
 ./configure --with-init-dir=/etc/init.d
 make
 make install
+ldconfig
 
 log "Enabling services to start at next boot"
 for SVC in httpd tomcat7 guacd
@@ -314,7 +344,7 @@ log "Writing /etc/guacamole/guacd.conf"
 log "Writing /etc/rsyslog.d/00-guacd.conf"
 (
     printf "# Log guacd generated log messages to file\n"
-    printf ":syslogtag, startswith, "guacd" /var/log/guacd.log\n\n"
+    printf ":syslogtag, startswith, \"guacd\" /var/log/guacd.log\n\n"
     printf "# comment out the following line to allow GUACD messages through.\n"
     printf "# Doing so means you'll also get GUACD messages in /var/log/syslog\n"
     printf "& ~\n"
@@ -500,6 +530,15 @@ for FILE in /usr/local/lib/freerdp/*
 do
     ln -sf ${FILE}
 done
+if [[ ! -d /usr/local/lib64/freerdp ]]
+then
+    mkdir /usr/local/lib64/freerdp
+fi
+cd /usr/local/lib64/freerdp
+for FILE in /usr/local/lib/freerdp/*
+do
+    ln -sf ${FILE}
+done
 
 
 log "Creating directory for file transfers"
@@ -511,7 +550,7 @@ fi
 
 # Start services
 log "Attempting to start proxy-related services"
-for SVC in guacd tomcat7 httpd
+for SVC in rsyslog guacd tomcat7 httpd
 do
     log "Stopping and starting ${SVC}"
     /sbin/service ${SVC} stop && /sbin/service ${SVC} start
