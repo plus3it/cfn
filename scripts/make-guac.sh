@@ -217,8 +217,8 @@ curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG
 log "Enabling the EPEL and base repos"
 yum-config-manager --enable epel base
 
-log "Installing OS standard Tomcat and Apache"
-yum install -y httpd24 tomcat7
+log "Installing OS standard Tomcat"
+yum install -y tomcat7
 
 log "Installing libraries to build freerdp from source"
 yum install gcc cmake openssl-devel libX11-devel libXext-devel \
@@ -269,7 +269,7 @@ make install
 ldconfig
 
 log "Enabling services to start at next boot"
-for SVC in httpd tomcat7 guacd
+for SVC in tomcat7 guacd
 do
     chkconfig ${SVC} on
 done
@@ -466,48 +466,6 @@ log "Setting SEL contexts on shell-init files"
 chcon system_u:object_r:bin_t:s0 /etc/profile.d/guacamole.*
 
 
-log "Adding a proxy-directive to Apache, /etc/httpd/conf.d/Guacamole-proxy.conf"
-(
-    printf "<Location />\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass http://localhost:8080/guacamole/"
-    printf " flushpackets=on\n"
-    printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
-    printf "\tProxyPassReverseCookiePath /guacamole/ /\n"
-    printf "</Location>\n"
-    printf "\n"
-    printf "<Location /guacamole/>\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass http://localhost:8080/guacamole/"
-    printf " flushpackets=on\n"
-    printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
-    printf "</Location>\n"
-    printf "\n"
-    printf "<Location /websocket-tunnel>\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass ws://localhost:8080/guacamole/websocket-tunnel\n"
-    printf "\tProxyPassReverse ws://localhost:8080/guacamole/websocket-tunnel\n"
-    printf "</Location>\n"
-    printf "\n"
-    printf "<Location /guacamole/websocket-tunnel>\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass ws://localhost:8080/guacamole/websocket-tunnel\n"
-    printf "\tProxyPassReverse ws://localhost:8080/guacamole/websocket-tunnel\n"
-    printf "</Location>\n"
-) > /etc/httpd/conf.d/Guacamole-proxy.conf
-
-
-log "Adding websocket proxy to Apache"
-(
-    printf "LoadModule proxy_module modules/mod_proxy.so\n"
-    printf "LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so\n"
-) > /etc/httpd/conf.modules.d/00-guacamole.conf
-
-
 log "Link guacamole to /etc/guacamole"
 if [[ ! -d /usr/share/tomcat7/.guacamole ]]
 then
@@ -550,7 +508,7 @@ fi
 
 # Start services
 log "Attempting to start proxy-related services"
-for SVC in rsyslog guacd tomcat7 httpd
+for SVC in rsyslog guacd tomcat7
 do
     log "Stopping and starting ${SVC}"
     /sbin/service ${SVC} stop && /sbin/service ${SVC} start
