@@ -305,7 +305,20 @@ log "Writing /etc/guacamole/logback.xml"
     printf "\n"
     printf "</configuration>\n"
 ) > /etc/guacamole/logback.xml
-
+log "Writing /etc/guacamole/guacd.conf"
+(
+    printf "# guacd configuration file\n\n"
+    printf "[daemon]\n"
+    printf "log_level = debug\n"
+) > /etc/guacamole/guacd.conf
+log "Writing /etc/rsyslog.d/00-guacd.conf"
+(
+    printf "# Log guacd generated log messages to file\n"
+    printf ":syslogtag, startswith, "guacd" /var/log/guacd.log\n\n"
+    printf "# comment out the following line to allow GUACD messages through.\n"
+    printf "# Doing so means you'll also get GUACD messages in /var/log/syslog\n"
+    printf "& ~\n"
+) > /etc/rsyslog.d/00-guacd.conf
 
 if [ -n "${GUAC_USERNAME}" ]
 then
