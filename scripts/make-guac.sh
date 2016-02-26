@@ -16,7 +16,7 @@
 #
 #################################################################
 __ScriptName="make-guac.sh"
-__GuacVersion="0.9.7"
+__GuacVersion="0.9.9"
 
 log()
 {
@@ -197,7 +197,8 @@ GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
 GUAC_SOURCE="http://sourceforge.net/projects/guacamole/files/current/source"
 GUAC_BINARY="http://sourceforge.net/projects/guacamole/files/current/binary"
 GUAC_EXTENSIONS="http://sourceforge.net/projects/guacamole/files/current/extensions"
-FREERDP_SOURCE="http://pub.freerdp.com/releases/freerdp-1.1.0-beta+2013071101.tar.gz"
+FREERDP_REPO="git://github.com/FreeRDP/FreeRDP.git"
+FREERDP_BRANCH="stable-1.1"
 ADDUSER="/usr/sbin/useradd"
 MODUSER="/usr/sbin/usermod"
 
@@ -220,21 +221,21 @@ yum-config-manager --enable epel base
 log "Installing OS standard Tomcat"
 yum install -y tomcat7
 
-log "Installing libraries to build freerdp from source"
-yum install gcc cmake openssl-devel libX11-devel libXext-devel \
+log "Installing utils and libraries to build freerdp from source"
+yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
     libXinerama-devel libXcursor-devel libXi-devel libXdamage-devel \
     libXv-devel libxkbfile-devel alsa-lib-devel cups-devel ffmpeg-devel \
     glib2-devel
 
 # Build freerdp
 cd /root
-FREERDP_FILENAME=$(echo ${FREERDP_SOURCE} | awk -F'/' '{ print ( $(NF) ) }')
-FREERDP_FILEBASE=$(basename -s .tar.gz ${FREERDP_FILENAME})
-rm -rf "${FREERDP_BASENAME}"
-log "Downloading and extracting ${FREERDP_FILENAME}"
-(curl -s -L "${FREERDP_SOURCE}" | tar -xzv) || \
-    die "Could not download and extract ${FREERDP_FILENAME}"
-cd "${FREERDP_FILEBASE}"
+FREERDP_BASE=$(basename -s .git ${FREERDP_REPO})
+rm -rf "${FREERDP_BASE}"
+git clone "${FREERDP_REPO}" || \
+    die "Could not clone ${FREERDP_REPO}"
+cd "${FREERDP_BASE}"
+git checkout "${FREERDP_BRANCH}" || \
+    die "Could not checkout branch ${FREERDP_BRANCH}"
 log "Building ${FREERDP_FILEBASE} from source"
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_SSE2=ON -DWITH_DEBUG_ALL=ON .
 make
