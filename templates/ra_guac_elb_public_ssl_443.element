@@ -35,9 +35,12 @@
                 "HealthCheck" : {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
-                    "Target" : "HTTP:80/guacamole/",
+                    "Target" : "HTTP:8080/",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
+                },
+                "ConnectionSettings" : {
+                    "IdleTimeout" : "900"
                 },
                 "LBCookieStickinessPolicy" : [
                     {
@@ -46,7 +49,7 @@
                 ],
                 "Listeners" : [
                     {
-                        "InstancePort" : "80",
+                        "InstancePort" : "8080",
                         "InstanceProtocol" : "HTTP",
                         "LoadBalancerPort" : "443",
                         "PolicyNames" : [
