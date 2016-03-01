@@ -1,94 +1,66 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This element creates a VPC network with an Internet Gateway.",
-    "Parameters"               : {
-        "CIDRVPC"          : {
+    "Description" : "This element creates a VPC network with an Internet Gateway.",
+    "Parameters" :
+    {
+        "CIDRVPC" :
+        {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
-            "Type"        : "String",
-            "Default"     : "10.0.0.0/16",
+            "Type" : "String",
+            "Default" : "10.0.0.0/16",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         }
     },
-    "Resources" : {
-        "VPC" : {
+    "Resources" :
+    {
+        "VPC" :
+        {
             "Type" : "AWS::EC2::VPC",
-            "Properties" : {
-                "CidrBlock" : {
-                    "Ref" : "CIDRVPC"
-                },
+            "Properties" :
+            {
+                "CidrBlock" : { "Ref" : "CIDRVPC" },
                 "EnableDnsSupport" : "true",
                 "EnableDnsHostnames" : "true",
-                "Tags"      : [
-                    {
-                        "Key" : "Application",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
-                    },
-                    {
-                        "Key" : "Network",
-                        "Value" : "Public"
-                    },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
+                        "Value" : { "Ref" : "AWS::StackName" }
                     }
                 ]
             }
         },
-        "InternetGateway" : {
+        "InternetGateway" :
+        {
             "Type" : "AWS::EC2::InternetGateway",
-            "Properties" : {
-                "Tags" : [
-                    {
-                        "Key" : "Application",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
-                    },
-                    {
-                        "Key" : "Network",
-                        "Value" : "Public"
-                    },
+            "Properties" :
+            {
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
+                        "Value" : { "Ref" : "AWS::StackName" }
                     }
                 ]
             }
         },
-        "AttachGateway"   : {
+        "AttachGateway" :
+        {
             "Type" : "AWS::EC2::VPCGatewayAttachment",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "InternetGatewayId" : {
-                    "Ref" : "InternetGateway"
-                }
+            "Properties" :
+            {
+                "VpcId" : { "Ref" : "VPC" },
+                "InternetGatewayId" : { "Ref" : "InternetGateway" }
             }
         },
-        "PublicRouteTable"   : {
+        "PublicRouteTable" :
+        {
             "Type" : "AWS::EC2::RouteTable",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "Tags"  : [
-                    {
-                        "Key" : "Application",
-                        "Value" : {
-                            "Ref" : "AWS::StackName"
-                        }
-                    },
-                    {
-                        "Key" : "Network",
-                        "Value" : "Public"
-                    },
+            "Properties" :
+            {
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
@@ -99,43 +71,38 @@
                 ]
             }
         },
-        "PublicRoute"        : {
+        "PublicRoute" :
+        {
             "Type" : "AWS::EC2::Route",
             "DependsOn" : "AttachGateway",
-            "Properties" : {
-                "RouteTableId" : {
-                    "Ref" : "PublicRouteTable"
-                },
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "PublicRouteTable" },
                 "DestinationCidrBlock" : "0.0.0.0/0",
-                "GatewayId"            : {
-                    "Ref" : "InternetGateway"
-                }
+                "GatewayId" : { "Ref" : "InternetGateway" }
             }
         }
     },
-    "Outputs" : {
-        "VPC" : {
-            "Value" : {
-                "Ref" : "VPC"
-            },
+    "Outputs" :
+    {
+        "VPC" :
+        {
+            "Value" : { "Ref" : "VPC" },
             "Description" : "VPC ID"
         },
-        "VPCCIDR" : {
-            "Value" : { 
-                "Ref": "CIDRVPC" 
-            },
+        "VPCCIDR" :
+        {
+            "Value" : { "Ref": "CIDRVPC"  },
             "Description" : "VPC CIDR"
         },
-        "InternetGatewayId" : {
-            "Value" : { 
-                "Ref": "InternetGateway" 
-            },
+        "InternetGatewayId" :
+        {
+            "Value" : {  "Ref": "InternetGateway"  },
             "Description" : "ID of the Internet Gateway"
         },
-        "PublicRouteTableId" : {
-            "Value" : {
-                "Ref" : "PublicRouteTable"
-            },
+        "PublicRouteTableId" :
+        {
+            "Value" : { "Ref" : "PublicRouteTable" },
             "Description" : "Route Table ID for Public Subnet"
         }
     }

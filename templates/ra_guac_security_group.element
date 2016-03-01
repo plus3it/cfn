@@ -1,34 +1,45 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description" : "This templates creates one security group for Guacmole instances, and one for their load balancer",
-    "Parameters" : {
-        "UseELB" : {
+    "Parameters" :
+    {
+        "UseELB" :
+        {
             "Description" : "Set to true if using an ELB in front of Guacamole; otherwise set to false",
-            "Type"        : "String",
-            "Default"     : "true",
-            "AllowedValues" : [ "true", "false" ]
+            "Type" : "String",
+            "Default" : "true",
+            "AllowedValues" :
+            [
+                "true",
+                "false"
+            ]
         },
-        "VPC" : {
+        "VPC" :
+        {
             "Description" : "VPC ID",
             "Type"        : "AWS::EC2::VPC::Id"
         }
     },
-    "Conditions" : {
+    "Conditions" :
+    {
         "UseELB" : { "Fn::Equals" : [ { "Ref" : "UseELB" }, "true" ] },
         "NoELB": { "Fn::Equals" : [ { "Ref" : "UseELB" }, "false" ] }
     },
-    "Resources" : {
-        "GuacSecurityGroup" : {
+    "Resources" :
+    {
+        "GuacSecurityGroup" :
+        {
             "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupDescription" : "Enable Guacamole remote access",
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "Tags" : [
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
+                        "Value" :
+                        { "Fn::Join" : ["", [
                             "ra-guac-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
@@ -36,10 +47,12 @@
                 ]
             }
         },
-        "PublicToGuacIngressTcp8080" : {
+        "PublicToGuacIngressTcp8080" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "NoELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "GuacSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort"   : "8080",
@@ -47,10 +60,12 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToGuacIngressTcp80" : {
+        "ElbToGuacIngressTcp80" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "GuacSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort"   : "8080",
@@ -58,18 +73,20 @@
                 "SourceSecurityGroupId" : { "Ref": "GuacElbSecurityGroup" }
             }
         },
-        "GuacElbSecurityGroup" : {
+        "GuacElbSecurityGroup" :
+        {
             "Type" : "AWS::EC2::SecurityGroup",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupDescription" : "Enable Guacamole remote access from the Internet",
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "Tags" : [
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
+                        "Value" :
+                        { "Fn::Join" : ["", [
                             "ra-guac-elb-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
@@ -77,10 +94,12 @@
                 ]
             }
         },
-        "PublicToElbIngressTcp443" : {
+        "PublicToElbIngressTcp443" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "GuacElbSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort"   : "443",
@@ -88,10 +107,12 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToGuacEgressTcp80" : {
+        "ElbToGuacEgressTcp80" :
+        {
             "Type" : "AWS::EC2::SecurityGroupEgress",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "GuacElbSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort"   : "8080",
@@ -100,18 +121,17 @@
             }
         }
     },
-    "Outputs" : {
-        "GuacSecurityGroupId" : {
-            "Value" : {
-                "Ref" : "GuacSecurityGroup"
-            },
+    "Outputs" :
+    {
+        "GuacSecurityGroupId" :
+        {
+            "Value" : { "Ref" : "GuacSecurityGroup" },
             "Description" : "Security Group ID for Guacamole instances"
         },
-        "GuacElbSecurityGroupId" : {
+        "GuacElbSecurityGroupId" :
+        {
             "Condition" : "UseELB",
-            "Value" : {
-                "Ref" : "GuacElbSecurityGroup"
-            },
+            "Value" : { "Ref" : "GuacElbSecurityGroup" },
             "Description" : "Security Group ID for the Guacamole Elastic Load Balancer"
         }
     }

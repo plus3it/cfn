@@ -1,514 +1,593 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This element creates 2 security groups for an Active Directory domain -- one for Domain Controllers and one for Domain Members.",
-    "Parameters"               : {
-        "CIDRVPC"          : {
+    "Description" : "This element creates 2 security groups for an Active Directory domain -- one for Domain Controllers and one for Domain Members.",
+    "Parameters" :
+    {
+        "CIDRVPC" :
+        {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
-            "Type"        : "String",
-            "Default"     : "10.0.0.0/16",
+            "Type" : "String",
+            "Default" : "10.0.0.0/16",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "VPC" : {
+        "VPC" :
+        {
             "Description" : "VPC ID",
-            "Type"        : "AWS::EC2::VPC::Id"
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
-    "Resources" : {
-        "DomainControllerSG" : {
+    "Resources" :
+    {
+        "DomainControllerSG" :
+        {
             "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupDescription" : "Domain Controller",
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "SecurityGroupIngress" : [
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" :
+                [
                     {
                         "IpProtocol" : "tcp",
-                        "FromPort"   : "53",
-                        "ToPort"     : "53",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRVPC"
-                        }
+                        "FromPort" : "53",
+                        "ToPort" : "53",
+                        "CidrIp" : { "Ref" : "CIDRVPC" }
                     },
                     {
                         "IpProtocol" : "udp",
-                        "FromPort"   : "53",
-                        "ToPort"     : "53",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRVPC"
-                        }
-                    },
-                    {
-                        "IpProtocol" : "icmp",
-                        "FromPort"   : "-1",
-                        "ToPort"     : "-1",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRVPC"
-                        }
+                        "FromPort" : "53",
+                        "ToPort" : "53",
+                        "CidrIp" : { "Ref" : "CIDRVPC" }
                     }
                 ],
-                "Tags" : [
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
-                            "DomainControllers-",
+                        "Value" :
+                        { "Fn::Join" : ["", [
+                            "DomainController-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
                     }
                 ]
             }
         },
-        "DC2DCIngressTcp389" : {
+        "DC2DCIngressTcp389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "389",
-                "ToPort"     : "389",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "389",
+                "ToPort" : "389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp389" : {
+        "DC2DCIngressUdp389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "389",
-                "ToPort"     : "389",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "389",
+                "ToPort" : "389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp636" : {
+        "DC2DCIngressTcp636" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "636",
-                "ToPort"     : "636",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "636",
+                "ToPort" : "636",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp3268to3269" : {
+        "DC2DCIngressTcp3268to3269" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "3268",
-                "ToPort"     : "3269",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "3268",
+                "ToPort" : "3269",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp88" : {
+        "DC2DCIngressTcp88" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "88",
-                "ToPort"     : "88",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "88",
+                "ToPort" : "88",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp88" : {
+        "DC2DCIngressUdp88" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "88",
-                "ToPort"     : "88",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "88",
+                "ToPort" : "88",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp53" : {
+        "DC2DCIngressTcp53" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "53",
-                "ToPort"     : "53",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "53",
+                "ToPort" : "53",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp53" : {
+        "DC2DCIngressUdp53" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "53",
-                "ToPort"     : "53",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "53",
+                "ToPort" : "53",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp445" : {
+        "DC2DCIngressTcp445" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "445",
-                "ToPort"     : "445",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "445",
+                "ToPort" : "445",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp445" : {
+        "DC2DCIngressUdp445" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "445",
-                "ToPort"     : "445",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "445",
+                "ToPort" : "445",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp135" : {
+        "DC2DCIngressTcp135" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "135",
-                "ToPort"     : "135",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "135",
+                "ToPort" : "135",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressDynamicTCP" : {
+        "DC2DCIngressDynamicTCP" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "49152",
-                "ToPort"     : "65535",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "49152",
+                "ToPort" : "65535",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp5722" : {
+        "DC2DCIngressTcp5722" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "5722",
-                "ToPort"     : "5722",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "5722",
+                "ToPort" : "5722",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp123" : {
+        "DC2DCIngressUdp123" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "123",
-                "ToPort"     : "123",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "123",
+                "ToPort" : "123",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp464" : {
+        "DC2DCIngressTcp464" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "464",
-                "ToPort"     : "464",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "464",
+                "ToPort" : "464",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp464" : {
+        "DC2DCIngressUdp464" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "464",
-                "ToPort"     : "464",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "464",
+                "ToPort" : "464",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressDynamicUDP" : {
+        "DC2DCIngressDynamicUDP" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "49152",
-                "ToPort"     : "65535",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "49152",
+                "ToPort" : "65535",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp137to138" : {
+        "DC2DCIngressUdp137to138" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "137",
-                "ToPort"     : "138",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "137",
+                "ToPort" : "138",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp9389" : {
+        "DC2DCIngressTcp9389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "9389",
-                "ToPort"     : "9389",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "9389",
+                "ToPort" : "9389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp139" : {
+        "DC2DCIngressTcp139" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "139",
-                "ToPort"     : "139",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "139",
+                "ToPort" : "139",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressUdp5355" : {
+        "DC2DCIngressUdp5355" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "5355",
-                "ToPort"     : "5355",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "5355",
+                "ToPort" : "5355",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DCIngressTcp5985to5986" : {
+        "DC2DCIngressTcp5985to5986" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "5985",
-                "ToPort"     : "5986",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "5985",
+                "ToPort" : "5986",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DomainMember2DCIngressTcp389" : {
+        "DomainMember2DCIngressTcp389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "389",
-                "ToPort"     : "389",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "389",
+                "ToPort" : "389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp389" : {
+        "DomainMember2DCIngressUdp389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "389",
-                "ToPort"     : "389",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "389",
+                "ToPort" : "389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp636" : {
+        "DomainMember2DCIngressTcp636" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "636",
-                "ToPort"     : "636",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "636",
+                "ToPort" : "636",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp3268to3269" : {
+        "DomainMember2DCIngressTcp3268to3269" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "3268",
-                "ToPort"     : "3269",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "3268",
+                "ToPort" : "3269",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp88" : {
+        "DomainMember2DCIngressTcp88" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "88",
-                "ToPort"     : "88",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "88",
+                "ToPort" : "88",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp88" : {
+        "DomainMember2DCIngressUdp88" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "88",
-                "ToPort"     : "88",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "88",
+                "ToPort" : "88",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp53" : {
+        "DomainMember2DCIngressTcp53" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "53",
-                "ToPort"     : "53",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "53",
+                "ToPort" : "53",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp53" : {
+        "DomainMember2DCIngressUdp53" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "53",
-                "ToPort"     : "53",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "53",
+                "ToPort" : "53",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp445" : {
+        "DomainMember2DCIngressTcp445" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "445",
-                "ToPort"     : "445",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "445",
+                "ToPort" : "445",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp445" : {
+        "DomainMember2DCIngressUdp445" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "445",
-                "ToPort"     : "445",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "445",
+                "ToPort" : "445",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp135" : {
+        "DomainMember2DCIngressTcp135" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "135",
-                "ToPort"     : "135",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "135",
+                "ToPort" : "135",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressDynamicTCP" : {
+        "DomainMember2DCIngressDynamicTCP" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "49152",
-                "ToPort"     : "65535",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "49152",
+                "ToPort" : "65535",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp123" : {
+        "DomainMember2DCIngressUdp123" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "123",
-                "ToPort"     : "123",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "123",
+                "ToPort" : "123",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp464" : {
+        "DomainMember2DCIngressTcp464" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "464",
-                "ToPort"     : "464",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "464",
+                "ToPort" : "464",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp464" : {
+        "DomainMember2DCIngressUdp464" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "464",
-                "ToPort"     : "464",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "464",
+                "ToPort" : "464",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressDynamicUDP" : {
+        "DomainMember2DCIngressDynamicUDP" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "49152",
-                "ToPort"     : "65535",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "49152",
+                "ToPort" : "65535",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressUdp137to138" : {
+        "DomainMember2DCIngressUdp137to138" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "137",
-                "ToPort"     : "138",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "137",
+                "ToPort" : "138",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp9389" : {
+        "DomainMember2DCIngressTcp9389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "9389",
-                "ToPort"     : "9389",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "9389",
+                "ToPort" : "9389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp139" : {
+        "DomainMember2DCIngressTcp139" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "139",
-                "ToPort"     : "139",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "139",
+                "ToPort" : "139",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp5985to5986" : {
+        "DomainMember2DCIngressTcp5985to5986" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "5985",
-                "ToPort"     : "5986",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "5985",
+                "ToPort" : "5986",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMember2DCIngressTcp3389" : {
+        "DomainMember2DCIngressTcp3389" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" : { "Ref": "DomainControllerSG" },
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "DomainControllerSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "3389",
-                "ToPort"     : "3389",
-                "SourceSecurityGroupId" : { "Ref": "DomainMemberSG" }
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "SourceSecurityGroupId" : { "Ref" : "DomainMemberSG" }
             }
         },
-        "DomainMemberSG"                      : {
+        "DomainMemberSG" :
+        {
             "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupDescription" : "Domain Members",
-                "VpcId"            : {
-                    "Ref" : "VPC"
-                },
-                "SecurityGroupIngress" : [
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" :
+                [
                     {
                         "IpProtocol" : "tcp",
-                        "FromPort"   : "3389",
-                        "ToPort"     : "3389",
-                        "CidrIp"     : {
-                            "Ref" : "CIDRVPC"
-                        }
+                        "FromPort" : "3389",
+                        "ToPort" : "3389",
+                        "CidrIp" : { "Ref" : "CIDRVPC" }
                     }
                 ],
-                "Tags" : [
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
+                        "Value" :
+                        { "Fn::Join" : ["", [
                             "DomainMembers-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
@@ -516,38 +595,41 @@
                 ]
             }
         },
-        "DC2DomainMemberIngressDynamicTCP" : {
+        "DC2DomainMemberIngressDynamicTCP" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" :  { "Ref": "DomainMemberSG" },
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "DomainMemberSG" },
                 "IpProtocol" : "tcp",
-                "FromPort"   : "49152",
-                "ToPort"     : "65535",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "49152",
+                "ToPort" : "65535",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         },
-        "DC2DomainMemberIngressDynamicUDP" : {
+        "DC2DomainMemberIngressDynamicUDP" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
-            "Properties" : {
-                "GroupId" :  { "Ref": "DomainMemberSG" },
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "DomainMemberSG" },
                 "IpProtocol" : "udp",
-                "FromPort"   : "49152",
-                "ToPort"     : "65535",
-                "SourceSecurityGroupId" : { "Ref": "DomainControllerSG" }
+                "FromPort" : "49152",
+                "ToPort" : "65535",
+                "SourceSecurityGroupId" : { "Ref" : "DomainControllerSG" }
             }
         }
     },
-    "Outputs" : {
-        "DomainControllerSGID"  : {
-            "Value" : {
-                "Ref" : "DomainControllerSG"
-            },
+    "Outputs" :
+    {
+        "DomainControllerSGID" :
+        {
+            "Value" : { "Ref" : "DomainControllerSG" },
             "Description" : "Domain Controller Security Group ID"
         },
-        "DomainMemberSGID"  : {
-            "Value" : {
-                "Ref" : "DomainMemberSG"
-            },
+        "DomainMemberSGID" :
+        {
+            "Value" : { "Ref" : "DomainMemberSG" },
             "Description" : "Domain Member Security Group ID"
         }
     }

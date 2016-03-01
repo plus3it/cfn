@@ -1,95 +1,92 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description" : "This template creates a public Elastic Load Balancer using Secure TCP (SSL) on port 443",
-    "Parameters" : {
-        "SslCertificateName" : {
+    "Parameters" :
+    {
+        "SslCertificateName" :
+        {
             "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB. The cert must already exist in the service.",
             "Type" : "String"
         },
-        "SslCertificateService" : {
+        "SslCertificateService" :
+        {
             "Description" : "The service hosting the SSL certificate. Must be ACM or IAM.",
             "Type" : "String",
             "Default" : "ACM",
-            "AllowedValues" : [
+            "AllowedValues" :
+            [
                 "ACM",
                 "IAM"
             ]
         },
-        "PublicSubnetIDs" : {
+        "PublicSubnetIDs" :
+        {
             "Description" : "A list of Public subnet IDs to attach to the load balancer.",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupId" : {
+        "SecurityGroupId" :
+        {
             "Description" : "ID of the security group for ELB",
             "Type" : "AWS::EC2::SecurityGroup::Id"
         }
     },
-    "Conditions" : {
-        "UseACM" : { "Fn::Equals" : [ { "Ref" : "SslCertificateService" }, "ACM" ] }
+    "Conditions" :
+    {
+        "UseACM" :
+        {
+            "Fn::Equals" : [ { "Ref" : "SslCertificateService" }, "ACM" ]
+        }
     },
-    "Resources" : {
-        "ELB" : {
-            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-            "Properties": {
+    "Resources" :
+    {
+        "ELB" :
+        {
+            "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties" :
+            {
                 "CrossZone" : "false",
-                "HealthCheck" : {
+                "HealthCheck" :
+                {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
                     "Target" : "HTTPS:443/",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
-                "Listeners" : [
+                "Listeners" :
+                [
                     {
                         "InstancePort" : "443",
                         "InstanceProtocol" : "SSL",
                         "LoadBalancerPort" : "443",
                         "Protocol" : "SSL",
-                        "SSLCertificateId" : {
-                            "Fn::If" : [
-                                "UseACM",
-                                {
-                                    "Fn::Join" : [
-                                        ":",
-                                        [
-                                            "arn:aws:acm",
-                                            { "Ref" : "AWS::Region" },
-                                            { "Ref":"AWS::AccountId" },
-                                            { "Fn::Join" : [
-                                                "",
-                                                [
-                                                    "certificate/",
-                                                    { "Ref":"SslCertificateName" }
-                                                ]
-                                            ] }
-                                        ]
-                                    ]
-                                },
-                                {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "arn:aws:iam::",
-                                            {
-                                                "Ref":"AWS::AccountId"
-                                            },
-                                            ":server-certificate/",
-                                            {
-                                                "Ref":"SslCertificateName"
-                                            }
-                                        ]
-                                    ]
-                                }
-                            ]
-                        }
+                        "SSLCertificateId" :
+                        { "Fn::If" : [
+                            "UseACM",
+                            { "Fn::Join" : [ ":", [
+                                "arn:aws:acm",
+                                { "Ref" : "AWS::Region" },
+                                { "Ref" : "AWS::AccountId" },
+                                { "Fn::Join" : [ "", [
+                                    "certificate/",
+                                    { "Ref" : "SslCertificateName" }
+                                ]]}
+                            ]]},
+                            { "Fn::Join" : [ "", [
+                                "arn:aws:iam::",
+                                { "Ref" : "AWS::AccountId" },
+                                " :server-certificate/",
+                                { "Ref" : "SslCertificateName" }
+                            ]]}
+                        ]}
                     }
                 ],
-                "Policies" : [
-                ],
+                "Policies" : [],
                 "Scheme" : "internet-facing",
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupId" } ],
                 "Subnets" : { "Ref" : "PublicSubnetIDs" },
-                "Tags" : [
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
                         "Value" : { "Ref" : "AWS::StackName" }
@@ -98,14 +95,17 @@
            }
         }
     },
-    "Outputs" : {
-        "LoadBalancerName" : {
-          "Description": "Name of the Elastic Load Balancer",
-          "Value": { "Ref" : "ELB" }
+    "Outputs" :
+    {
+        "LoadBalancerName" :
+        {
+            "Description" : "Name of the Elastic Load Balancer",
+            "Value" : { "Ref" : "ELB" }
         },
-        "LoadBalancerDns" : {
-          "Description": "DNS name for the ELB",
-          "Value": { "Fn::GetAtt" : [ "ELB", "DNSName" ] }
+        "LoadBalancerDns" :
+        {
+            "Description" : "DNS name for the ELB",
+            "Value" : { "Fn::GetAtt" : [ "ELB", "DNSName" ] }
         }
     }
 }
