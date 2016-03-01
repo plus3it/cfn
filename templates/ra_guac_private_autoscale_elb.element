@@ -330,43 +330,68 @@
                         "Fn::Join" : [
                             "",
                             [
-                                "#!/bin/bash -xe\n",
+                                "#!/bin/bash -xe\n\n",
 
                                 "# CFN LaunchConfig Update Toggle: ",
                                 { "Ref" : "ForceUpdateToggle" },
-                                "\n",
+                                "\n\n",
 
                                 "# Get pip\n",
-                                "curl https://bootstrap.pypa.io/get-pip.py | python\n",
-                                "hash pip 2> /dev/null || PATH=\"${PATH}:/usr/local/bin\"\n",
+                                "curl --silent --show-error --retry 5 -L ",
+                                "https://bootstrap.pypa.io/get-pip.py",
+                                " | python", "\n\n",
+
+                                "# Add pip to path\n",
+                                "hash pip 2> /dev/null || ",
+                                "PATH=\"${PATH}:/usr/local/bin\"", "\n\n",
 
                                 "# Upgrade setuptools\n",
-                                "pip install --upgrade setuptools\n",
+                                "pip install --upgrade setuptools\n\n",
 
                                 "# Fix python urllib3 warnings\n",
                                 "yum -y install gcc python-devel libffi-devel openssl-devel\n",
-                                "pip install pyopenssl ndg-httpsclient pyasn1\n",
+                                "pip install pyopenssl ndg-httpsclient pyasn1\n\n",
 
-                                "# Get cfn scripts\n",
-                                "#pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
-                                "#chmod 775 /opt/aws/apitools/cfn-init/init/redhat/cfn-hup\n",
-                                "#ln -f -s /opt/aws/apitools/cfn-init/init/redhat/cfn-hup /etc/rc.d/init.d/cfn-hup\n",
-                                "#chkconfig --add cfn-hup\n",
-                                "#chkconfig cfn-hup on\n",
-                                "#mkdir -p /opt/aws/bin\n",
-                                "#for SCRIPT in cfn-elect-cmd-leader cfn-get-metadata cfn-hup",
-                                " cfn-init cfn-send-cmd-event cfn-send-cmd-result cfn-signal\n",
-                                "#do\n",
-                                "#    ln -f -s /usr/bin/${SCRIPT} /opt/aws/bin/${SCRIPT}\n",
-                                "#done\n",
+                                "# Get cfn utils\n",
+                                "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n\n",
 
-                                "yum -y install aws-cfn-bootstrap\n",
+                                "# Remove gcc now that it is no longer needed\n",
+                                "yum -y remove gcc --setopt=clean_requirements_on_remove=1\n\n",
+
+                                "# Fixup cfn utils\n",
+                                "INITDIR=$(find -L /opt/aws/apitools/cfn-init/init -name redhat ",
+                                "2> /dev/null || echo /usr/init/redhat)\n",
+                                "chmod 775 ${INITDIR}/cfn-hup\n",
+                                "ln -f -s ${INITDIR}/cfn-hup /etc/rc.d/init.d/cfn-hup\n",
+                                "chkconfig --add cfn-hup\n",
+                                "chkconfig cfn-hup on\n",
+                                "mkdir -p /opt/aws/bin\n",
+                                "BINDIR=$(find -L /opt/aws/apitools/cfn-init -name bin ",
+                                "2> /dev/null || echo /usr/bin)\n",
+                                "for SCRIPT in cfn-elect-cmd-leader cfn-get-metadata cfn-hup ",
+                                "cfn-init cfn-send-cmd-event cfn-send-cmd-result cfn-signal\n",
+                                "do\n",
+                                "    ln -s ${BINDIR}/${SCRIPT} /opt/aws/bin/${SCRIPT} 2> /dev/null || ",
+                                "    echo Skipped symbolic link, /opt/aws/bin/${SCRIPT} already exists\n",
+                                "done\n\n",
+
+                                "# Add cfn-signal to path\n",
+                                "hash cfn-signal 2> /dev/null || ",
+                                "PATH=\"${PATH}:/usr/local/bin:/opt/aws/bin\"",
+                                "\n\n",
 
                                 "# Execute cfn-init\n",
-                                "/opt/aws/bin/cfn-init -v -c config ",
-                                "    --stack ", { "Ref" : "AWS::StackName" },
-                                "    --resource GuacLaunchConfig ",
-                                "    --region ", { "Ref" : "AWS::Region" }, "\n"
+                                "/opt/aws/bin/cfn-init -v -c config",
+                                " --stack ", { "Ref" : "AWS::StackName" },
+                                " --resource GuacLaunchConfig ",
+                                " --region ", { "Ref" : "AWS::Region" }, " ||",
+                                " ( echo 'ERROR: cfn-init failed! Aborting!';",
+                                " /opt/aws/bin/cfn-signal -e 1",
+                                "  --stack ", { "Ref" : "AWS::StackName" },
+                                "  --resource SystemPrepAutoScalingGroup",
+                                "  --region ", { "Ref" : "AWS::Region"}, ";",
+                                " exit 1",
+                                " )\n\n"
                             ]
                         ]
                     }
