@@ -7,36 +7,57 @@
         {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
             "Type" : "String",
-            "Default" : "10.0.0.0/16",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "Default" : "10.1.0.0/16",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
         "CIDRPrivateSubnet1" :
         {
             "Description" : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, etc...)",
             "Type" : "String",
-            "Default" : "10.0.0.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "Default" : "10.1.0.0/19",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
         "CIDRPrivateSubnet2" :
         {
             "Description" : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, etc...)",
             "Type" : "String",
-            "Default" : "10.0.64.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "Default" : "10.1.64.0/19",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
         "CIDRPublicSubnet1" :
         {
             "Description" : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, etc...)",
             "Type" : "String",
-            "Default" : "10.0.32.0/20",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "Default" : "10.1.32.0/20",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
         "CIDRPublicSubnet2" :
         {
             "Description" : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, etc...)",
             "Type" : "String",
-            "Default" : "10.0.96.0/20",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "Default" : "10.1.96.0/20",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+        },
+        "VpcPeerId" :
+        {
+            "Description" : "If creating a VPC peering connection, specify the VPC ID of the peer. Leave blank if not creating a VPC peering connection.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
+        },
+        "VpcPeerCidr" :
+        {
+            "Description" : "CIDR block for the VPC Peer (Example: 10.0.0.0/16, etc...). Used to create a route to the VPC peer. Ignored if \"VpcPeerId\" is blank.",
+            "Type" : "String",
+            "Default" : "10.0.0.0/16",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+        }
+    },
+    "Conditions" :
+    {
+        "PeerVpc" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "VpcPeerId" }, "" ] } ]
         }
     },
     "Resources" :
@@ -49,7 +70,25 @@
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_vpc_with_igw.element",
                 "Parameters" :
                 {
-                    "CIDRVPC" : { "Ref" : "CIDRVPC" }
+                    "CIDRVPC" : { "Ref" : "CIDRVPC" },
+                    "VpcPeerId" :
+                    {
+                        "Fn::If" :
+                        [
+                            "PeerVpc",
+                            { "Ref" : "VpcPeerId" },
+                            { "Ref" : "AWS::NoValue" }
+                        ]
+                    },
+                    "VpcPeerCidr" :
+                    {
+                        "Fn::If" :
+                        [
+                            "PeerVpc",
+                            { "Ref" : "VpcPeerCidr" },
+                            { "Ref" : "AWS::NoValue" }
+                        ]
+                    }
                 }
             }
         },
@@ -130,7 +169,31 @@
                             "Outputs.PublicSubnetId"
                         ]
                     },
-                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] },
+                    "VpcPeeringConnectionId" :
+                    {
+                        "Fn::If" :
+                        [
+                            "PeerVpc",
+                            {
+                                "Fn::GetAtt" :
+                                [
+                                    "VPCStack",
+                                    "Outputs.VpcPeeringConnection"
+                                ]
+                            },
+                            { "Ref" : "AWS::NoValue" }
+                        ]
+                    },
+                    "VpcPeerCidr" :
+                    {
+                        "Fn::If" :
+                        [
+                            "PeerVpc",
+                            { "Ref" : "VpcPeerCidr" },
+                            { "Ref" : "AWS::NoValue" }
+                        ]
+                    }
                 }
             }
         },
@@ -289,6 +352,19 @@
                 ]
             },
             "Description" : "Elastic IP for NAT Gateway"
+        },
+        "VpcPeeringConnection" :
+        {
+            "Condition" : "PeerVpc",
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "VPCStack",
+                    "Outputs.VpcPeeringConnection"
+                ]
+            },
+            "Description" : "ID of the VPC peering connection"
         }
     }
 }
