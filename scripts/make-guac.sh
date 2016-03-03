@@ -236,7 +236,7 @@ git clone "${FREERDP_REPO}" || \
 cd "${FREERDP_BASE}"
 git checkout "${FREERDP_BRANCH}" || \
     die "Could not checkout branch ${FREERDP_BRANCH}"
-log "Building ${FREERDP_FILEBASE} from source"
+log "Building ${FREERDP_BASE} from source"
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_SSE2=ON -DWITH_DEBUG_ALL=ON .
 make
 make install
