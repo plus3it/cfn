@@ -8,7 +8,7 @@
             "Description" : "CIDR Block for the VPC. This is used in the security group for the NAT instance, to allow inbound connections from instances in the VPC.",
             "Type" : "String",
             "Default" : "10.0.0.0/16",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
         "KeyPairName" :
         {
@@ -46,6 +46,30 @@
         {
             "Description" : "VPC ID",
             "Type" : "AWS::EC2::VPC::Id"
+        },
+        "VpcPeeringConnectionId" :
+        {
+            "Description" : "ID of the VPC Peering Connection. Leave blank if not creating a VPC peering connection.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^pcx-[0-9a-z]{8}$"
+        },
+        "VpcPeerCidr" :
+        {
+            "Description" : "CIDR block for the VPC Peer (Example: 10.1.0.0/16, etc...). Used to create a route to the VPC peer. Ignored if \"VpcPeeringConnectionId\" is blank.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+        }
+    },
+    "Conditions" :
+    {
+        "VpcPeeringConnection" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "VpcPeeringConnectionId" }, "" ] }
+            ]
         }
     },
     "Mappings" :
@@ -161,6 +185,17 @@
                 "RouteTableId" : { "Ref" : "PrivateRouteTable" },
                 "DestinationCidrBlock" : "0.0.0.0/0",
                 "NetworkInterfaceId" : { "Ref" : "NATElasticNetworkInterface" }
+            }
+        },
+        "VpcPeerRoute" :
+        {
+            "Type" : "AWS::EC2::Route",
+            "Condition" : "VpcPeeringConnection",
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+                "DestinationCidrBlock" : { "Ref" : "VpcPeerCidr" },
+                "VpcPeeringConnectionId" : { "Ref" : "VpcPeeringConnectionId" }
             }
         },
         "NATElasticIP" :
