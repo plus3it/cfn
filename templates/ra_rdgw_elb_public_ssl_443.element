@@ -49,7 +49,7 @@
                 {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
-                    "Target" : "HTTPS:443/",
+                    "Target" : "HTTPS:443/iisstart.htm",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
