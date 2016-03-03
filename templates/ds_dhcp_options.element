@@ -1,47 +1,43 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This element creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
-    "Parameters"               : {
-        "DomainDNSName" : {
+    "Description" : "This element creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
+    "Parameters" :
+    {
+        "DomainDNSName" :
+        {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
-            "Type"        : "String",
-            "Default"     : "example.com",
-            "MinLength"   : "3",
-            "MaxLength"   : "25",
+            "Type" : "String",
+            "Default" : "example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "DomainControllerIPs" : {
+        "DomainControllerIPs" :
+        {
             "Description" : "Comma-separated list of IP addresses of Domain Controllers (e.g. 10.0.0.10,10.0.64.10)",
-            "Type"        : "CommaDelimitedList",
-            "Default"     : "10.0.0.10"
+            "Type" : "CommaDelimitedList",
+            "Default" : "10.0.0.10"
         },
-        "VPC" : {
+        "VPC" :
+        {
             "Description" : "VPC ID",
-            "Type"        : "AWS::EC2::VPC::Id"
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
-    "Resources" : {
-        "DhcpOptions" : {
+    "Resources" :
+    {
+        "DhcpOptions" :
+        {
             "Type" : "AWS::EC2::DHCPOptions",
-            "Properties" : {
-                "DomainName" : {
-                    "Ref" : "DomainDNSName"
-                },
-                "DomainNameServers" : [
-                    "AmazonProvidedDNS"
-                ],
-                "NtpServers" : {
-                    "Ref" : "DomainControllerIPs"
-                },
-                "NetbiosNameServers" : {
-                    "Ref" : "DomainControllerIPs"
-                },
+            "Properties" :
+            {
+                "DomainName" : { "Ref" : "DomainDNSName" },
+                "DomainNameServers" : [ "AmazonProvidedDNS" ],
+                "NtpServers" : { "Ref" : "DomainControllerIPs" },
+                "NetbiosNameServers" : { "Ref" : "DomainControllerIPs" },
                 "NetbiosNodeType" : "2",
-                "Tags" : [
-                    {
-                        "Key" : "Domain",
-                        "Value" : { "Ref" : "DomainDNSName" }
-                    },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
                         "Value" : { "Ref" : "AWS::StackName" }
@@ -49,15 +45,13 @@
                 ]
             }
         },
-        "VPCDHCPOptionsAssociation" : {
+        "VPCDHCPOptionsAssociation" :
+        {
             "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "DhcpOptionsId" : {
-                    "Ref" : "DhcpOptions"
-                }
+            "Properties" :
+            {
+                "VpcId" : { "Ref" : "VPC" },
+                "DhcpOptionsId" : { "Ref" : "DhcpOptions" }
             }
         }
     }

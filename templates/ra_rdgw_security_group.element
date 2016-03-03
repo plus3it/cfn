@@ -1,31 +1,41 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description" : "This templates creates one security group for RDGW instances, and one for their load balancer",
-    "Parameters" : {
-        "UseELB" : {
+    "Parameters" :
+    {
+        "UseELB" :
+        {
             "Description" : "Set to true if using an ELB in front of the RDGW; otherwise set to false",
             "Type" : "String",
             "Default" : "true",
-            "AllowedValues" : [ "true", "false" ]
+            "AllowedValues" :
+            [
+                "true",
+                "false"
+            ]
         },
-        "VPC" : {
+        "VPC" :
+        {
             "Description" : "VPC ID",
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
-    "Conditions" : {
+    "Conditions" :
+    {
         "UseELB" : { "Fn::Equals" : [ { "Ref" : "UseELB" }, "true" ] },
         "NoELB": { "Fn::Equals" : [ { "Ref" : "UseELB" }, "false" ] }
     },
-    "Resources" : {
-        "RdgwSecurityGroup" : {
+    "Resources" :
+    {
+        "RdgwSecurityGroup" :
+        {
             "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupDescription" : "Enable RDGW access from the Internet",
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "Tags" : [
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
@@ -36,10 +46,12 @@
                 ]
             }
         },
-        "PublicToRdgwIngressTcp443" : {
+        "PublicToRdgwIngressTcp443" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "NoELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "RdgwSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort" : "443",
@@ -47,10 +59,12 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToRdgwIngressTcp443" : {
+        "ElbToRdgwIngressTcp443" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "RdgwSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort" : "443",
@@ -58,15 +72,16 @@
                 "SourceSecurityGroupId" : { "Ref": "RdgwElbSecurityGroup" }
             }
         },
-        "RdgwElbSecurityGroup" : {
+        "RdgwElbSecurityGroup" :
+        {
             "Type" : "AWS::EC2::SecurityGroup",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupDescription" : "Enable RDGW access from the Internet",
-                "VpcId" : {
-                    "Ref" : "VPC"
-                },
-                "Tags" : [
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
@@ -77,10 +92,12 @@
                 ]
             }
         },
-        "PublicToElbIngressTcp443" : {
+        "PublicToElbIngressTcp443" :
+        {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "RdgwElbSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort" : "443",
@@ -88,10 +105,12 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToRdgwEgressTcp443" : {
+        "ElbToRdgwEgressTcp443" :
+        {
             "Type" : "AWS::EC2::SecurityGroupEgress",
             "Condition" : "UseELB",
-            "Properties" : {
+            "Properties" :
+            {
                 "GroupId" :  { "Ref": "RdgwElbSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort" : "443",
@@ -100,18 +119,17 @@
             }
         }
     },
-    "Outputs" : {
-        "RdgwSecurityGroupId" : {
-            "Value" : {
-                "Ref" : "RdgwSecurityGroup"
-            },
+    "Outputs" :
+    {
+        "RdgwSecurityGroupId" :
+        {
+            "Value" : { "Ref" : "RdgwSecurityGroup" },
             "Description" : "Security Group ID for the RDGW"
         },
-        "RdgwElbSecurityGroupId" : {
+        "RdgwElbSecurityGroupId" :
+        {
             "Condition" : "UseELB",
-            "Value" : {
-                "Ref" : "RdgwElbSecurityGroup"
-            },
+            "Value" : { "Ref" : "RdgwElbSecurityGroup" },
             "Description" : "Security Group ID for the RDGW Elastic Load Balancer"
         }
     }
