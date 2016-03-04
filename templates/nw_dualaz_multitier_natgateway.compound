@@ -47,7 +47,7 @@
         },
         "VpcPeerCidr" :
         {
-            "Description" : "CIDR block for the VPC Peer (Example: 10.0.0.0/16, etc...). Used to create a route to the VPC peer. Ignored if \"VpcPeerId\" is blank.",
+            "Description" : "CIDR block for the VPC Peer (Example: 10.0.0.0/16, etc...). Used to create routes to the VPC peer. Ignored if \"VpcPeerId\" is blank.",
             "Type" : "String",
             "Default" : "10.0.0.0/16",
             "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
@@ -70,25 +70,7 @@
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_vpc_with_igw.element",
                 "Parameters" :
                 {
-                    "CIDRVPC" : { "Ref" : "CIDRVPC" },
-                    "VpcPeerId" :
-                    {
-                        "Fn::If" :
-                        [
-                            "PeerVpc",
-                            { "Ref" : "VpcPeerId" },
-                            { "Ref" : "AWS::NoValue" }
-                        ]
-                    },
-                    "VpcPeerCidr" :
-                    {
-                        "Fn::If" :
-                        [
-                            "PeerVpc",
-                            { "Ref" : "VpcPeerCidr" },
-                            { "Ref" : "AWS::NoValue" }
-                        ]
-                    }
+                    "CIDRVPC" : { "Ref" : "CIDRVPC" }
                 }
             }
         },
@@ -169,31 +151,7 @@
                             "Outputs.PublicSubnetId"
                         ]
                     },
-                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] },
-                    "VpcPeeringConnectionId" :
-                    {
-                        "Fn::If" :
-                        [
-                            "PeerVpc",
-                            {
-                                "Fn::GetAtt" :
-                                [
-                                    "VPCStack",
-                                    "Outputs.VpcPeeringConnection"
-                                ]
-                            },
-                            { "Ref" : "AWS::NoValue" }
-                        ]
-                    },
-                    "VpcPeerCidr" :
-                    {
-                        "Fn::If" :
-                        [
-                            "PeerVpc",
-                            { "Ref" : "VpcPeerCidr" },
-                            { "Ref" : "AWS::NoValue" }
-                        ]
-                    }
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
                 }
             }
         },
@@ -254,6 +212,38 @@
                         ]
                     },
                     "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "VpcPeeringConnectionStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Condition" : "PeerVpc",
+            "DependsOn" : "NATGatewayStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_vpc_peering_connection.element",
+                "Parameters" :
+                {
+                    "RouteTableId1" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "VPCStack",
+                            "Outputs.PublicRouteTableId"
+                        ]
+                    },
+                    "RouteTableId2" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "NATGatewayStack",
+                            "Outputs.PrivateRouteTableId"
+                        ]
+                    },
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] },
+                    "VpcPeerId" : { "Ref" : "VpcPeerId" },
+                    "VpcPeerCidr" : { "Ref" : "VpcPeerCidr" }
                 }
             }
         }

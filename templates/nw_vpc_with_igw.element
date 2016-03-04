@@ -9,27 +9,6 @@
             "Type" : "String",
             "Default" : "10.0.0.0/16",
             "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
-        },
-        "VpcPeerId" :
-        {
-            "Description" : "If creating a VPC peering connection, specify the VPC ID of the peer. Leave blank if not creating a VPC peering connection.",
-            "Type" : "String",
-            "Default" : "",
-            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
-        },
-        "VpcPeerCidr" :
-        {
-            "Description" : "CIDR block for the VPC Peer (Example: 10.1.0.0/16, etc...). Used to create a route to the VPC peer. Ignored if \"VpcPeerId\" is blank.",
-            "Type" : "String",
-            "Default" : "10.0.0.0/16",
-            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
-        }
-    },
-    "Conditions" :
-    {
-        "PeerVpc" :
-        {
-            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "VpcPeerId" }, "" ] } ]
         }
     },
     "Resources" :
@@ -103,35 +82,6 @@
                 "DestinationCidrBlock" : "0.0.0.0/0",
                 "GatewayId" : { "Ref" : "InternetGateway" }
             }
-        },
-        "VpcPeeringConnection" :
-        {
-            "Type" : "AWS::EC2::VPCPeeringConnection",
-            "Condition" : "PeerVpc",
-            "Properties" :
-            {
-                "VpcId" : { "Ref" : "VPC" },
-                "PeerVpcId" : { "Ref": "VpcPeerId" },
-                "Tags" :
-                [
-                    {
-                        "Key" : "Name",
-                        "Value" : { "Ref" : "AWS::StackName" }
-                    }
-                ]
-            }
-        },
-        "VpcPeerRoute" :
-        {
-            "Type" : "AWS::EC2::Route",
-            "Condition" : "PeerVpc",
-            "DependsOn" : "AttachGateway",
-            "Properties" :
-            {
-                "RouteTableId" : { "Ref" : "PublicRouteTable" },
-                "DestinationCidrBlock" : { "Ref" : "VpcPeerCidr" },
-                "VpcPeeringConnectionId" : { "Ref" : "VpcPeeringConnection" }
-            }
         }
     },
     "Outputs" :
@@ -155,12 +105,6 @@
         {
             "Value" : { "Ref" : "PublicRouteTable" },
             "Description" : "Route Table ID for Public Subnet"
-        },
-        "VpcPeeringConnection" :
-        {
-            "Condition" : "PeerVpc",
-            "Value" : { "Ref" : "VpcPeeringConnection" },
-            "Description" : "ID of the VPC peering connection"
         }
     }
 }
