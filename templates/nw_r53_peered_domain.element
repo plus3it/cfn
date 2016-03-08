@@ -1,0 +1,270 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This element creates a Route53 Private Hosted Zone and the associated resource records for a peered domain.",
+    "Parameters" :
+    {
+        "PeeredDomainDnsName" :
+        {
+            "Description" : "Fully qualified domain name (FQDN) of the peered directory root e.g. ad.example.com",
+            "Type" : "String",
+            "Default" : "ad.example.com",
+            "MinLength" : "3",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "PeeredDc1Name" :
+        {
+            "Description" : "NetBIOS computer name of the first Domain Controller (Example: dc001, dc002, dc003, etc...)",
+            "Type" : "String",
+            "Default" : "dc001",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+"
+        },
+        "PeeredDc1Ip" :
+        {
+            "Description" : "Private IP for the first Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...)",
+            "Type" : "String",
+            "Default" : "10.0.0.10",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
+        },
+        "PeeredDc2Name" :
+        {
+            "Description" : "NetBIOS computer name of the second Domain Controller (Example: dc001, dc002, dc003, etc...)",
+            "Type" : "String",
+            "Default" : "dc002",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+"
+        },
+        "PeeredDc2Ip" :
+        {
+            "Description" : "Private IP for the second Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...)",
+            "Type" : "String",
+            "Default" : "10.0.64.10",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
+        },
+        "VPC" :
+        {
+            "Description" : "VPC ID that will host the Route53 Private Hosted Zone.",
+            "Type" : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources" :
+    {
+        "PrivateHostedZone" :
+        {
+            "Type" : "AWS::Route53::HostedZone",
+            "Properties" :
+            {
+                "HostedZoneConfig" :
+                {
+                    "Comment" : 
+                        { "Fn::Join" : ["", [
+                            "Zone for ",
+                            { "Ref" : "PeeredDomainDnsName" }
+                        ]]}
+                },
+                "HostedZoneTags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : ["", [
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ],
+                "Name" : { "Ref" : "PeeredDomainDnsName" },
+                "VPCs" :
+                [
+                    {
+                        "VPCId" : { "Ref" : "VPC" },
+                        "VPCRegion" : { "Ref" : "AWS::Region" }
+                    }
+                ]
+            }
+        },
+        "PeeredDcARecordSet1" :
+        {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "PrivateHostedZone",
+            "Properties" :
+            {
+                "HostedZoneName" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Name" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDc1Name" }, ".",
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Ref" : "PeeredDc1Ip" } ]
+            }
+        },
+        "PeeredDcSrvRecordSet1" :
+        {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "PrivateHostedZone",
+            "Properties" :
+            {
+                "HostedZoneName" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Name" :
+                { "Fn::Join" : [ "", [
+                    "_ldap._tcp.dc._msdcs.",
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Type" : "SRV",
+                "TTL" : "300",
+                "ResourceRecords" :
+                [
+                    { "Fn::Join" : [ "", [
+                        "0 100 389 ",
+                        { "Ref" : "PeeredDc1Name" }, ".",
+                        { "Ref" : "PeeredDomainDnsName" },
+                        "."
+                    ]]}
+                ],
+                "SetIdentifier" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDc1Name" }, ".",
+                    { "Ref" : "AWS::StackName" },
+                    "."
+                ]]},
+                "Weight" : "20"
+            }
+        },
+        "PeeredDomainARecordSet1" :
+        {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "PrivateHostedZone",
+            "Properties" :
+            {
+                "HostedZoneName" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Name" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Ref" : "PeeredDc1Ip" } ],
+                "SetIdentifier" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDc1Name" }, ".",
+                    { "Ref" : "AWS::StackName" },
+                    "."
+                ]]},
+                "Weight" : "20"
+            }
+        },
+        "PeeredDcARecordSet2" :
+        {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "PrivateHostedZone",
+            "Properties" :
+            {
+                "HostedZoneName" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Name" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDc2Name" }, ".",
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Ref" : "PeeredDc2Ip" } ]
+            }
+        },
+        "PeeredDcSrvRecordSet2" :
+        {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "PrivateHostedZone",
+            "Properties" :
+            {
+                "HostedZoneName" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Name" :
+                { "Fn::Join" : [ "", [
+                    "_ldap._tcp.dc._msdcs.",
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Type" : "SRV",
+                "TTL" : "300",
+                "ResourceRecords" :
+                [
+                    { "Fn::Join" : [ "", [
+                        "0 100 389 ",
+                        { "Ref" : "PeeredDc2Name" }, ".",
+                        { "Ref" : "PeeredDomainDnsName" },
+                        "."
+                    ]]}
+                ],
+                "SetIdentifier" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDc2Name" }, ".",
+                    { "Ref" : "AWS::StackName" },
+                    "."
+                ]]},
+                "Weight" : "20"
+            }
+        },
+        "PeeredDomainARecordSet2" :
+        {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : "PrivateHostedZone",
+            "Properties" :
+            {
+                "HostedZoneName" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Name" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDomainDnsName" },
+                    "."
+                ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Ref" : "PeeredDc2Ip" } ],
+                "SetIdentifier" :
+                { "Fn::Join" : [ "", [
+                    { "Ref" : "PeeredDc2Name" }, ".",
+                    { "Ref" : "AWS::StackName" },
+                    "."
+                ]]},
+                "Weight" : "20"
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "PrivateHostedZoneId" :
+        {
+            "Value" : { "Ref" : "PrivateHostedZone" },
+            "Description" : "ID of the Private Hosted Zone"
+        }
+    }
+}
