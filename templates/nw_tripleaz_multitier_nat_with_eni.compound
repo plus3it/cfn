@@ -100,6 +100,45 @@
             "Type" : "String",
             "Default" : "10.0.0.0/16",
             "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+        },
+        "VpcPeerDomainDnsName" :
+        {
+            "Description" : "DNS name of the peered zone (Example: ad.example.com). Creates a Route53 Private Hosted Zone. Leave blank to skip this step.",
+            "Type" : "String",
+            "Default" : "ad.example.com",
+            "AllowedPattern" : "^$|[a-zA-Z0-9]+\\..+"
+        },
+        "VpcPeerDc1Name" :
+        {
+            "Description" : "NetBIOS computer name of the first Domain Controller (Example: dc001, dc002, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "dc001",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+"
+        },
+        "VpcPeerDc1Ip" :
+        {
+            "Description" : "Private IP for the first Domain Controller instance (Example: 10.0.0.10, 10.0.64.10, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "10.0.0.10",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
+        },
+        "VpcPeerDc2Name" :
+        {
+            "Description" : "NetBIOS computer name of the second Domain Controller (Example: dc001, dc002, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "dc002",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+"
+        },
+        "VpcPeerDc2Ip" :
+        {
+            "Description" : "Private IP for the second Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "10.0.64.10",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
         }
     },
     "Conditions" :
@@ -107,6 +146,13 @@
         "PeerVpc" :
         {
             "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "VpcPeerId" }, "" ] } ]
+        },
+        "CreatePeeredZone" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "VpcPeerDomainDnsName" }, "" ] }
+            ]
         }
     },
     "Resources" :
@@ -380,6 +426,25 @@
                     "VpcPeerCidr" : { "Ref" : "VpcPeerCidr" }
                 }
             }
+        },
+        "VpcPeeredZoneStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Condition" : "CreatePeeredZone",
+            "DependsOn" : "VPCStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_r53_peered_domain.element",
+                "Parameters" :
+                {
+                    "PeeredDomainDnsName" : { "Ref" : "VpcPeerDomainDnsName" },
+                    "PeeredDc1Name" : { "Ref" : "VpcPeerDc1Name" },
+                    "PeeredDc1Ip" : { "Ref" : "VpcPeerDc1Ip" },
+                    "PeeredDc2Name" : { "Ref" : "VpcPeerDc2Name" },
+                    "PeeredDc2Ip" : { "Ref" : "VpcPeerDc1Ip" },
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
         }
     },
     "Outputs" :
@@ -597,6 +662,19 @@
                 ]
             },
             "Description" : "ID of the VPC peering connection"
+        },
+        "VpcPeerPrivateHostedZoneId" :
+        {
+            "Condition" : "CreatePeeredZone",
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "VpcPeeredZoneStack",
+                    "Outputs.PrivateHostedZoneId"
+                ]
+            },
+            "Description" : "ID of the Private Hosted Zone used for resolution of a domain in the peered VPC"
         }
     }
 }
