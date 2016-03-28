@@ -496,7 +496,7 @@ fi
 
 # Add DICELAB custom HTML content to GUAC login page
 oldhtmltext='            <\/form>\\n\\n'
-newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a href="https://redmine.dicelab.net">DICELAB Redmine</a></p>\\n            <p style="text-align:center"><a href="https://accounts.dicelab.net">DICELAB Account Management</a></p></div>\\n\\n            </form>\\n\\n'
+newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="https://redmine.dicelab.net">DICELAB Redmine</a></p>\\n            <p style="text-align:center"><a target="_blank" href="https://accounts.dicelab.net">DICELAB Account Management</a></p></div>\\n\\n            </form>\\n\\n'
 sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
 
 # Start services
