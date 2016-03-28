@@ -516,11 +516,6 @@ then
     mkdir /var/tmp/guacamole
 fi
 
-# Add DICELAB custom HTML content to GUAC login page
-oldhtmltext='            <\/form>\\n\\n'
-newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
-sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
-
 # Start services
 log "Attempting to start proxy-related services"
 for SVC in rsyslog guacd tomcat7
@@ -532,3 +527,9 @@ do
       die "Failed to start ${SVC}."
     fi
 done
+
+# Add custom HTML links to GUAC login page
+oldhtmltext='            <\/form>\\n\\n'
+newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
+sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
+service tomcat7 restart
