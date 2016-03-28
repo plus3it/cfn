@@ -90,6 +90,30 @@
             "Default" : "0.9.9",
             "MinLength" : "1"
         },
+        "URL1" :
+        {
+            "Description" : "First custom URL to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : "https://accounts.example.com"
+        },
+        "URLText1" :
+        {
+            "Description" : "Text/Label to display for the First custom URL displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : "Account Management"
+        },
+        "URL2" :
+        {
+            "Description" : "Second custom URL to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : "https://redmine.example.com"
+        },
+        "URLText2" :
+        {
+            "Description" : "Text/Label to display for the Second custom URL displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : "Example Redmine"
+        },
         "PrivateSubnetIDs" :
         {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
@@ -331,7 +355,15 @@
                                     " -D ",
                                     { "Ref" : "GuacLdapDN" },
                                     " -v ",
-                                    { "Ref" : "GuacVersion" }
+                                    { "Ref" : "GuacVersion" },
+                                    " -L ",
+                                    { "Ref" : "URL1" },
+                                    " -T ",
+                                    { "Ref" : "URLText1" },
+                                    " -l ",
+                                    { "Ref" : "URL2" },
+                                    " -t ",
+                                    { "Ref" : "URLText2" }
                                 ]]}
                             }
                         }

@@ -93,6 +93,30 @@
             "Default" : "0.9.9",
             "MinLength" : "1"
         },
+        "URL1" :
+        {
+            "Description" : "First custom URL to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : "https://accounts.example.com"
+        },
+        "URLText1" :
+        {
+            "Description" : "Text/Label to display for the First custom URL displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : "Account Management"
+        },
+        "URL2" :
+        {
+            "Description" : "Second custom URL to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : "https://redmine.example.com"
+        },
+        "URLText2" :
+        {
+            "Description" : "Text/Label to display for the Second custom URL displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : "Example Redmine"
+        },
         "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Guacamole Instances",
@@ -180,6 +204,10 @@
                     "GuacLdapServer" : {"Ref" : "GuacLdapServer"},
                     "GuacLdapDN" : {"Ref" : "GuacLdapDN"},
                     "GuacVersion" : {"Ref" : "GuacVersion"},
+                    "URL1" : {"Ref" : "URL1"},
+                    "URLText1" : {"Ref" : "URLText1"},
+                    "URL2" : {"Ref" : "URL2"},
+                    "URLText2" : {"Ref" : "URLText2"},
                     "PrivateSubnetIDs" :
                     {
                         "Fn::Join" : [
@@ -199,7 +227,7 @@
                     ]]}
                 }
             }
-      	}
+        }
     },
     "Outputs" :
     {
