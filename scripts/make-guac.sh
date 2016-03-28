@@ -90,6 +90,12 @@ usage()
       be used for the OS user.
   -s  Password for the OS user (-S). If -S is specified, then this parameter
       is required.
+  -L  URL for first Link to be included in Guac login page. If -T is specified,
+      then this parameter is required.
+  -T  Text to be displayed for the URL provided with -L.
+  -l  URL for second Link to be included in Guac login page. If -t is specified,
+      then this parameter is required.
+  -t  Text to be displayed for the URL provided with -l.
 EOT
 }  # ----------  end of function usage  ----------
 
@@ -107,10 +113,14 @@ GUAC_USERNAME=
 GUAC_PASSWORD=
 SSH_USERNAME=
 SSH_PASSWORD=
+URL_1=
+URLTEXT_1=
+URL_2=
+URLTEXT_2=
 
 
 # Parse command-line parameters
-while getopts :hH:D:U:R:A:C:P:v:G:g:S:s: opt
+while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t opt
 do
     case "${opt}" in
         h)
@@ -152,6 +162,18 @@ do
             ;;
         s)
             SSH_PASSWORD="${OPTARG}"
+            ;;
+        L)
+            URL_1="${OPTARG}"
+            ;;
+        T)
+            URLTEXT_1="${OPTARG}"
+            ;;
+        l)
+            URL_2="${OPTARG}"
+            ;;
+        t)
+            URLTEXT_2="${OPTARG}"
             ;;
         \?)
             usage
@@ -496,7 +518,7 @@ fi
 
 # Add DICELAB custom HTML content to GUAC login page
 oldhtmltext='            <\/form>\\n\\n'
-newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="https://redmine.dicelab.net">DICELAB Redmine</a></p>\\n            <p style="text-align:center"><a target="_blank" href="https://accounts.dicelab.net">DICELAB Account Management</a></p></div>\\n\\n            </form>\\n\\n'
+newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
 sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
 
 # Start services
