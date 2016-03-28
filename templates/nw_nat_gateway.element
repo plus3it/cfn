@@ -1,0 +1,86 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This element creates a NAT Gateway with an Elastic IP, Private route table with route to the NAT Gateway.",
+    "Parameters" :
+    {
+        "PublicSubnetId" :
+        {
+            "Description" : "Subnet ID for the NAT Gateway Public Subnet.",
+            "Type" : "AWS::EC2::Subnet::Id"
+        },
+        "VPC" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources" :
+    {
+        "NATGateway" :
+        {
+           "Type" : "AWS::EC2::NatGateway",
+           "Properties" :
+            {
+              "AllocationId" :
+              {
+                  "Fn::GetAtt" :
+                  [
+                      "NATGatewayElasticIP",
+                      "AllocationId"
+                  ]
+              },
+              "SubnetId" : { "Ref" : "PublicSubnetId" }
+            }
+        },
+        "PrivateRouteTable" :
+        {
+            "Type" : "AWS::EC2::RouteTable",
+            "Properties" :
+            {
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : ["", [
+                            "Private-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PrivateRoute" :
+        {
+            "Type" : "AWS::EC2::Route",
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "NatGatewayId" : { "Ref" : "NATGateway" }
+            }
+        },
+        "NATGatewayElasticIP" :
+        {
+            "Type" : "AWS::EC2::EIP",
+            "Properties" :
+            {
+                "Domain" : "vpc"
+            }
+        }
+    },         
+    "Outputs" :
+    {
+        "PrivateRouteTableId" :
+        {
+            "Value" : { "Ref" : "PrivateRouteTable" },
+            "Description" : "ID of the Private Route Table for NAT Gateway"
+        },
+        "NATGatewayElasticIP" :
+        {
+            "Value" : { "Ref" : "NATGatewayElasticIP" },
+            "Description" : "Elastic IP for NAT Gateway"
+        }   
+    }
+}

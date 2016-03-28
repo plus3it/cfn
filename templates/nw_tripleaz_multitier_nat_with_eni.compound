@@ -1,363 +1,680 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a VPC infrastructure for a triple-AZ, dual-tier application. Outbound access for private subnets is enabled via a NAT instance in each AZ.",
-    "Parameters"               : {
-        "CIDRVPC"          : {
+    "Description" : "This template creates a VPC infrastructure for a triple-AZ, dual-tier application. Outbound access for private subnets is enabled via a NAT instance in each AZ.",
+    "Parameters" :
+    {
+        "CIDRVPC" :
+        {
             "Description" : "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
-            "Type"        : "String",
-            "Default"     : "10.0.0.0/16",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+            "Type" : "String",
+            "Default" : "10.1.0.0/16",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "CIDRPrivateSubnet1"  : {
-            "Description"    : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, 10.0.128.0/19, etc...)",
-            "Type"           : "String",
-            "Default"        : "10.0.0.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        "CIDRPrivateSubnet1" :
+        {
+            "Description" : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, 10.0.128.0/19, etc...)",
+            "Type" : "String",
+            "Default" : "10.1.0.0/19",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "CIDRPrivateSubnet2"  : {
-            "Description"    : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, 10.0.128.0/19, etc...)",
-            "Type"           : "String",
-            "Default"        : "10.0.64.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        "CIDRPrivateSubnet2" :
+        {
+            "Description" : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, 10.0.128.0/19, etc...)",
+            "Type" : "String",
+            "Default" : "10.1.64.0/19",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "CIDRPrivateSubnet3"  : {
-            "Description"    : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, 10.0.128.0/19, etc...)",
-            "Type"           : "String",
-            "Default"        : "10.0.128.0/19",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        "CIDRPrivateSubnet3" :
+        {
+            "Description" : "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, 10.0.128.0/19, etc...)",
+            "Type" : "String",
+            "Default" : "10.1.128.0/19",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "CIDRPublicSubnet1"   : {
-            "Description"    : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, 10.0.160.0/20, etc...)",
-            "Type"           : "String",
-            "Default"        : "10.0.32.0/20",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        "CIDRPublicSubnet1" :
+        {
+            "Description" : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, 10.0.160.0/20, etc...)",
+            "Type" : "String",
+            "Default" : "10.1.32.0/20",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "CIDRPublicSubnet2"   : {
-            "Description"    : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, 10.0.160.0/20, etc...)",
-            "Type"           : "String",
-            "Default"        : "10.0.96.0/20",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        "CIDRPublicSubnet2" :
+        {
+            "Description" : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, 10.0.160.0/20, etc...)",
+            "Type" : "String",
+            "Default" : "10.1.96.0/20",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "CIDRPublicSubnet3"   : {
-            "Description"    : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, 10.0.160.0/20, etc...)",
-            "Type"           : "String",
-            "Default"        : "10.0.160.0/20",
-            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        "CIDRPublicSubnet3" :
+        {
+            "Description" : "CIDR Block for a Public DMZ Subnet (Example: 10.0.32.0/20, 10.0.96.0/20, 10.0.160.0/20, etc...)",
+            "Type" : "String",
+            "Default" : "10.1.160.0/20",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
         },
-        "KeyPairName" : {
+        "KeyPairName" :
+        {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
+            "Type" : "AWS::EC2::KeyPair::KeyName"
         },
-        "InstanceTypeNAT" : {
+        "InstanceTypeNAT" :
+        {
             "Description" : "Amazon EC2 instance type for the NAT Instance",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
-            "AllowedValues" : [
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" :
+            [
                 "t2.micro",
                 "t2.small",
                 "t2.medium"
             ]
         },
-        "IpAddressNAT1"   : {
+        "IpAddressNAT1" :
+        {
             "Description" : "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
-            "Type"        : "String",
-            "Default"     : "10.0.47.254"
+            "Type" : "String",
+            "Default" : "10.1.47.254"
         },
-        "IpAddressNAT2"   : {
+        "IpAddressNAT2" :
+        {
             "Description" : "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
-            "Type"        : "String",
-            "Default"     : "10.0.111.254"
+            "Type" : "String",
+            "Default" : "10.1.111.254"
         },
-        "IpAddressNAT3"   : {
+        "IpAddressNAT3" :
+        {
             "Description" : "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, 10.0.175.254, etc)",
-            "Type"        : "String",
-            "Default"     : "10.0.175.254"
+            "Type" : "String",
+            "Default" : "10.1.175.254"
+        },
+        "VpcPeerId" :
+        {
+            "Description" : "If creating a VPC peering connection, specify the VPC ID of the peer. Leave blank if not creating a VPC peering connection.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
+        },
+        "VpcPeerCidr" :
+        {
+            "Description" : "CIDR block for the VPC Peer (Example: 10.0.0.0/16, etc...). Used to create routes to the VPC peer. Ignored if \"VpcPeerId\" is blank.",
+            "Type" : "String",
+            "Default" : "10.0.0.0/16",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+        },
+        "VpcPeerDomainDnsName" :
+        {
+            "Description" : "DNS name of the peered zone (Example: ad.example.com). Creates a Route53 Private Hosted Zone. Leave blank to skip this step.",
+            "Type" : "String",
+            "Default" : "ad.example.com",
+            "AllowedPattern" : "^$|[a-zA-Z0-9]+\\..+"
+        },
+        "VpcPeerDc1Name" :
+        {
+            "Description" : "NetBIOS computer name of the first Domain Controller (Example: dc001, dc002, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "dc001",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+"
+        },
+        "VpcPeerDc1Ip" :
+        {
+            "Description" : "Private IP for the first Domain Controller instance (Example: 10.0.0.10, 10.0.64.10, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "10.0.0.10",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
+        },
+        "VpcPeerDc2Name" :
+        {
+            "Description" : "NetBIOS computer name of the second Domain Controller (Example: dc001, dc002, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "dc002",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+"
+        },
+        "VpcPeerDc2Ip" :
+        {
+            "Description" : "Private IP for the second Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...). Ignored if \"VpcPeerDomainDnsName\" is blank.",
+            "Type" : "String",
+            "Default" : "10.0.64.10",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
         }
     },
-	"Resources" : {
-    	"VPCStack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_vpc_with_igw.element",
-           	 	"Parameters" : {
-					"CIDRVPC" : {"Ref" : "CIDRVPC"}
-           		}
-			}
-      	},	
-    	"PublicSubnet1Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "VPCStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_public_subnet.element",
-           	 	"Parameters" : {
-					"AvailabilityZoneName" : {
-                        "Fn::Select" : [
-                            0,
-                            {
-                                "Fn::GetAZs" : ""
-                            }
-                        ]
-                    },
-					"CIDRPublicSubnet" : {"Ref" : "CIDRPublicSubnet1"},
-					"PublicRouteTableId" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.PublicRouteTableId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"PublicSubnet2Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "VPCStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_public_subnet.element",
-           	 	"Parameters" : {
-					"AvailabilityZoneName" : {
-                        "Fn::Select" : [
-                            1,
-                            {
-                                "Fn::GetAZs" : ""
-                            }
-                        ]
-                    },
-					"CIDRPublicSubnet" : {"Ref" : "CIDRPublicSubnet2"},
-					"PublicRouteTableId" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.PublicRouteTableId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"PublicSubnet3Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "VPCStack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_public_subnet.element",
-           	 	"Parameters" : {
-					"AvailabilityZoneName" : {
-                        "Fn::Select" : [
-                            2,
-                            {
-                                "Fn::GetAZs" : ""
-                            }
-                        ]
-                    },
-					"CIDRPublicSubnet" : {"Ref" : "CIDRPublicSubnet3"},
-					"PublicRouteTableId" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.PublicRouteTableId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"NATwithENI1Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "PublicSubnet1Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_nat_with_eni.element",
-           	 	"Parameters" : {
-					"CIDRVPC" : {"Ref" : "CIDRVPC"},
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"InstanceTypeNAT" : {"Ref" : "InstanceTypeNAT"},
-					"IpAddressNAT" : {"Ref" : "IpAddressNAT1"},
-					"PublicSubnetId" : { "Fn::GetAtt" : [ "PublicSubnet1Stack", "Outputs.PublicSubnetId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"NATwithENI2Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "NATwithENI1Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_nat_with_eni.element",
-           	 	"Parameters" : {
-					"CIDRVPC" : {"Ref" : "CIDRVPC"},
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"InstanceTypeNAT" : {"Ref" : "InstanceTypeNAT"},
-					"IpAddressNAT" : {"Ref" : "IpAddressNAT2"},
-					"PublicSubnetId" : { "Fn::GetAtt" : [ "PublicSubnet2Stack", "Outputs.PublicSubnetId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"NATwithENI3Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "NATwithENI2Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_nat_with_eni.element",
-           	 	"Parameters" : {
-					"CIDRVPC" : {"Ref" : "CIDRVPC"},
-					"KeyPairName" : {"Ref" : "KeyPairName"},
-					"InstanceTypeNAT" : {"Ref" : "InstanceTypeNAT"},
-					"IpAddressNAT" : {"Ref" : "IpAddressNAT3"},
-					"PublicSubnetId" : { "Fn::GetAtt" : [ "PublicSubnet3Stack", "Outputs.PublicSubnetId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"PrivateSubnet1Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "NATwithENI1Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_private_subnet.element",
-           	 	"Parameters" : {
-					"AvailabilityZoneName" : {
-                        "Fn::Select" : [
-                            0,
-                            {
-                                "Fn::GetAZs" : ""
-                            }
-                        ]
-                    },
-					"CIDRPrivateSubnet" : {"Ref" : "CIDRPrivateSubnet1"},
-					"PrivateRouteTableId" : { "Fn::GetAtt" : [ "NATwithENI1Stack", "Outputs.PrivateRouteTableId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"PrivateSubnet2Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "NATwithENI2Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_private_subnet.element",
-           	 	"Parameters" : {
-					"AvailabilityZoneName" : {
-                        "Fn::Select" : [
-                            1,
-                            {
-                                "Fn::GetAZs" : ""
-                            }
-                        ]
-                    },
-					"CIDRPrivateSubnet" : {"Ref" : "CIDRPrivateSubnet2"},
-					"PrivateRouteTableId" : { "Fn::GetAtt" : [ "NATwithENI2Stack", "Outputs.PrivateRouteTableId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	},
-    	"PrivateSubnet3Stack" : {
-	    	"Type" : "AWS::CloudFormation::Stack",
-			"DependsOn" : "NATwithENI3Stack",
-       	 	"Properties" : {
-           		"TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_private_subnet.element",
-           	 	"Parameters" : {
-					"AvailabilityZoneName" : {
-                        "Fn::Select" : [
-                            2,
-                            {
-                                "Fn::GetAZs" : ""
-                            }
-                        ]
-                    },
-					"CIDRPrivateSubnet" : {"Ref" : "CIDRPrivateSubnet3"},
-					"PrivateRouteTableId" : { "Fn::GetAtt" : [ "NATwithENI3Stack", "Outputs.PrivateRouteTableId" ] },
-					"VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
-           		}
-			}
-      	}
+    "Conditions" :
+    {
+        "PeerVpc" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "VpcPeerId" }, "" ] } ]
+        },
+        "CreatePeeredZone" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "VpcPeerDomainDnsName" }, "" ] }
+            ]
+        }
     },
-    "Outputs" : {
-         "VPC" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ]
-            },
+    "Resources" :
+    {
+        "VPCStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_vpc_with_igw.element",
+                "Parameters" :
+                {
+                    "CIDRVPC" : { "Ref" : "CIDRVPC" }
+                }
+            }
+      	},
+        "PublicSubnet1Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "VPCStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_public_subnet.element",
+                "Parameters" :
+                {
+                    "AvailabilityZoneName" :
+                    { "Fn::Select" : [
+                        0,
+                        { "Fn::GetAZs" : "" }
+                    ]},
+                    "CIDRPublicSubnet" : { "Ref" : "CIDRPublicSubnet1" },
+                    "PublicRouteTableId" :
+                    { "Fn::GetAtt" : [
+                        "VPCStack",
+                        "Outputs.PublicRouteTableId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "PublicSubnet2Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "VPCStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_public_subnet.element",
+                "Parameters" :
+                {
+                    "AvailabilityZoneName" :
+                    { "Fn::Select" : [
+                        1,
+                        { "Fn::GetAZs" : "" }
+                    ]},
+                    "CIDRPublicSubnet" : { "Ref" : "CIDRPublicSubnet2" },
+                    "PublicRouteTableId" :
+                    { "Fn::GetAtt" : [
+                        "VPCStack",
+                        "Outputs.PublicRouteTableId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "PublicSubnet3Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "VPCStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_public_subnet.element",
+                "Parameters" :
+                {
+                    "AvailabilityZoneName" :
+                    { "Fn::Select" : [
+                        2,
+                        { "Fn::GetAZs" : "" }
+                    ]},
+                    "CIDRPublicSubnet" : {"Ref" : "CIDRPublicSubnet3"},
+                    "PublicRouteTableId" :
+                    { "Fn::GetAtt" : [
+                        "VPCStack",
+                        "Outputs.PublicRouteTableId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "NATwithENI1Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "PublicSubnet1Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_nat_with_eni.element",
+                "Parameters" :
+                {
+                    "CIDRVPC" : {"Ref" : "CIDRVPC"},
+                    "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "InstanceTypeNAT" : {"Ref" : "InstanceTypeNAT"},
+                    "IpAddressNAT" : {"Ref" : "IpAddressNAT1"},
+                    "PublicSubnetId" :
+                    { "Fn::GetAtt" : [
+                        "PublicSubnet1Stack",
+                        "Outputs.PublicSubnetId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "NATwithENI2Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "NATwithENI1Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_nat_with_eni.element",
+                "Parameters" :
+                {
+                    "CIDRVPC" : { "Ref" : "CIDRVPC" },
+                    "KeyPairName" : { "Ref" : "KeyPairName" },
+                    "InstanceTypeNAT" : { "Ref" : "InstanceTypeNAT" },
+                    "IpAddressNAT" : { "Ref" : "IpAddressNAT2" },
+                    "PublicSubnetId" :
+                    { "Fn::GetAtt" : [
+                        "PublicSubnet2Stack",
+                        "Outputs.PublicSubnetId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "NATwithENI3Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "NATwithENI2Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_nat_with_eni.element",
+                "Parameters" :
+                {
+                    "CIDRVPC" : { "Ref" : "CIDRVPC" },
+                    "KeyPairName" : { "Ref" : "KeyPairName" },
+                    "InstanceTypeNAT" : { "Ref" : "InstanceTypeNAT" },
+                    "IpAddressNAT" : { "Ref" : "IpAddressNAT3" },
+                    "PublicSubnetId" :
+                    { "Fn::GetAtt" : [
+                        "PublicSubnet3Stack",
+                        "Outputs.PublicSubnetId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "PrivateSubnet1Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "NATwithENI1Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_private_subnet.element",
+                "Parameters" :
+                {
+                    "AvailabilityZoneName" :
+                    { "Fn::Select" : [
+                        0,
+                        { "Fn::GetAZs" : "" }
+                    ]},
+                    "CIDRPrivateSubnet" : { "Ref" : "CIDRPrivateSubnet1" },
+                    "PrivateRouteTableId" :
+                    { "Fn::GetAtt" : [
+                        "NATwithENI1Stack",
+                        "Outputs.PrivateRouteTableId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "PrivateSubnet2Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "NATwithENI2Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_private_subnet.element",
+                "Parameters" :
+                {
+                    "AvailabilityZoneName" :
+                    { "Fn::Select" : [
+                        1,
+                        { "Fn::GetAZs" : "" }
+                    ]},
+                    "CIDRPrivateSubnet" : { "Ref" : "CIDRPrivateSubnet2" },
+                    "PrivateRouteTableId" :
+                    { "Fn::GetAtt" : [
+                        "NATwithENI2Stack",
+                        "Outputs.PrivateRouteTableId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "PrivateSubnet3Stack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "NATwithENI3Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_private_subnet.element",
+                "Parameters" :
+                {
+                    "AvailabilityZoneName" :
+                    { "Fn::Select" : [
+                        2,
+                        { "Fn::GetAZs" : "" }
+                    ]},
+                    "CIDRPrivateSubnet" : { "Ref" : "CIDRPrivateSubnet3" },
+                    "PrivateRouteTableId" :
+                    { "Fn::GetAtt" : [
+                        "NATwithENI3Stack",
+                        "Outputs.PrivateRouteTableId"
+                    ]},
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        },
+        "VpcPeeringConnectionStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Condition" : "PeerVpc",
+            "DependsOn" : "NATwithENI3Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_vpc_peering_connection.element",
+                "Parameters" :
+                {
+                    "RouteTableId1" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "VPCStack",
+                            "Outputs.PublicRouteTableId"
+                        ]
+                    },
+                    "RouteTableId2" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "NATwithENI1Stack",
+                            "Outputs.PrivateRouteTableId"
+                        ]
+                    },
+                    "RouteTableId3" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "NATwithENI2Stack",
+                            "Outputs.PrivateRouteTableId"
+                        ]
+                    },
+                    "RouteTableId4" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "NATwithENI3Stack",
+                            "Outputs.PrivateRouteTableId"
+                        ]
+                    },
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] },
+                    "VpcPeerId" : { "Ref" : "VpcPeerId" },
+                    "VpcPeerCidr" : { "Ref" : "VpcPeerCidr" }
+                }
+            }
+        },
+        "VpcPeeredZoneStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Condition" : "CreatePeeredZone",
+            "DependsOn" : "VPCStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_r53_peered_domain.element",
+                "Parameters" :
+                {
+                    "PeeredDomainDnsName" : { "Ref" : "VpcPeerDomainDnsName" },
+                    "PeeredDc1Name" : { "Ref" : "VpcPeerDc1Name" },
+                    "PeeredDc1Ip" : { "Ref" : "VpcPeerDc1Ip" },
+                    "PeeredDc2Name" : { "Ref" : "VpcPeerDc2Name" },
+                    "PeeredDc2Ip" : { "Ref" : "VpcPeerDc1Ip" },
+                    "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
+                }
+            }
+        }
+    },
+    "Outputs" :
+    {
+         "VPC" :
+         {
+            "Value" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] },
             "Description" : "VPC ID"
         },
-        "InternetGatewayId" : {
-            "Value" : { 
+        "InternetGatewayId" :
+        {
+            "Value" :
+            {
                 "Fn::GetAtt": [ "VPCStack", "Outputs.InternetGatewayId" ]
             },
             "Description" : "ID of the Internet Gateway"
         },
-        "PublicRouteTableId" : {
-            "Value" : {
+        "PublicRouteTableId" :
+        {
+            "Value" :
+            {
                 "Fn::GetAtt" : [ "VPCStack", "Outputs.PublicRouteTableId" ]
             },
             "Description" : "Route Table ID for Public Subnet"
         },
-        "PublicSubnet1Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "PublicSubnet1Stack", "Outputs.PublicSubnetId" ]
+        "PublicSubnet1Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "PublicSubnet1Stack",
+                    "Outputs.PublicSubnetId"
+                ]
             },
             "Description" : "Subnet ID for Public Subnet 1"
         },
-        "PublicSubnet2Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "PublicSubnet2Stack", "Outputs.PublicSubnetId" ]
+        "PublicSubnet2Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "PublicSubnet2Stack",
+                    "Outputs.PublicSubnetId"
+                ]
             },
             "Description" : "Subnet ID for Public Subnet 2"
         },
-        "PublicSubnet3Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "PublicSubnet3Stack", "Outputs.PublicSubnetId" ]
+        "PublicSubnet3Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "PublicSubnet3Stack",
+                    "Outputs.PublicSubnetId"
+                ]
             },
             "Description" : "Subnet ID for Public Subnet 3"
         },
-        "PrivateSubnet1Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "PrivateSubnet1Stack", "Outputs.PrivateSubnetId" ]
+        "PrivateSubnet1Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "PrivateSubnet1Stack",
+                    "Outputs.PrivateSubnetId"
+                ]
             },
             "Description" : "Subnet ID for Private Subnet 1"
         },
-        "PrivateSubnet2Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "PrivateSubnet2Stack", "Outputs.PrivateSubnetId" ]
+        "PrivateSubnet2Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "PrivateSubnet2Stack",
+                    "Outputs.PrivateSubnetId"
+                ]
             },
             "Description" : "Subnet ID for Private Subnet 2"
         },
-        "PrivateSubnet3Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "PrivateSubnet3Stack", "Outputs.PrivateSubnetId" ]
+        "PrivateSubnet3Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "PrivateSubnet3Stack",
+                    "Outputs.PrivateSubnetId"
+                ]
             },
             "Description" : "Subnet ID for Private Subnet 3"
         },
-        "NAT1ElasticNetworkInterfaceId" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "NATwithENI1Stack", "Outputs.NATElasticNetworkInterfaceId" ]
+        "NAT1ElasticNetworkInterfaceId" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "NATwithENI1Stack",
+                    "Outputs.NATElasticNetworkInterfaceId"
+                ]
             },
             "Description" : "ID of the Elastic Network Interface for NAT 1"
         },
-        "NAT1SecurityGroupId" : {
-            "Value" : { 
-                "Fn::GetAtt": [ "NATwithENI1Stack", "Outputs.NATSecurityGroupId" ]
+        "NAT1SecurityGroupId" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt":
+                [
+                    "NATwithENI1Stack",
+                    "Outputs.NATSecurityGroupId"
+                ]
             },
             "Description" : "ID of the Security Group for NAT 1"
         },
-        "PrivateRouteTable1Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "NATwithENI1Stack", "Outputs.PrivateRouteTableId" ]
+        "PrivateRouteTable1Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "NATwithENI1Stack",
+                    "Outputs.PrivateRouteTableId"
+                ]
             },
             "Description" : "ID of the Private Route Table for NAT 1"
         },
-        "NAT2ElasticNetworkInterfaceId" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "NATwithENI2Stack", "Outputs.NATElasticNetworkInterfaceId" ]
+        "NAT2ElasticNetworkInterfaceId" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "NATwithENI2Stack",
+                    "Outputs.NATElasticNetworkInterfaceId"
+                ]
             },
             "Description" : "ID of the Elastic Network Interface for NAT 2"
         },
-        "NAT2SecurityGroupId" : {
-            "Value" : { 
-                "Fn::GetAtt": [ "NATwithENI2Stack", "Outputs.NATSecurityGroupId" ]
+        "NAT2SecurityGroupId" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt":
+                [
+                    "NATwithENI2Stack",
+                    "Outputs.NATSecurityGroupId"
+                ]
             },
             "Description" : "ID of the Security Group for NAT 2"
         },
-        "PrivateRouteTable2Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "NATwithENI2Stack", "Outputs.PrivateRouteTableId" ]
+        "PrivateRouteTable2Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "NATwithENI2Stack",
+                    "Outputs.PrivateRouteTableId"
+                ]
             },
             "Description" : "ID of the Private Route Table for NAT 2"
         },
-        "NAT3ElasticNetworkInterfaceId" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "NATwithENI3Stack", "Outputs.NATElasticNetworkInterfaceId" ]
+        "NAT3ElasticNetworkInterfaceId" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "NATwithENI3Stack",
+                    "Outputs.NATElasticNetworkInterfaceId"
+                ]
             },
             "Description" : "ID of the Elastic Network Interface for NAT 3"
         },
-        "NAT3SecurityGroupId" : {
-            "Value" : { 
-                "Fn::GetAtt": [ "NATwithENI3Stack", "Outputs.NATSecurityGroupId" ]
+        "NAT3SecurityGroupId" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt":
+                [
+                    "NATwithENI3Stack",
+                    "Outputs.NATSecurityGroupId"
+                ]
             },
             "Description" : "ID of the Security Group for NAT 3"
         },
-        "PrivateRouteTable3Id" : {
-            "Value" : {
-                "Fn::GetAtt" : [ "NATwithENI3Stack", "Outputs.PrivateRouteTableId" ]
+        "PrivateRouteTable3Id" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "NATwithENI3Stack",
+                    "Outputs.PrivateRouteTableId"
+                ]
             },
             "Description" : "ID of the Private Route Table for NAT 3"
+        },
+        "VpcPeeringConnection" :
+        {
+            "Condition" : "PeerVpc",
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "VPCStack",
+                    "Outputs.VpcPeeringConnection"
+                ]
+            },
+            "Description" : "ID of the VPC peering connection"
+        },
+        "VpcPeerPrivateHostedZoneId" :
+        {
+            "Condition" : "CreatePeeredZone",
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "VpcPeeredZoneStack",
+                    "Outputs.PrivateHostedZoneId"
+                ]
+            },
+            "Description" : "ID of the Private Hosted Zone used for resolution of a domain in the peered VPC"
         }
     }
 }

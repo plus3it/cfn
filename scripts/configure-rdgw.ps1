@@ -8,16 +8,24 @@ Param(
 #Based on:
 # * https://s3.amazonaws.com/microsoft_windows/scripts/Configure-RDGW.ps1
 
-if (-not $ServerFQDN) {
-    $name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-hostname
-    if (-not $name) {
-        $name = [System.Net.DNS]::GetHostByName('').HostName
+if (-not $ServerFQDN)
+{
+    try
+    {
+        $name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-hostname
+    }
+    catch
+    {
+        if (-not $name)
+        {
+            $name = [System.Net.DNS]::GetHostByName('').HostName
+        }
     }
     $ServerFQDN = $name
 }
 
 $null = Install-WindowsFeature RDS-Gateway,RSAT-RDS-Gateway
-$null = Import-Module remotedesktopservices
+$null = Import-Module RemoteDesktopServices
 
 # Remove self-signed certs from the personal store before creating a new one
 dir cert:\localmachine\my | ? { $_.Issuer -eq $_.Subject } | % { Remove-Item  $_.PSPath }
@@ -44,6 +52,9 @@ $ekuoids.add($serverauthoid)
 $ekuext = new-object -com "X509Enrollment.CX509ExtensionEnhancedKeyUsage.1"
 $ekuext.InitializeEncode($ekuoids)
 
+$sigoid = New-Object -ComObject X509Enrollment.CObjectId
+$sigoid.InitializeFromValue(([Security.Cryptography.Oid]"SHA256").Value)
+
 $cert = new-object -com "X509Enrollment.CX509CertificateRequestCertificate.1"
 $cert.InitializeFromPrivateKey(2, $key, "")
 $cert.Subject = $name
@@ -51,6 +62,7 @@ $cert.Issuer = $cert.Subject
 $cert.NotBefore = get-date
 $cert.NotAfter = $cert.NotBefore.AddDays(730)
 $cert.X509Extensions.Add($ekuext)
+$cert.SignatureInformation.HashAlgorithm = $sigoid
 $cert.Encode()
 
 $enrollment = new-object -com "X509Enrollment.CX509Enrollment.1"

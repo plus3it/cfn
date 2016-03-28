@@ -1,50 +1,98 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description" : "This template creates a public Elastic Load Balancer using HTTPS on port 443",
-    "Parameters" : {
-        "SslCertificateName" : {
-            "Description" : "The name of the SSL certificate to associate with the ELB. The certificate must have previously been loaded in AWS (via the command line).",
+    "Parameters" :
+    {
+        "SslCertificateName" :
+        {
+            "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB. The cert must already exist in the service.",
             "Type" : "String"
         },
-        "PublicSubnetIDs" : {
+        "SslCertificateService" :
+        {
+            "Description" : "The service hosting the SSL certificate. Must be ACM or IAM.",
+            "Type" : "String",
+            "Default" : "ACM",
+            "AllowedValues" :
+            [
+                "ACM",
+                "IAM"
+            ]
+        },
+        "PublicSubnetIDs" :
+        {
             "Description" : "A list of Public subnet IDs to attach to the load balancer.",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupId" : {
+        "SecurityGroupId" :
+        {
             "Description" : "ID of the security group for ELB",
             "Type" : "AWS::EC2::SecurityGroup::Id"
         }
     },
-    "Resources" : {
-        "ELB" : {
+    "Conditions" :
+    {
+        "UseACM" :
+        { "Fn::Equals" : [
+            { "Ref" : "SslCertificateService" },
+            "ACM"
+        ]}
+    },
+    "Resources" :
+    {
+        "ELB" :
+        {
             "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
-            "Properties" : {
+            "Properties" :
+            {
                 "CrossZone" : "true",
-                "HealthCheck" : {
+                "HealthCheck" :
+                {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
-                    "Target" : "HTTP:80/guacamole/",
+                    "Target" : "HTTP:8080/",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
-                "LBCookieStickinessPolicy" : [
+                "ConnectionSettings" :
+                {
+                    "IdleTimeout" : "900"
+                },
+                "LBCookieStickinessPolicy" :
+                [
                     {
                         "PolicyName" : "guac-lb-cookie-policy"
                     }
                 ],
-                "Listeners" : [
+                "Listeners" :
+                [
                     {
-                        "InstancePort" : "80",
+                        "InstancePort" : "8080",
                         "InstanceProtocol" : "HTTP",
                         "LoadBalancerPort" : "443",
-                        "PolicyNames" : [
+                        "PolicyNames" :
+                        [
                             "guac-lb-cookie-policy"
                         ],
                         "Protocol" : "HTTPS",
-                        "SSLCertificateId" : {
-                            "Fn::Join": [
-                                "",
-                                [
+                        "SSLCertificateId" :
+                        {
+                            "Fn::If" :
+                            [
+                                "UseACM",
+                                { "Fn::Join" : [ ":", [
+                                    "arn:aws:acm",
+                                    { "Ref" : "AWS::Region" },
+                                    { "Ref":"AWS::AccountId" },
+                                    { "Fn::Join" : [
+                                        "",
+                                        [
+                                            "certificate/",
+                                            { "Ref":"SslCertificateName" }
+                                        ]
+                                    ] }
+                                ]]},
+                                { "Fn::Join": [ "", [
                                     "arn:aws:iam::",
                                     {
                                         "Ref":"AWS::AccountId"
@@ -53,7 +101,7 @@
                                     {
                                         "Ref":"SslCertificateName"
                                     }
-                                ]
+                                ]]}
                             ]
                         }
                     }
@@ -61,10 +109,12 @@
                 "Scheme" : "internet-facing",
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupId" } ],
                 "Subnets" : { "Ref" : "PublicSubnetIDs" },
-                "Tags" : [
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
+                        "Value" :
+                        { "Fn::Join" : ["", [
                             "ra-guac-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
@@ -73,12 +123,15 @@
            }
         }
     },
-    "Outputs" : {
-        "LoadBalancerName" : {
+    "Outputs" :
+    {
+        "LoadBalancerName" :
+        {
           "Description" : "Name of the Elastic Load Balancer",
           "Value" : { "Ref" : "ELB" }
         },
-        "LoadBalancerDns" : {
+        "LoadBalancerDns" :
+        {
           "Description" : "DNS name for the ELB",
           "Value" : { "Fn::GetAtt" : ["ELB", "DNSName"] }
         }

@@ -1,11 +1,11 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates creates one security group for RDGW instances, and one for their load balancer",
+    "Description" : "This templates creates one security group for RDSH instances, and one for their load balancer",
     "Parameters" :
     {
         "UseELB" :
         {
-            "Description" : "Set to true if using an ELB in front of the RDGW; otherwise set to false",
+            "Description" : "Set to true if using an ELB in front of the RDSH; otherwise set to false",
             "Type" : "String",
             "Default" : "true",
             "AllowedValues" :
@@ -23,114 +23,114 @@
     "Conditions" :
     {
         "UseELB" : { "Fn::Equals" : [ { "Ref" : "UseELB" }, "true" ] },
-        "NoELB": { "Fn::Equals" : [ { "Ref" : "UseELB" }, "false" ] }
+        "NoELB" : { "Fn::Equals" : [ { "Ref" : "UseELB" }, "false" ] }
     },
     "Resources" :
     {
-        "RdgwSecurityGroup" :
+        "RdshSecurityGroup" :
         {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" :
             {
-                "GroupDescription" : "Enable RDGW access from the Internet",
+                "GroupDescription" : "Allow Remote Access to the RDSH instances",
                 "VpcId" : { "Ref" : "VPC" },
                 "Tags" :
                 [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
-                            "rdgw-",
+                        "Value" : { "Fn::Join" : [ "", [
+                            "ra-rdsh-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
                     }
                 ]
             }
         },
-        "PublicToRdgwIngressTcp443" :
+        "PrivateToRdshIngressTcp3389" :
         {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "NoELB",
             "Properties" :
             {
-                "GroupId" :  { "Ref": "RdgwSecurityGroup" },
+                "GroupId" : { "Ref" : "RdshSecurityGroup" },
                 "IpProtocol" : "tcp",
-                "FromPort" : "443",
-                "ToPort" : "443",
+                "FromPort" : "3389",
+                "ToPort" : "3389",
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToRdgwIngressTcp443" :
+        "ElbToRdshIngressTcp3389" :
         {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
             "Properties" :
             {
-                "GroupId" :  { "Ref": "RdgwSecurityGroup" },
+                "GroupId" : { "Ref" : "RdshSecurityGroup" },
                 "IpProtocol" : "tcp",
-                "FromPort" : "443",
-                "ToPort" : "443",
-                "SourceSecurityGroupId" : { "Ref": "RdgwElbSecurityGroup" }
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "SourceSecurityGroupId" : { "Ref" : "RdshElbSecurityGroup" }
             }
         },
-        "RdgwElbSecurityGroup" :
+        "RdshElbSecurityGroup" :
         {
             "Type" : "AWS::EC2::SecurityGroup",
             "Condition" : "UseELB",
             "Properties" :
             {
-                "GroupDescription" : "Enable RDGW access from the Internet",
+                "GroupDescription" : "Allow connectivity through the RDSH ELB to RDSH instances",
                 "VpcId" : { "Ref" : "VPC" },
                 "Tags" :
                 [
                     {
                         "Key" : "Name",
                         "Value" : { "Fn::Join" : ["", [
-                            "rdgw-elb-",
+                            "ra-rdsh-elb-",
                             { "Ref" : "AWS::StackName" }
                         ]]}
                     }
                 ]
             }
         },
-        "PublicToElbIngressTcp443" :
+        "PublicToElbIngressTcp3389" :
         {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Condition" : "UseELB",
             "Properties" :
             {
-                "GroupId" :  { "Ref": "RdgwElbSecurityGroup" },
+                "GroupId" : { "Ref" : "RdshElbSecurityGroup" },
                 "IpProtocol" : "tcp",
-                "FromPort" : "443",
-                "ToPort" : "443",
+                "FromPort" : "3389",
+                "ToPort" : "3389",
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToRdgwEgressTcp443" :
+        "ElbToRdshEgressTcp3389" :
         {
             "Type" : "AWS::EC2::SecurityGroupEgress",
             "Condition" : "UseELB",
             "Properties" :
             {
-                "GroupId" :  { "Ref": "RdgwElbSecurityGroup" },
+                "GroupId" : { "Ref" : "RdshElbSecurityGroup" },
                 "IpProtocol" : "tcp",
-                "FromPort" : "443",
-                "ToPort" : "443",
-                "DestinationSecurityGroupId" : { "Ref": "RdgwSecurityGroup" }
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "DestinationSecurityGroupId" : { "Ref" : "RdshSecurityGroup" }
             }
         }
     },
     "Outputs" :
     {
-        "RdgwSecurityGroupId" :
+        "RdshSecurityGroupId" :
         {
-            "Value" : { "Ref" : "RdgwSecurityGroup" },
-            "Description" : "Security Group ID for the RDGW"
+            "Value" : { "Ref" : "RdshSecurityGroup" },
+            "Description" : "Security Group ID for RDSH instances"
         },
-        "RdgwElbSecurityGroupId" :
+        "RdshElbSecurityGroupId" :
         {
             "Condition" : "UseELB",
-            "Value" : { "Ref" : "RdgwElbSecurityGroup" },
-            "Description" : "Security Group ID for the RDGW Elastic Load Balancer"
+            "Value" : { "Ref" : "RdshElbSecurityGroup" },
+            "Description" : "Security Group ID for the RDSH Elastic Load Balancer"
         }
     }
 }

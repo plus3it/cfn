@@ -16,7 +16,7 @@
 #
 #################################################################
 __ScriptName="make-guac.sh"
-__GuacVersion="0.9.7"
+__GuacVersion="0.9.9"
 
 log()
 {
@@ -44,17 +44,17 @@ usage()
 {
     cat << EOT
   Usage:  ${__ScriptName} [options]
-  
+
   Note:
   If no options are specified, then Guacamole v${__GuacVersion} will be
   installed, but it will not be configured and users will not be able to
-  authenticate. Specify -H (and associated options) to configure LDAP 
+  authenticate. Specify -H (and associated options) to configure LDAP
   authentication. Specify -G (and associated options) to configure file-based
   authentication.
 
   Options:
   -h  Display this message.
-  -H  Hostname of the LDAP server to authenticate users against 
+  -H  Hostname of the LDAP server to authenticate users against
       (e.g. ldap.example.com). Using the domain DNS name is acceptable as long
       as it resolves to an LDAP server (e.g. example.com). If specified, LDAP
       authentication will be installed and configured. Requires -D.
@@ -63,17 +63,17 @@ usage()
   -U  The base of the DN for all Guacamole users. This is prepended to the
       directory DN (-D) to create the full DN to the user container. This will
       be appended to the username when a user logs in. Default is "CN=Users".
-  -R  The base of the DN for all Guacamole roles. This is used by the LDAP 
+  -R  The base of the DN for all Guacamole roles. This is used by the LDAP
       plugin to search for groups the user is a member of. Using this option
-      will enable Roles Based Access Control (RBAC) support. This is prepended 
-      to the directory DN (-D) to create the full DN to the RBAC container.    
+      will enable Roles Based Access Control (RBAC) support. This is prepended
+      to the directory DN (-D) to create the full DN to the RBAC container.
   -A  The attribute which contains the username and which is part of the DN
       for all Guacamole users. Usually, this will be "uid" or "cn". This is
       used together with the user base DN (-U) to derive the full DN of each
       user logging in. Default is "cn".
   -C  The base of the DN for all Guacamole configurations. Each configuration
       is analogous to a connection. This is prepended to the directory DN (-D)
-      to create the full DN to the configuration container. Default is 
+      to create the full DN to the configuration container. Default is
       "CN=GuacConfigGroups". NOTE: This default value does not exist by
       default in the LDAP directory and will need to be created, or a
       different value will need to be provided.
@@ -110,7 +110,7 @@ SSH_PASSWORD=
 
 
 # Parse command-line parameters
-while getopts :hH:D:U:A:C:P:v:G:g:S:s: opt
+while getopts :hH:D:U:R:A:C:P:v:G:g:S:s: opt
 do
     case "${opt}" in
         h)
@@ -128,7 +128,7 @@ do
             ;;
         R)
             LDAP_GROUP_BASE="${OPTARG}"
-            ;;            
+            ;;
         A)
             LDAP_USER_ATTRIBUTE="${OPTARG}"
             ;;
@@ -197,6 +197,8 @@ GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
 GUAC_SOURCE="http://sourceforge.net/projects/guacamole/files/current/source"
 GUAC_BINARY="http://sourceforge.net/projects/guacamole/files/current/binary"
 GUAC_EXTENSIONS="http://sourceforge.net/projects/guacamole/files/current/extensions"
+FREERDP_REPO="git://github.com/FreeRDP/FreeRDP.git"
+FREERDP_BRANCH="stable-1.1"
 ADDUSER="/usr/sbin/useradd"
 MODUSER="/usr/sbin/usermod"
 
@@ -216,17 +218,46 @@ curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG
 log "Enabling the EPEL and base repos"
 yum-config-manager --enable epel base
 
-log "Installing OS standard Tomcat and Apache"
-yum install -y httpd24 tomcat7
+log "Installing OS standard Tomcat"
+yum install -y tomcat7
+
+log "Installing utils and libraries to build freerdp from source"
+yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
+    libXinerama-devel libXcursor-devel libXi-devel libXdamage-devel \
+    libXv-devel libxkbfile-devel alsa-lib-devel cups-devel ffmpeg-devel \
+    glib2-devel
+
+# Build freerdp
+cd /root
+FREERDP_BASE=$(basename -s .git ${FREERDP_REPO})
+rm -rf "${FREERDP_BASE}"
+git clone "${FREERDP_REPO}" || \
+    die "Could not clone ${FREERDP_REPO}"
+cd "${FREERDP_BASE}"
+git checkout "${FREERDP_BRANCH}" || \
+    die "Could not checkout branch ${FREERDP_BRANCH}"
+log "Building ${FREERDP_BASE} from source"
+cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_SSE2=ON -DWITH_DEBUG_ALL=ON .
+make
+make install
+(
+    printf "/usr/local/lib/freerdp\n"
+    printf "/usr/local/lib64/freerdp\n"
+    printf "/usr/local/lib\n"
+    printf "/usr/local/lib64\n"
+) > /etc/ld.so.conf.d/freerdp.conf
+ldconfig
+
 
 log "Installing libraries to build guacamole from source"
 yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
-    uuid-devel freerdp-devel pango-devel libssh2-devel pulseaudio-libs-devel \
-    openssl-devel libvorbis-devel dejavu-sans-mono-fonts freerdp-plugins
+    uuid-devel pango-devel libssh2-devel pulseaudio-libs-devel openssl-devel \
+    libvorbis-devel dejavu-sans-mono-fonts libwebp-devel \
 
 # Build guacamole-server
 cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
+rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
 (curl -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz/download" | tar -xzv) || \
     die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
@@ -236,9 +267,10 @@ log "Building ${GUAC_FILEBASE} from source"
 ./configure --with-init-dir=/etc/init.d
 make
 make install
+ldconfig
 
 log "Enabling services to start at next boot"
-for SVC in httpd tomcat7 guacd
+for SVC in tomcat7 guacd
 do
     chkconfig ${SVC} on
 done
@@ -260,14 +292,14 @@ done
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
 curl -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
-    -o /var/lib/tomcat7/webapps/guacamole.war
+    -o /var/lib/tomcat7/webapps/ROOT.war
 
 
 # Gotta make SELinux happy...
 if [[ $(getenforce) = "Enforcing" ]] || [[ $(getenforce) = "Permissive" ]]
 then
     chcon -R --reference=/var/lib/tomcat7/webapps \
-        /var/lib/tomcat7/webapps/guacamole.war
+        /var/lib/tomcat7/webapps/ROOT.war
     if [[ $(getsebool httpd_can_network_relay | \
         cut -d ">" -f 2 | sed 's/[ ]*//g') = "off" ]]
     then
@@ -304,7 +336,20 @@ log "Writing /etc/guacamole/logback.xml"
     printf "\n"
     printf "</configuration>\n"
 ) > /etc/guacamole/logback.xml
-
+log "Writing /etc/guacamole/guacd.conf"
+(
+    printf "# guacd configuration file\n\n"
+    printf "[daemon]\n"
+    printf "log_level = debug\n"
+) > /etc/guacamole/guacd.conf
+log "Writing /etc/rsyslog.d/00-guacd.conf"
+(
+    printf "# Log guacd generated log messages to file\n"
+    printf ":syslogtag, startswith, \"guacd\" /var/log/guacd.log\n\n"
+    printf "# comment out the following line to allow GUACD messages through.\n"
+    printf "# Doing so means you'll also get GUACD messages in /var/log/syslog\n"
+    printf "& ~\n"
+) > /etc/rsyslog.d/00-guacd.conf
 
 if [ -n "${GUAC_USERNAME}" ]
 then
@@ -384,24 +429,32 @@ then
         echo "ldap-username-attribute: ${LDAP_USER_ATTRIBUTE}"
         echo "ldap-config-base-dn:     ${LDAP_CONFIG_BASE},${LDAP_DOMAIN_DN}"
     ) >> /etc/guacamole/guacamole.properties
-    
+
     if [ -n "$LDAP_GROUP_BASE" ]
     then
         log "Adding the LDAP group base DN, RBAC is enabled."
         (
-            echo "ldap-group-base-dn       ${LDAP_GROUP_BASE},${LDAP_DOMAIN_DN}"
+            echo "ldap-group-base-dn:      ${LDAP_GROUP_BASE},${LDAP_DOMAIN_DN}"
         ) >> /etc/guacamole/guacamole.properties
-        
+
         if [ "$GUAC_VERSION" == "0.9.7" ]
         then
             log "Enabling custom RBAC jar for 0.9.7"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || die "Unable to download 0.9.7 custom plugin from s3 bucket" 
+            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || \
+                die "Unable to download 0.9.7 custom plugin from s3 bucket"
+        elif [ "$GUAC_VERSION" == "0.9.9" ]
+        then
+            log "Enabling custom RBAC jar for 0.9.9"
+            rm -rf "/etc/guacamole/extensions/*"
+            cd "/etc/guacamole/extensions/"
+            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.9.jar || \
+                die "Unable to download 0.9.9 custom plugin from s3 bucket"
         else
-            log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7!"
+            log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7 or 0.9.9!"
         fi
-    fi    	
+    fi
 fi
 
 
@@ -414,53 +467,21 @@ log "Setting SEL contexts on shell-init files"
 chcon system_u:object_r:bin_t:s0 /etc/profile.d/guacamole.*
 
 
-log "Adding a proxy-directive to Apache, /etc/httpd/conf.d/Guacamole-proxy.conf"
-(
-    printf "<Location />\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass http://localhost:8080/guacamole/"
-    printf " flushpackets=on\n"
-    printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
-    printf "\tProxyPassReverseCookiePath /guacamole/ /\n"
-    printf "</Location>\n"
-    printf "\n"
-    printf "<Location /guacamole/>\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass http://localhost:8080/guacamole/"
-    printf " flushpackets=on\n"
-    printf "\tProxyPassReverse http://localhost:8080/guacamole/\n"
-    printf "\tProxyPassReverseCookiePath /guacamole/ /guacamole/\n"
-    printf "</Location>\n"
-    printf "\n"
-    printf "<Location /guacamole/websocket-tunnel>\n"
-    printf "\tOrder allow,deny\n"
-    printf "\tAllow from all\n"
-    printf "\tProxyPass ws://localhost:8080//guacamole/websocket-tunnel\n"
-    printf "\tProxyPassReverse ws://localhost:8080//guacamole/websocket-tunnel\n"
-    printf "</Location>\n"
-) > /etc/httpd/conf.d/Guacamole-proxy.conf
-
-
-log "Link guacamole to /etc/guacamole"
-if [[ ! -d /usr/share/tomcat7/.guacamole ]]
-then
-    mkdir /usr/share/tomcat7/.guacamole
-fi
-cd /usr/share/tomcat7/.guacamole
-for FILE in /etc/guacamole/*
-do
-    ln -sf ${FILE}
-done
-
-
 log "Ensuring freerdp plugins are linked properly"
 if [[ ! -d /usr/lib64/freerdp ]]
 then
     mkdir /usr/lib64/freerdp
 fi
 cd /usr/lib64/freerdp
+for FILE in /usr/local/lib/freerdp/*
+do
+    ln -sf ${FILE}
+done
+if [[ ! -d /usr/local/lib64/freerdp ]]
+then
+    mkdir /usr/local/lib64/freerdp
+fi
+cd /usr/local/lib64/freerdp
 for FILE in /usr/local/lib/freerdp/*
 do
     ln -sf ${FILE}
@@ -476,7 +497,7 @@ fi
 
 # Start services
 log "Attempting to start proxy-related services"
-for SVC in guacd tomcat7 httpd
+for SVC in rsyslog guacd tomcat7
 do
     log "Stopping and starting ${SVC}"
     /sbin/service ${SVC} stop && /sbin/service ${SVC} start

@@ -1,29 +1,37 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
     "Description" : "This template creates a internal Elastic Load Balancer using TCP on port 3389",
-    "Parameters" : {
-        "PrivateSubnetIDs" : {
+    "Parameters" :
+    {
+        "PrivateSubnetIDs" :
+        {
             "Description" : "A list of Private subnet IDs to attach to the load balancer.",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupId" : {
+        "SecurityGroupId" :
+        {
             "Description" : "ID of the security group for the ELB",
             "Type" : "AWS::EC2::SecurityGroup::Id"
         }
     },
-    "Resources" : {
-        "ELB" : {
+    "Resources" :
+    {
+        "ELB" :
+        {
             "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-            "Properties": {
+            "Properties":
+            {
                 "CrossZone" : "false",
-                "HealthCheck" : {
+                "HealthCheck" :
+                {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
                     "Target" : "TCP:3389",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
-                "Listeners" : [
+                "Listeners" :
+                [
                     {
                         "InstancePort" : "3389",
                         "InstanceProtocol" : "TCP",
@@ -31,28 +39,34 @@
                         "Protocol" : "TCP"
                     }
                 ],
-                "Policies" : [
-                ],
+                "Policies" : [],
                 "Scheme" : "internal",
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupId" } ],
                 "Subnets" : { "Ref" : "PrivateSubnetIDs" },
-                "Tags" : [
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Ref" : "AWS::StackName" }
+                        "Value" : { "Fn::Join" : ["", [
+                            "ra-rdsh-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
                     }
                 ]
             }
         }
     },
-    "Outputs" : {
-        "LoadBalancerName" : {
+    "Outputs" :
+    {
+        "LoadBalancerName" :
+        {
             "Description" : "Name of the Elastic Load Balancer",
             "Value" : { "Ref" : "ELB" }
         },
-        "LoadBalancerDns" : {
+        "LoadBalancerDns" :
+        {
             "Description" : "DNS name for the ELB",
-            "Value" : { "Fn::GetAtt" : ["ELB", "DNSName"] }
+            "Value" : { "Fn::GetAtt" : [ "ELB", "DNSName" ] }
         }
     }
 }

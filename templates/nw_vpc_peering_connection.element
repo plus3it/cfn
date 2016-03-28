@@ -1,0 +1,157 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This element creates a VPC peering connection and adds the necessary route to specified route tables.",
+    "Parameters" :
+    {
+        "RouteTableId1" :
+        {
+            "Description" : "ID of the first Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+        },
+        "RouteTableId2" :
+        {
+            "Description" : "ID of the second Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+        },
+        "RouteTableId3" :
+        {
+            "Description" : "ID of the third Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+        },
+        "RouteTableId4" :
+        {
+            "Description" : "ID of the third Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+        },
+        "VPC" :
+        {
+            "Description" : "VPC ID where the peering connection will be initiated.",
+            "Type" : "AWS::EC2::VPC::Id"
+        },
+        "VpcPeerId" :
+        {
+            "Description" : "VPC ID of the peer.",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
+        },
+        "VpcPeerCidr" :
+        {
+            "Description" : "CIDR block for the VPC Peer (Example: 10.1.0.0/16, etc...). Used to create a route to the VPC peer.",
+            "Type" : "String",
+            "Default" : "10.0.0.0/16",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+        }
+        
+    },
+    "Conditions" :
+    {
+        "RouteTable1" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "RouteTableId1" }, "" ] }
+            ]
+        },
+        "RouteTable2" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "RouteTableId2" }, "" ] }
+            ]
+        },
+        "RouteTable3" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "RouteTableId3" }, "" ] }
+            ]
+        },
+        "RouteTable4" :
+        {
+            "Fn::Not" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "RouteTableId4" }, "" ] }
+            ]
+        }
+    },
+    "Resources" :
+    {
+        "VpcPeeringConnection" :
+        {
+            "Type" : "AWS::EC2::VPCPeeringConnection",
+            "Properties" :
+            {
+                "VpcId" : { "Ref" : "VPC" },
+                "PeerVpcId" : { "Ref": "VpcPeerId" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        },
+        "VpcPeerRoute1" :
+        {
+            "Type" : "AWS::EC2::Route",
+            "Condition" : "RouteTable1",
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "RouteTableId1" },
+                "DestinationCidrBlock" : { "Ref" : "VpcPeerCidr" },
+                "VpcPeeringConnectionId" : { "Ref" : "VpcPeeringConnection" }
+            }
+        },
+        "VpcPeerRoute2" :
+        {
+            "Type" : "AWS::EC2::Route",
+            "Condition" : "RouteTable2",
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "RouteTableId2" },
+                "DestinationCidrBlock" : { "Ref" : "VpcPeerCidr" },
+                "VpcPeeringConnectionId" : { "Ref" : "VpcPeeringConnection" }
+            }
+        },
+        "VpcPeerRoute3" :
+        {
+            "Type" : "AWS::EC2::Route",
+            "Condition" : "RouteTable3",
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "RouteTableId3" },
+                "DestinationCidrBlock" : { "Ref" : "VpcPeerCidr" },
+                "VpcPeeringConnectionId" : { "Ref" : "VpcPeeringConnection" }
+            }
+        },
+        "VpcPeerRoute4" :
+        {
+            "Type" : "AWS::EC2::Route",
+            "Condition" : "RouteTable4",
+            "Properties" :
+            {
+                "RouteTableId" : { "Ref" : "RouteTableId4" },
+                "DestinationCidrBlock" : { "Ref" : "VpcPeerCidr" },
+                "VpcPeeringConnectionId" : { "Ref" : "VpcPeeringConnection" }
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "VpcPeeringConnection" :
+        {
+            "Value" : { "Ref" : "VpcPeeringConnection" },
+            "Description" : "ID of the VPC peering connection"
+        }
+    }
+}

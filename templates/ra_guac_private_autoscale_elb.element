@@ -1,177 +1,211 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This templates deploys Guacamole (Guac) instances in an autoscale group behind an ELB.",
-    "Parameters"               : {
-        "KeyPairName" : {
+    "Description" : "This templates deploys Guacamole (Guac) instances in an autoscale group behind an ELB.",
+    "Parameters" :
+    {
+        "KeyPairName" :
+        {
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type"        : "AWS::EC2::KeyPair::KeyName"
+            "Type" : "AWS::EC2::KeyPair::KeyName"
         },
-        "InstanceType" : {
+        "AmiNameSearchString" :
+        {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "amzn-ami-hvm-*.x86_64-gp2"
+        },
+        "InstanceType" :
+        {
             "Description" : "Amazon EC2 instance type for the Guacamole Instances",
-            "Type"        : "String",
-            "Default"     : "t2.micro",
-            "AllowedValues" : [
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" :
+            [
                 "t2.micro",
                 "t2.small",
                 "t2.medium",
+                "t2.large",
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
                 "m4.xlarge"
             ]
         },
-        "DesiredCapacity" : {
+        "ForceUpdateToggle" :
+        {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" :
+            [
+                "A",
+                "B"
+            ]
+        },
+        "DesiredCapacity" :
+        {
             "Description" : "The number of instances the autoscale group will spin up initially",
             "Type" : "String",
             "MinLength" : "1",
             "Default" : "1"
         },
-        "MinCapacity" : {
+        "MinCapacity" :
+        {
             "Description" : "The minimum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
             "Default" : "1"
         },
-        "MaxCapacity" : {
+        "MaxCapacity" :
+        {
             "Description" : "The maximum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
             "Default" : "1"
         },
-        "ElbName" : {
+        "ElbName" :
+        {
             "Description" : "Name of the Guacamole Elastic Load Balancer",
             "Type" : "String",
             "MinLength" : "1"
         },
-        "GuacLdapServer" : {
+        "GuacLdapServer" :
+        {
             "Description" : "Name of LDAP server Guacamole will authenticate against",
             "Type" : "String",
             "Default" : "ad.example.com",
             "MinLength" : "1"
         },
-        "GuacLdapDN" : {
+        "GuacLdapDN" :
+        {
             "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
             "Default" : "DC=ad,DC=example,DC=com",
             "MinLength" : "1"
         },
-        "PrivateSubnetIDs" : {
+        "GuacVersion" :
+        {
+            "Description" : "Version of Guacamole to install",
+            "Type" : "String",
+            "Default" : "0.9.9",
+            "MinLength" : "1"
+        },
+        "PrivateSubnetIDs" :
+        {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
-            "Type"        : "List<AWS::EC2::Subnet::Id>"
+            "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupIDs" : {
+        "SecurityGroupIDs" :
+        {
             "Description" : "List of security group IDs for Guacamole instances",
-            "Type"        : "List<AWS::EC2::SecurityGroup::Id>"
+            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
         }
     },
-    "Mappings" : {
-        "AWSInstanceType2Arch" : {
-            "t2.micro" : {
-                "Arch" : "64"
-            },
-            "t2.small" : {
-                "Arch" : "64"
-            },
-            "t2.medium" : {
-                "Arch" : "64"
-            },
-            "c4.large" : {
-                "Arch" : "64"
-            },
-            "c4.xlarge" : {
-                "Arch" : "64"
-            },
-            "m4.large" : {
-                "Arch" : "64"
-            },
-            "m4.xlarge" : {
-                "Arch" : "64"
+    "Resources" :
+    {
+        "AmiIdLookup":
+        {
+            "Type": "Custom::AmiIdLookup",
+            "Properties":
+            {
+                "ServiceToken":
+                { "Fn::Join" : [ ":", [
+                    "arn:aws:lambda",
+                    { "Ref" : "AWS::Region" },
+                    { "Ref" : "AWS::AccountId" },
+                    "function:cfn-look-up-ami-ids"
+                ]]},
+                "Region": { "Ref" : "AWS::Region" },
+                "AmiNameSearchString": { "Ref" : "AmiNameSearchString" }
             }
         },
-        "AWSRegionArch2AMI" : {
-            "us-east-1" : {
-                "64" : "ami-e3106686"
-            },
-            "us-west-2" : {
-                "64" : "ami-9ff7e8af"
-            },
-            "us-west-1" : {
-                "64" : "ami-cd3aff89"
+        "GuacScaleUpPolicy" :
+        {
+            "Type" : "AWS::AutoScaling::ScalingPolicy",
+            "Properties" :
+            {
+                "AdjustmentType" : "ChangeInCapacity",
+                "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
+                "Cooldown" : "60",
+                "ScalingAdjustment" : "1"
             }
-        }
-    },
-    "Resources" : {
-        "GuacScaleUpPolicy" : {
-           "Type" : "AWS::AutoScaling::ScalingPolicy",
-           "Properties" : {
-              "AdjustmentType" : "ChangeInCapacity",
-              "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
-              "Cooldown" : "60",
-              "ScalingAdjustment" : "1"
-           }
         },
-        "GuacScaleDownPolicy" : {
-           "Type" : "AWS::AutoScaling::ScalingPolicy",
-           "Properties" : {
-              "AdjustmentType" : "ChangeInCapacity",
-              "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
-              "Cooldown" : "60",
-              "ScalingAdjustment" : "-1"
-           }
+        "GuacScaleDownPolicy" :
+        {
+            "Type" : "AWS::AutoScaling::ScalingPolicy",
+            "Properties" :
+            {
+                "AdjustmentType" : "ChangeInCapacity",
+                "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
+                "Cooldown" : "60",
+                "ScalingAdjustment" : "-1"
+            }
         },
-        "GuacCPUAlarmLow": {
-           "Type": "AWS::CloudWatch::Alarm",
-           "Properties": {
-              "EvaluationPeriods": "10",
-              "Statistic": "Average",
-              "Threshold": "10",
-              "AlarmDescription": "Scale-down if CPU < 10% for 10 minutes",
-              "Period": "60",
-              "AlarmActions": [ { "Ref": "GuacScaleDownPolicy" } ],
-              "Namespace": "AWS/EC2",
-              "Dimensions": [ {
-                 "Name": "AutoScalingGroupName",
-                 "Value": { "Ref": "GuacAutoScalingGroup" }
-              } ],
-              "ComparisonOperator": "LessThanThreshold",
-              "MetricName": "CPUUtilization"
-           }
+        "GuacCPUAlarmLow":
+        {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties":
+            {
+                "EvaluationPeriods": "10",
+                "Statistic": "Average",
+                "Threshold": "10",
+                "AlarmDescription": "Scale-down if CPU < 10% for 10 minutes",
+                "Period": "60",
+                "AlarmActions": [ { "Ref": "GuacScaleDownPolicy" } ],
+                "Namespace": "AWS/EC2",
+                "Dimensions":
+                [{
+                   "Name": "AutoScalingGroupName",
+                   "Value": { "Ref": "GuacAutoScalingGroup" }
+                }],
+                "ComparisonOperator": "LessThanThreshold",
+                "MetricName": "CPUUtilization"
+            }
         },
-        "GuacCPUAlarmHigh": {
-           "Type": "AWS::CloudWatch::Alarm",
-           "Properties": {
-              "EvaluationPeriods": "5",
-              "Statistic": "Average",
-              "Threshold": "70",
-              "AlarmDescription": "Scale-up if CPU > 70% for 5 minutes or metric disappears indicating instance is down",
-              "Period": "60",
-              "AlarmActions": [ { "Ref": "GuacScaleUpPolicy" } ],
-              "Namespace": "AWS/EC2",
-              "Dimensions": [ {
-                 "Name": "AutoScalingGroupName",
-                 "Value": { "Ref": "GuacAutoScalingGroup" }
-              } ],
-              "ComparisonOperator": "GreaterThanThreshold",
-              "MetricName": "CPUUtilization"
-           }
+        "GuacCPUAlarmHigh":
+        {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties":
+            {
+                "EvaluationPeriods": "5",
+                "Statistic": "Average",
+                "Threshold": "70",
+                "AlarmDescription": "Scale-up if CPU > 70% for 5 minutes or metric disappears indicating instance is down",
+                "Period": "60",
+                "AlarmActions": [ { "Ref": "GuacScaleUpPolicy" } ],
+                "Namespace": "AWS/EC2",
+                "Dimensions":
+                [{
+                   "Name": "AutoScalingGroupName",
+                   "Value": { "Ref": "GuacAutoScalingGroup" }
+                }],
+                "ComparisonOperator": "GreaterThanThreshold",
+                "MetricName": "CPUUtilization"
+            }
         },
-        "GuacAutoScalingGroup" : {
+        "GuacAutoScalingGroup" :
+        {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
-            "UpdatePolicy" : {
-                "AutoScalingRollingUpdate" : {
+            "UpdatePolicy" :
+            {
+                "AutoScalingRollingUpdate" :
+                {
                     "MinInstancesInService" : "1",
                     "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
                     "PauseTime" : "PT15M"
                 }
             },
-            "CreationPolicy" : {
-                "ResourceSignal" : {
+            "CreationPolicy" :
+            {
+                "ResourceSignal" :
+                {
                     "Count" : { "Ref" : "DesiredCapacity" },
                     "Timeout" : "PT15M"
                 }
             },
-            "Properties" : {
+            "Properties" :
+            {
                 "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
                 "LaunchConfigurationName" : { "Ref" : "GuacLaunchConfig" },
                 "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
@@ -180,10 +214,12 @@
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
-                "Tags" : [
+                "Tags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
+                        "Value" :
+                        { "Fn::Join" : ["", [
                             "ra-guac-",
                             { "Ref" : "AWS::StackName" }
                         ]]},
@@ -192,26 +228,36 @@
                 ]
             }
         },
-        "GuacLaunchConfig" : {
+        "GuacLaunchConfig" :
+        {
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
-            "Metadata" : {
-                "AWS::CloudFormation::Init" : {
-                    "configSets" : {
-                        "config" : [
+            "Metadata" :
+            {
+                "AWS::CloudFormation::Init" :
+                {
+                    "configSets" :
+                    {
+                        "config" :
+                        [
                             "setup",
                             "make-guac",
                             "finalize"
                         ],
-                        "update" : [
+                        "update" :
+                        [
                             "setup",
                             "make-guac",
                             "finalize"
                         ]
                     },
-                    "setup" : {
-                        "files" : {
-                            "/etc/cfn/cfn-hup.conf" : {
-                                "content" : { "Fn::Join" : ["", [
+                    "setup" :
+                    {
+                        "files" :
+                        {
+                            "/etc/cfn/cfn-hup.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : ["", [
                                     "[main]\n",
                                     "stack=", { "Ref" : "AWS::StackId" }, "\n",
                                     "region=", { "Ref" : "AWS::Region" }, "\n",
@@ -222,8 +268,10 @@
                                 "owner"   : "root",
                                 "group"   : "root"
                             },
-                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
-                                "content" : { "Fn::Join" : ["", [
+                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : ["", [
                                     "[cfn-auto-reloader-hook]\n",
                                     "triggers=post.update\n",
                                     "path=Resources.GuacLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
@@ -237,19 +285,31 @@
                                 "owner"   : "root",
                                 "group"   : "root"
                             },
-                            "/etc/cfn/scripts/make-guac.sh" : {
+                            "/etc/cfn/scripts/make-guac.sh" :
+                            {
                                 "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/make-guac.sh",
                                 "mode"    : "000700",
                                 "owner"   : "root",
                                 "group"   : "root"
                             }
                         },
-                        "services" : {
-                            "sysvinit" : {
-                                "cfn-hup" : {
+                        "commands" :
+                        {
+                            "10-yum-update" :
+                            {
+                                "command" : "yum -y update"
+                            }
+                        },
+                        "services" :
+                        {
+                            "sysvinit" :
+                            {
+                                "cfn-hup" :
+                                {
                                     "enabled" : "true",
                                     "ensureRunning" : "true",
-                                    "files" : [
+                                    "files" :
+                                    [
                                         "/etc/cfn/cfn-hup.conf",
                                         "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
                                     ]
@@ -257,122 +317,126 @@
                             }
                         }
                     },
-                    "make-guac" : {
-                        "commands" : {
-                            "10-make-guac" : {
-                                "command" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "/etc/cfn/scripts/make-guac.sh",
-                                            " -H ",
-                                            { "Ref" : "GuacLdapServer" },
-                                            " -D ",
-                                            { "Ref" : "GuacLdapDN" }
-                                        ]
-                                    ]
-                                }
+                    "make-guac" :
+                    {
+                        "commands" :
+                        {
+                            "10-make-guac" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    "/etc/cfn/scripts/make-guac.sh",
+                                    " -H ",
+                                    { "Ref" : "GuacLdapServer" },
+                                    " -D ",
+                                    { "Ref" : "GuacLdapDN" },
+                                    " -v ",
+                                    { "Ref" : "GuacVersion" }
+                                ]]}
                             }
                         }
                     },
-                    "finalize" : {
-                        "commands" : {
-                            "10-signal-success" : {
-                                "command" : {
-                                    "Fn::Join" : [
-                                        "",
-                                        [
-                                            "/opt/aws/bin/cfn-signal -e 0 ",
-                                            "   --stack ", { "Ref" : "AWS::StackName" },
-                                            "   --resource GuacAutoScalingGroup ",
-                                            "   --region ", { "Ref" : "AWS::Region"}, "\n"
-                                        ]
-                                    ]
-                                },
+                    "finalize" :
+                    {
+                        "commands" :
+                        {
+                            "10-signal-success" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    "/opt/aws/bin/cfn-signal -e 0 ",
+                                    "   --stack ", { "Ref" : "AWS::StackName" },
+                                    "   --resource GuacAutoScalingGroup ",
+                                    "   --region ", { "Ref" : "AWS::Region"}, "\n"
+                                ]]},
                                 "ignoreErrors" : "true"
                             }
                         }
                     }
                 }
             },
-            "Properties" : {
-                "ImageId" : {
-                    "Fn::FindInMap" : [
-                        "AWSRegionArch2AMI",
-                        {
-                            "Ref" : "AWS::Region"
-                        },
-                        {
-                            "Fn::FindInMap" : [
-                                "AWSInstanceType2Arch",
-                                {
-                                    "Ref" : "InstanceType"
-                                },
-                                "Arch"
-                            ]
-                        }
-                    ]
-                },
-                "InstanceType" : {
-                    "Ref" : "InstanceType"
-                },
-                "KeyName" : {
-                    "Ref" : "KeyPairName"
-                },
-                "BlockDeviceMappings" : [
+            "Properties" :
+            {
+                "ImageId": { "Fn::GetAtt": [ "AmiIdLookup", "Id" ] },
+                "InstanceType" : { "Ref" : "InstanceType" },
+                "KeyName" : { "Ref" : "KeyPairName" },
+                "BlockDeviceMappings" :
+                [
                     {
                         "DeviceName" : "/dev/xvda",
-                        "Ebs"        : {
+                        "Ebs" :
+                        {
                             "VolumeType" : "gp2",
                             "DeleteOnTermination" : "true"
                         }
                     }
                 ],
-                "SecurityGroups" : {
-                    "Ref" : "SecurityGroupIDs"
-                },
-                "UserData" : {
-                    "Fn::Base64" : {
-                        "Fn::Join" : [
-                            "",
-                            [
-                                "#!/bin/bash -xe\n",
+                "SecurityGroups" : { "Ref" : "SecurityGroupIDs" },
+                "UserData" :
+                { "Fn::Base64" : { "Fn::Join" : [ "", [
+                    "#!/bin/bash -xe\n\n",
 
-                                "# Get pip\n",
-                                "curl https://bootstrap.pypa.io/get-pip.py | python\n",
-                                "hash pip 2> /dev/null || PATH=\"${PATH}:/usr/local/bin\"\n",
+                    "# CFN LaunchConfig Update Toggle: ",
+                    { "Ref" : "ForceUpdateToggle" },
+                    "\n\n",
 
-                                "# Upgrade setuptools\n",
-                                "pip install --upgrade setuptools\n",
+                    "# Get pip\n",
+                    "curl --silent --show-error --retry 5 -L ",
+                    "https://bootstrap.pypa.io/get-pip.py",
+                    " | python", "\n\n",
 
-                                "# Fix python urllib3 warnings\n",
-                                "yum -y install gcc python-devel libffi-devel openssl-devel\n",
-                                "pip install pyopenssl ndg-httpsclient pyasn1\n",
+                    "# Add pip to path\n",
+                    "hash pip 2> /dev/null || ",
+                    "PATH=\"${PATH}:/usr/local/bin\"", "\n\n",
 
-                                "# Get cfn scripts\n",
-                                "#pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
-                                "#chmod 775 /opt/aws/apitools/cfn-init/init/redhat/cfn-hup\n",
-                                "#ln -f -s /opt/aws/apitools/cfn-init/init/redhat/cfn-hup /etc/rc.d/init.d/cfn-hup\n",
-                                "#chkconfig --add cfn-hup\n",
-                                "#chkconfig cfn-hup on\n",
-                                "#mkdir -p /opt/aws/bin\n",
-                                "#for SCRIPT in cfn-elect-cmd-leader cfn-get-metadata cfn-hup",
-                                " cfn-init cfn-send-cmd-event cfn-send-cmd-result cfn-signal\n",
-                                "#do\n",
-                                "#    ln -f -s /usr/bin/${SCRIPT} /opt/aws/bin/${SCRIPT}\n",
-                                "#done\n",
-                                
-                                "yum -y install aws-cfn-bootstrap\n",
+                    "# Upgrade setuptools\n",
+                    "pip install --upgrade setuptools\n\n",
 
-                                "# Execute cfn-init\n",
-                                "/opt/aws/bin/cfn-init -v -c config ",
-                                "    --stack ", { "Ref" : "AWS::StackName" },
-                                "    --resource GuacLaunchConfig ",
-                                "    --region ", { "Ref" : "AWS::Region" }, "\n"
-                            ]
-                        ]
-                    }
-                }
+                    "# Fix python urllib3 warnings\n",
+                    "yum -y install gcc python-devel libffi-devel openssl-devel\n",
+                    "pip install pyopenssl ndg-httpsclient pyasn1\n\n",
+
+                    "# Get cfn utils\n",
+                    "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n\n",
+
+                    "# Remove gcc now that it is no longer needed\n",
+                    "yum -y remove gcc --setopt=clean_requirements_on_remove=1\n\n",
+
+                    "# Fixup cfn utils\n",
+                    "INITDIR=$(find -L /opt/aws/apitools/cfn-init/init -name redhat ",
+                    "2> /dev/null || echo /usr/init/redhat)\n",
+                    "chmod 775 ${INITDIR}/cfn-hup\n",
+                    "ln -f -s ${INITDIR}/cfn-hup /etc/rc.d/init.d/cfn-hup\n",
+                    "chkconfig --add cfn-hup\n",
+                    "chkconfig cfn-hup on\n",
+                    "mkdir -p /opt/aws/bin\n",
+                    "BINDIR=$(find -L /opt/aws/apitools/cfn-init -name bin ",
+                    "2> /dev/null || echo /usr/bin)\n",
+                    "for SCRIPT in cfn-elect-cmd-leader cfn-get-metadata cfn-hup ",
+                    "cfn-init cfn-send-cmd-event cfn-send-cmd-result cfn-signal\n",
+                    "do\n",
+                    "    ln -s ${BINDIR}/${SCRIPT} /opt/aws/bin/${SCRIPT} 2> /dev/null || ",
+                    "    echo Skipped symbolic link, /opt/aws/bin/${SCRIPT} already exists\n",
+                    "done\n\n",
+
+                    "# Add cfn-signal to path\n",
+                    "hash cfn-signal 2> /dev/null || ",
+                    "PATH=\"${PATH}:/usr/local/bin:/opt/aws/bin\"",
+                    "\n\n",
+
+                    "# Execute cfn-init\n",
+                    "/opt/aws/bin/cfn-init -v -c config",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource GuacLaunchConfig ",
+                    " --region ", { "Ref" : "AWS::Region" }, " ||",
+                    " ( echo 'ERROR: cfn-init failed! Aborting!';",
+                    " /opt/aws/bin/cfn-signal -e 1",
+                    "  --stack ", { "Ref" : "AWS::StackName" },
+                    "  --resource SystemPrepAutoScalingGroup",
+                    "  --region ", { "Ref" : "AWS::Region"}, ";",
+                    " exit 1",
+                    " )\n\n"
+                ]]}}
             }
         }
     }

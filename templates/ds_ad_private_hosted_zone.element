@@ -1,35 +1,44 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This element creates a Route53 private hosted zone, to resolve the domain to the AD Domain Controllers via DHCP.",
-    "Parameters"               : {
-        "DNSName" : {
+    "Description" : "This element creates a Route53 private hosted zone, to resolve the domain to the AD Domain Controllers via DHCP.",
+    "Parameters" :
+    {
+        "DNSName" :
+        {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
-            "Type"        : "String",
-            "Default"     : "example.com",
-            "MinLength"   : "3",
-            "MaxLength"   : "25",
+            "Type" : "String",
+            "Default" : "example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "VPC" : {
+        "VPC" :
+        {
             "Description" : "VPC ID",
-            "Type"        : "AWS::EC2::VPC::Id"
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
-    "Resources" : {
-        "HostedZone" : {
+    "Resources" :
+    {
+        "HostedZone" :
+        {
             "Type" : "AWS::Route53::HostedZone",
-            "Properties" : {
+            "Properties" :
+            {
                 "Name" : { "Ref" : "DNSName" },
-                "VPCs" : [
+                "VPCs" :
+                [
                     {
                         "VPCId" : { "Ref" : "VPC" },
                         "VPCRegion" : { "Ref" : "AWS::Region" }
                     }
                 ],
-                "HostedZoneTags" : [
+                "HostedZoneTags" :
+                [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : [ "", [
+                        "Value" :
+                        { "Fn::Join" : [ "", [
                             { "Ref" : "DNSName" },
                             "-",
                             { "Ref" : "AWS::StackName" }
@@ -39,12 +48,12 @@
             }
         }
     },
-    "Outputs" : {
-        "HostedZoneId" : {
+    "Outputs" :
+    {
+        "HostedZoneId" :
+        {
             "Description" : "ID of the Route53 private hosted zone",
-            "Value" : { 
-                "Ref" : "HostedZone" 
-            }
+            "Value" : { "Ref" : "HostedZone" }
         }
     }
 }
