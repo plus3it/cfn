@@ -228,7 +228,9 @@ MODUSER="/usr/sbin/usermod"
 # Start the real work
 log "Installing EPEL repo"
 yum -y install \
-    http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+
+yum -y install yum-utils
 
 log "Ensuring the CentOS Base repo is available"
 curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
@@ -251,7 +253,7 @@ yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
 
 # Build freerdp
 cd /root
-FREERDP_BASE=$(basename -s .git ${FREERDP_REPO})
+FREERDP_BASE=$(basename ${FREERDP_REPO} .git)
 rm -rf "${FREERDP_BASE}"
 git clone "${FREERDP_REPO}" || \
     die "Could not clone ${FREERDP_REPO}"
@@ -529,6 +531,7 @@ do
 done
 
 # Add custom HTML links to GUAC login page
+sleep 5
 oldhtmltext='            <\/form>\\n\\n'
 newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
 sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
