@@ -120,7 +120,7 @@ URLTEXT_2=
 
 
 # Parse command-line parameters
-while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t opt
+while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t: opt
 do
     case "${opt}" in
         h)
