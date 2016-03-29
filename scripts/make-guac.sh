@@ -233,10 +233,10 @@ yum -y install \
 yum -y install yum-utils
 
 log "Ensuring the CentOS Base repo is available"
-curl --retry 3 -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
+curl --retry 3 --retry-delay 5 -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
     -o "/etc/yum.repos.d/CentOS-Base.repo"
 
-curl --retry 3 -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
+curl --retry 3 --retry-delay 5 -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
     -o "/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6"
 
 log "Enabling the EPEL and base repos"
@@ -283,7 +283,7 @@ cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
 rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
-(curl --retry 3 -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz/download" | tar -xzv) || \
+(curl --retry 3 --retry-delay 5 -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz/download" | tar -xzv) || \
     die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
 
 cd "${GUAC_FILEBASE}"
@@ -315,7 +315,7 @@ done
 
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
-curl --retry 3 -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
+curl --retry 3 --retry-delay 5 -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
     -o /var/lib/tomcat7/webapps/ROOT.war
 
 
@@ -429,7 +429,7 @@ then
     # Install the Guacamole LDAP auth extension
     log "Downloading Guacmole ldap extension"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
-    curl --retry 3 -s -L "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
+    curl --retry 3 --retry-delay 5 -s -L "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
         -o "/root/${GUAC_LDAP}.tar.gz" || \
         die "Could not download ldap extension"
 
@@ -466,14 +466,14 @@ then
             log "Enabling custom RBAC jar for 0.9.7"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl --retry 3 -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || \
+            curl --retry 3 --retry-delay 5 -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || \
                 die "Unable to download 0.9.7 custom plugin from s3 bucket"
         elif [ "$GUAC_VERSION" == "0.9.9" ]
         then
             log "Enabling custom RBAC jar for 0.9.9"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl --retry 3 -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.9.jar || \
+            curl --retry 3 --retry-delay 5 -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.9.jar || \
                 die "Unable to download 0.9.9 custom plugin from s3 bucket"
         else
             log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7 or 0.9.9!"
