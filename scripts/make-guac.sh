@@ -531,7 +531,7 @@ do
 done
 
 # Add custom HTML links to GUAC login page
-sleep 5
+sleep 15
 oldhtmltext='            <\/form>\\n\\n'
 newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
 sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
