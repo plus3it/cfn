@@ -282,7 +282,7 @@ yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
 cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
 rm -rf "${GUAC_FILEBASE}"
-log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
+log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz from S3"
 (curl --retry 3 --retry-delay 5 -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" | tar -xzv) || \
     die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
 
@@ -314,7 +314,7 @@ done
 
 
 # Install the Guacamole client
-log "Downloading Guacamole client from project repo"
+log "Downloading Guacamole client from project repo from S3"
 curl --retry 3 --retry-delay 5 -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war \
     -o /var/lib/tomcat7/webapps/ROOT.war
 
@@ -427,7 +427,7 @@ if [ -n "${LDAP_HOSTNAME}" ]
 then
 
     # Install the Guacamole LDAP auth extension
-    log "Downloading Guacmole ldap extension"
+    log "Downloading Guacmole ldap extension from S3"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
     curl --retry 3 --retry-delay 5 -s -L "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz" \
         -o "/root/${GUAC_LDAP}.tar.gz" || \
