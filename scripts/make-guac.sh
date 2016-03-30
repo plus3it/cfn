@@ -283,7 +283,7 @@ cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
 rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
-(curl --retry 3 --retry-delay 5 -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz/download" | tar -xzv) || \
+(curl --retry 3 --retry-delay 5 -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" | tar -xzv) || \
     die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
 
 cd "${GUAC_FILEBASE}"
@@ -315,7 +315,7 @@ done
 
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
-curl --retry 3 --retry-delay 5 -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
+curl --retry 3 --retry-delay 5 -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war \
     -o /var/lib/tomcat7/webapps/ROOT.war
 
 
@@ -429,7 +429,7 @@ then
     # Install the Guacamole LDAP auth extension
     log "Downloading Guacmole ldap extension"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
-    curl --retry 3 --retry-delay 5 -s -L "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
+    curl --retry 3 --retry-delay 5 -s -L "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz" \
         -o "/root/${GUAC_LDAP}.tar.gz" || \
         die "Could not download ldap extension"
 
