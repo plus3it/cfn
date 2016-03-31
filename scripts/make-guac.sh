@@ -539,4 +539,7 @@ sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.
     if [[ $? -ne 0 ]]
     then 
       log "SED statement failed to set GUAC login page links: ${URLTEXT_1}, ${URLTEXT_2}"
+    fi
 service tomcat7 restart
+log "tomcat restarted"
+exit 0
