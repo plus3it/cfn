@@ -69,6 +69,9 @@ $null = $adapters | foreach-object { $_.SetDynamicDNSRegistration($TRUE, $TRUE) 
 # Enable SmartScreen
 Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name SmartScreenEnabled -ErrorAction Stop -Value "RequireAdmin" -Force
 
+# Set the Audio Service to start automatically, without failing if the service name cannot be found
+@(Get-Service -Name "audiosrv" -ErrorAction SilentlyContinue) | % { Set-Service -Name $_.Name -StartupType "Automatic" }
+
 # Create public desktop shortcut for Windows Security
 $WindowsSecurityPath = "${env:SYSTEMDRIVE}\Users\Public\Desktop\Windows Security.lnk"
 $WindowsSecurityShortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("${WindowsSecurityPath}")
