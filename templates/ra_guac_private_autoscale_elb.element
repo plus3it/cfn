@@ -193,7 +193,7 @@
                     "MinInstancesInService" : "1",
                     "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT15M"
+                    "PauseTime" : "PT20M"
                 }
             },
             "CreationPolicy" :
@@ -201,7 +201,7 @@
                 "ResourceSignal" :
                 {
                     "Count" : { "Ref" : "DesiredCapacity" },
-                    "Timeout" : "PT15M"
+                    "Timeout" : "PT20M"
                 }
             },
             "Properties" :
