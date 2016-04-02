@@ -407,7 +407,8 @@ then
     # Install the Guacamole LDAP auth extension
     log "Downloading Guacmole ldap extension"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
-    curl -s -L "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
+    curl -s --show-error --retry 5 -L \
+        "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
         -o "/root/${GUAC_LDAP}.tar.gz" || \
         die "Could not download ldap extension"
 
