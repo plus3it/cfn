@@ -219,13 +219,15 @@ log "Enabling the EPEL and base repos"
 yum-config-manager --enable epel base
 
 log "Installing OS standard Tomcat"
-yum install -y tomcat7
+yum clean all
+yum -y install tomcat7 || die "Failed to install tomcat"
 
 log "Installing utils and libraries to build freerdp from source"
 yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
     libXinerama-devel libXcursor-devel libXi-devel libXdamage-devel \
     libXv-devel libxkbfile-devel alsa-lib-devel cups-devel ffmpeg-devel \
-    glib2-devel
+    glib2-devel \
+    || die "Failed to install packages required to build freerdp"
 
 # Build freerdp
 cd /root
