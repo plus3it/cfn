@@ -229,7 +229,7 @@
                             },
                             "c:\\cfn\\scripts\\configure-rdsh.ps1" :
                             {
-                                "source" : "https://s3.amazonaws.com/app-chemistry/scripts/configure-rdsh.ps1"
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdsh.ps1"
                             }
                         },
                         "services" :
