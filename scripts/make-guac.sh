@@ -232,7 +232,7 @@ log "Installing EPEL repo"
 yum -y install \
     http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
 
-yum -y install yum-utils
+yum -y install yum-utils yum-plugin-fastestmirror
 
 log "Ensuring the CentOS Base repo is available"
 curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
