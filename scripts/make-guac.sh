@@ -233,6 +233,30 @@ then
 fi
 
 
+# Validate parameter pairs of URL and URLTEXT are appropriately populated
+if [ -n "${URL_1}" ]
+then
+    if [ -z "${URLTEXT_1}" ]
+    then
+        die "URL1 was provided (-L), but the partner URLTEXT was not (-T), login page unmodified; exiting"
+    fi
+elif [ -n "${URLTEXT_1}" ]
+then
+    die "URLTEXT1 was provided (-T), but the URL was not (-L), login page unmodified; exiting"
+fi
+
+if [ -n "${URL_2}" ]
+then
+    if [ -z "${URLTEXT_2}" ]
+    then
+        die "URL2 was provided (-l), but the partner URLTEXT was not (-t), login page unmodified; exiting"
+    fi
+elif [ -n "${URLTEXT_2}" ]
+then
+    die "URLTEXT2 was provided (-t), but the URL was not (-l), login page unmodified; exiting"
+fi
+
+
 # Set internal variables
 PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
            randomsalt = ''.join(random.sample(string.ascii_letters,8)); \
@@ -561,34 +585,6 @@ do
       die "Failed to start ${SVC}."
     fi
 done
-
-# Validate parameters for Guacamole login page URLs, exit script successfully if parameters not set correctly; parameters are not required
-# Validate parameter pairs of URL and URLTEXT are appropriately populated
-if [ -n "${URL_1}" ]
-then
-    if [ -z "${URLTEXT_1}" ]
-    then
-        log "URL1 was provided (-L), but the partner URLTEXT was not (-T), login page unmodified; exiting"
-        exit 0
-    fi
-elif [ -n "${URLTEXT_1}" ]
-then
-    log "URLTEXT1 was provided (-T), but the URL was not (-L), login page unmodified; exiting"
-    exit 0
-fi
-
-if [ -n "${URL_2}" ]
-then
-    if [ -z "${URLTEXT_2}" ]
-    then
-        log "URL2 was provided (-l), but the partner URLTEXT was not (-t), login page unmodified; exiting"
-        exit 0
-    fi
-elif [ -n "${URLTEXT_2}" ]
-then
-    log "URLTEXT2 was provided (-t), but the URL was not (-l), login page unmodified; exiting"
-    exit 0
-fi
 
 
 #Add custom URLs to Guacamole login page, change is not stateful due to sed pattern to be matched/replaced
