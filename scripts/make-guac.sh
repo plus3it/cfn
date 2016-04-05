@@ -40,6 +40,26 @@ __md5sum()
 }  # ----------  end of function md5sum  ----------
 
 
+retry()
+{
+    local n=0
+    local try=$1
+    local cmd="${@: 2}"
+    [[ $# -le 1 ]] && {
+    echo "Usage $0 <number_of_retry_attempts> <Command>"; }
+
+    until [[ $n -ge $try ]]
+    do
+        $cmd && break || {
+            echo "Command Fail.."
+            ((n++))
+            echo "retry $n ::"
+            sleep $n;
+            }
+    done
+}  # ----------  end of function retry  ----------
+
+
 usage()
 {
     cat << EOT
@@ -218,9 +238,9 @@ PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
            randomsalt = ''.join(random.sample(string.ascii_letters,8)); \
            print crypt.crypt('${SSH_PASSWORD}', '\$6\$%s))\$' % randomsalt)" )
 GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
-GUAC_SOURCE="http://sourceforge.net/projects/guacamole/files/current/source"
-GUAC_BINARY="http://sourceforge.net/projects/guacamole/files/current/binary"
-GUAC_EXTENSIONS="http://sourceforge.net/projects/guacamole/files/current/extensions"
+GUAC_SOURCE="https://sourceforge.net/projects/guacamole/files/current/source"
+GUAC_BINARY="https://sourceforge.net/projects/guacamole/files/current/binary"
+GUAC_EXTENSIONS="https://sourceforge.net/projects/guacamole/files/current/extensions"
 FREERDP_REPO="git://github.com/FreeRDP/FreeRDP.git"
 FREERDP_BRANCH="stable-1.1"
 ADDUSER="/usr/sbin/useradd"
@@ -229,27 +249,29 @@ MODUSER="/usr/sbin/usermod"
 
 # Start the real work
 log "Installing EPEL repo"
-yum -y install \
+retry 2 yum -y install \
     http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
 
-yum -y install yum-utils yum-plugin-fastestmirror
+retry 5 yum -y install yum-utils yum-plugin-fastestmirror wget
 
 log "Ensuring the CentOS Base repo is available"
-curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
+retry 5 curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
     -o "/etc/yum.repos.d/CentOS-Base.repo"
 
-curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
+retry 5 curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
     -o "/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6"
 
 log "Enabling the EPEL and base repos"
 yum-config-manager --enable epel base
 
+log "Clean yum cache"
+retry 5 yum clean all
+
 log "Installing OS standard Tomcat"
-yum clean all
-yum -y install tomcat7 || die "Failed to install tomcat"
+retry 5 yum -y install tomcat7 || die "Failed to install tomcat"
 
 log "Installing utils and libraries to build freerdp from source"
-yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
+retry 5 yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
     libXinerama-devel libXcursor-devel libXi-devel libXdamage-devel \
     libXv-devel libxkbfile-devel alsa-lib-devel cups-devel ffmpeg-devel \
     glib2-devel \
@@ -278,7 +300,7 @@ ldconfig
 
 
 log "Installing libraries to build guacamole from source"
-yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
+retry 5 yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
     uuid-devel pango-devel libssh2-devel pulseaudio-libs-devel openssl-devel \
     libvorbis-devel dejavu-sans-mono-fonts libwebp-devel \
 
@@ -287,8 +309,10 @@ cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
 rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
-(curl -s --show-error --retry 5 -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" | tar -xzv) || \
-    die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
+retry 5 wget "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" || \
+    die "Could not download ${GUAC_FILEBASE}.tar.gz"
+tar -xvf ${GUAC_FILEBASE}.tar.gz || \
+    die "Could not extract ${GUAC_FILEBASE}.tar.gz"
 
 cd "${GUAC_FILEBASE}"
 log "Building ${GUAC_FILEBASE} from source"
@@ -319,8 +343,11 @@ done
 
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
-curl -s --show-error --retry 5 -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war \
-    -o /var/lib/tomcat7/webapps/ROOT.war
+cd /root
+retry 5 wget ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war || \
+    die "Could not download ${GUAC_BINARY}"
+mv guacamole-${GUAC_VERSION}.war /var/lib/tomcat7/webapps/ROOT.war || \
+    die "Could not move ${GUAC_BINARY}"
 
 
 # Gotta make SELinux happy...
@@ -433,12 +460,12 @@ then
     # Install the Guacamole LDAP auth extension
     log "Downloading Guacmole ldap extension"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
-    curl -s --show-error --retry 5 -L \
-        "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
-        -o "/root/${GUAC_LDAP}.tar.gz" || \
+    cd /root
+    retry 5 wget \
+        "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz" || \
         die "Could not download ldap extension"
 
-    log "Extracing Guacamole ldap extension"
+    log "Extracting Guacamole ldap extension"
     cd /root
     tar -xvf "${GUAC_LDAP}.tar.gz" || \
         die "Could not extract Guacamole ldap plugin"
