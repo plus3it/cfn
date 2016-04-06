@@ -333,7 +333,7 @@ cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
 rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
-retry 5 wget "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" || \
+retry 5 wget --timeout=10 "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" || \
     die "Could not download ${GUAC_FILEBASE}.tar.gz"
 tar -xvf ${GUAC_FILEBASE}.tar.gz || \
     die "Could not extract ${GUAC_FILEBASE}.tar.gz"
@@ -368,7 +368,7 @@ done
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
 cd /root
-retry 5 wget ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war || \
+retry 5 wget --timeout=10 ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war || \
     die "Could not download ${GUAC_BINARY}"
 mv guacamole-${GUAC_VERSION}.war /var/lib/tomcat7/webapps/ROOT.war || \
     die "Could not move ${GUAC_BINARY}"
@@ -485,7 +485,7 @@ then
     log "Downloading Guacmole ldap extension"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
     cd /root
-    retry 5 wget \
+    retry 5 wget --timeout=10 \
         "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz" || \
         die "Could not download ldap extension"
 
