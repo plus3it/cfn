@@ -262,9 +262,9 @@ PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
            randomsalt = ''.join(random.sample(string.ascii_letters,8)); \
            print crypt.crypt('${SSH_PASSWORD}', '\$6\$%s))\$' % randomsalt)" )
 GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
-GUAC_SOURCE="http://netcologne.dl.sourceforge.net/project/guacamole/current/source"
-GUAC_BINARY="http://netcologne.dl.sourceforge.net/project/guacamole/current/binary"
-GUAC_EXTENSIONS="http://netcologne.dl.sourceforge.net/project/guacamole/current/extensions"
+GUAC_SOURCE="https://s3.amazonaws.com/dicelab-guacamole"
+GUAC_BINARY="https://s3.amazonaws.com/dicelab-guacamole"
+GUAC_EXTENSIONS="https://s3.amazonaws.com/dicelab-guacamole"
 FREERDP_REPO="git://github.com/FreeRDP/FreeRDP.git"
 FREERDP_BRANCH="stable-1.1"
 ADDUSER="/usr/sbin/useradd"
