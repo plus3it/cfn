@@ -40,6 +40,26 @@ __md5sum()
 }  # ----------  end of function md5sum  ----------
 
 
+retry()
+{
+    local n=0
+    local try=$1
+    local cmd="${@: 2}"
+    [[ $# -le 1 ]] && {
+    echo "Usage $0 <number_of_retry_attempts> <Command>"; }
+
+    until [[ $n -ge $try ]]
+    do
+        $cmd && break || {
+            echo "Command Fail.."
+            ((n++))
+            echo "retry $n ::"
+            sleep $n;
+            }
+    done
+}  # ----------  end of function retry  ----------
+
+
 usage()
 {
     cat << EOT
@@ -90,6 +110,14 @@ usage()
       be used for the OS user.
   -s  Password for the OS user (-S). If -S is specified, then this parameter
       is required.
+  -L  URL for first link to be included in Guac login page. If -T is specified,
+      then this parameter is required for successful modification.
+  -T  Text to be displayed for the URL provided with -L.  If -L is specified,
+      then this parameter is required for successful modification.
+  -l  URL for second link to be included in Guac login page. If -t is specified,
+      then this parameter is required for successful modification.
+  -t  Text to be displayed for the URL provided with -l.  If -l is specified,
+      then this parameter is required for successful modification.
 EOT
 }  # ----------  end of function usage  ----------
 
@@ -107,10 +135,14 @@ GUAC_USERNAME=
 GUAC_PASSWORD=
 SSH_USERNAME=
 SSH_PASSWORD=
+URL_1=
+URLTEXT_1=
+URL_2=
+URLTEXT_2=
 
 
 # Parse command-line parameters
-while getopts :hH:D:U:R:A:C:P:v:G:g:S:s: opt
+while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t: opt
 do
     case "${opt}" in
         h)
@@ -153,6 +185,18 @@ do
         s)
             SSH_PASSWORD="${OPTARG}"
             ;;
+        L)
+            URL_1="${OPTARG}"
+            ;;
+        T)
+            URLTEXT_1="${OPTARG}"
+            ;;
+        l)
+            URL_2="${OPTARG}"
+            ;;
+        t)
+            URLTEXT_2="${OPTARG}"
+            ;;
         \?)
             usage
             echo "ERROR: unknown parameter \"$OPTARG\""
@@ -189,14 +233,38 @@ then
 fi
 
 
+# Validate parameter pairs of URL and URLTEXT are appropriately populated
+if [ -n "${URL_1}" ]
+then
+    if [ -z "${URLTEXT_1}" ]
+    then
+        die "URL1 was provided (-L), but the partner URLTEXT was not (-T), login page unmodified; exiting"
+    fi
+elif [ -n "${URLTEXT_1}" ]
+then
+    die "URLTEXT1 was provided (-T), but the URL was not (-L), login page unmodified; exiting"
+fi
+
+if [ -n "${URL_2}" ]
+then
+    if [ -z "${URLTEXT_2}" ]
+    then
+        die "URL2 was provided (-l), but the partner URLTEXT was not (-t), login page unmodified; exiting"
+    fi
+elif [ -n "${URLTEXT_2}" ]
+then
+    die "URLTEXT2 was provided (-t), but the URL was not (-l), login page unmodified; exiting"
+fi
+
+
 # Set internal variables
 PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
            randomsalt = ''.join(random.sample(string.ascii_letters,8)); \
            print crypt.crypt('${SSH_PASSWORD}', '\$6\$%s))\$' % randomsalt)" )
 GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
-GUAC_SOURCE="http://sourceforge.net/projects/guacamole/files/current/source"
-GUAC_BINARY="http://sourceforge.net/projects/guacamole/files/current/binary"
-GUAC_EXTENSIONS="http://sourceforge.net/projects/guacamole/files/current/extensions"
+GUAC_SOURCE="https://s3.amazonaws.com/dicelab-guacamole"
+GUAC_BINARY="https://s3.amazonaws.com/dicelab-guacamole"
+GUAC_EXTENSIONS="https://s3.amazonaws.com/dicelab-guacamole"
 FREERDP_REPO="git://github.com/FreeRDP/FreeRDP.git"
 FREERDP_BRANCH="stable-1.1"
 ADDUSER="/usr/sbin/useradd"
@@ -205,25 +273,29 @@ MODUSER="/usr/sbin/usermod"
 
 # Start the real work
 log "Installing EPEL repo"
-yum -y install \
-    http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+retry 2 yum -y install \
+    http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+
+retry 5 yum -y install yum-utils yum-plugin-fastestmirror wget
 
 log "Ensuring the CentOS Base repo is available"
-curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
+retry 5 curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/CentOS-Base.repo" \
     -o "/etc/yum.repos.d/CentOS-Base.repo"
 
-curl -s -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
+retry 5 curl -s --show-error --retry 5 -L "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/RPM-GPG-KEY-CentOS-6" \
     -o "/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6"
 
 log "Enabling the EPEL and base repos"
 yum-config-manager --enable epel base
 
+log "Clean yum cache"
+retry 5 yum clean all
+
 log "Installing OS standard Tomcat"
-yum clean all
-yum -y install tomcat7 || die "Failed to install tomcat"
+retry 5 yum -y install tomcat7 || die "Failed to install tomcat"
 
 log "Installing utils and libraries to build freerdp from source"
-yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
+retry 5 yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
     libXinerama-devel libXcursor-devel libXi-devel libXdamage-devel \
     libXv-devel libxkbfile-devel alsa-lib-devel cups-devel ffmpeg-devel \
     glib2-devel \
@@ -231,7 +303,7 @@ yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
 
 # Build freerdp
 cd /root
-FREERDP_BASE=$(basename -s .git ${FREERDP_REPO})
+FREERDP_BASE=$(basename ${FREERDP_REPO} .git)
 rm -rf "${FREERDP_BASE}"
 git clone "${FREERDP_REPO}" || \
     die "Could not clone ${FREERDP_REPO}"
@@ -252,7 +324,7 @@ ldconfig
 
 
 log "Installing libraries to build guacamole from source"
-yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
+retry 5 yum -y install gcc cairo-devel libjpeg-turbo-devel libjpeg-devel libpng-devel \
     uuid-devel pango-devel libssh2-devel pulseaudio-libs-devel openssl-devel \
     libvorbis-devel dejavu-sans-mono-fonts libwebp-devel \
 
@@ -261,8 +333,10 @@ cd /root
 GUAC_FILEBASE="guacamole-server-${GUAC_VERSION}"
 rm -rf "${GUAC_FILEBASE}"
 log "Downloading and extracting ${GUAC_FILEBASE}.tar.gz"
-(curl -s -L "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz/download" | tar -xzv) || \
-    die "Could not download and extract ${GUAC_FILEBASE}.tar.gz"
+retry 5 wget --timeout=10 "${GUAC_SOURCE}/${GUAC_FILEBASE}.tar.gz" || \
+    die "Could not download ${GUAC_FILEBASE}.tar.gz"
+tar -xvf ${GUAC_FILEBASE}.tar.gz || \
+    die "Could not extract ${GUAC_FILEBASE}.tar.gz"
 
 cd "${GUAC_FILEBASE}"
 log "Building ${GUAC_FILEBASE} from source"
@@ -293,8 +367,11 @@ done
 
 # Install the Guacamole client
 log "Downloading Guacamole client from project repo"
-curl -s -L ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war/download \
-    -o /var/lib/tomcat7/webapps/ROOT.war
+cd /root
+retry 5 wget --timeout=10 ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war || \
+    die "Could not download ${GUAC_BINARY}"
+mv guacamole-${GUAC_VERSION}.war /var/lib/tomcat7/webapps/ROOT.war || \
+    die "Could not move ${GUAC_BINARY}"
 
 
 # Gotta make SELinux happy...
@@ -407,12 +484,12 @@ then
     # Install the Guacamole LDAP auth extension
     log "Downloading Guacmole ldap extension"
     GUAC_LDAP="guacamole-auth-ldap-${GUAC_VERSION}"
-    curl -s --show-error --retry 5 -L \
-        "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz/download" \
-        -o "/root/${GUAC_LDAP}.tar.gz" || \
+    cd /root
+    retry 5 wget --timeout=10 \
+        "${GUAC_EXTENSIONS}/${GUAC_LDAP}.tar.gz" || \
         die "Could not download ldap extension"
 
-    log "Extracing Guacamole ldap extension"
+    log "Extracting Guacamole ldap extension"
     cd /root
     tar -xvf "${GUAC_LDAP}.tar.gz" || \
         die "Could not extract Guacamole ldap plugin"
@@ -445,14 +522,14 @@ then
             log "Enabling custom RBAC jar for 0.9.7"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || \
+            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || \
                 die "Unable to download 0.9.7 custom plugin from s3 bucket"
         elif [ "$GUAC_VERSION" == "0.9.9" ]
         then
             log "Enabling custom RBAC jar for 0.9.9"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.9.jar || \
+            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.9.jar || \
                 die "Unable to download 0.9.9 custom plugin from s3 bucket"
         else
             log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7 or 0.9.9!"
@@ -497,7 +574,6 @@ then
     mkdir /var/tmp/guacamole
 fi
 
-
 # Start services
 log "Attempting to start proxy-related services"
 for SVC in rsyslog guacd tomcat7
@@ -509,3 +585,26 @@ do
       die "Failed to start ${SVC}."
     fi
 done
+
+
+#Add custom URLs to Guacamole login page, change is not stateful due to sed pattern to be matched/replaced
+if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
+then 
+    log "Attempting to add HTML links from parameter input to Guacamole login page"
+    sleep 15
+    oldhtmltext='            <\/form>\\n\\n'
+    newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
+    sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
+        if [[ $? -ne 0 ]]
+        then 
+            log "sed statement failed to set Guacamole login page links: ${URLTEXT_1}, ${URLTEXT_2}"
+        fi
+    service tomcat7 restart
+        if [[ $? -ne 0 ]]
+        then 
+            log "Final Tomcat restart unsuccessful"
+        fi
+    log "Successfully added URL(s) to Guacamole login page"
+else
+    log "URL parameters were blank, not changing Guacamole login page"
+fi

@@ -90,6 +90,30 @@
             "Default" : "0.9.9",
             "MinLength" : "1"
         },
+        "URL1" :
+        {
+            "Description" : "First custom URL/link to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : "https://accounts.example.com"
+        },
+        "URLText1" :
+        {
+            "Description" : "Text/Label to display for the First custom URL/link displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : "Account Management"
+        },
+        "URL2" :
+        {
+            "Description" : "Second custom URL/link to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : "https://redmine.example.com"
+        },
+        "URLText2" :
+        {
+            "Description" : "Text/Label to display for the Second custom URL/link displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : "Example Redmine"
+        },
         "PrivateSubnetIDs" :
         {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
@@ -99,6 +123,25 @@
         {
             "Description" : "List of security group IDs for Guacamole instances",
             "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+        }
+    },
+    "Conditions" :
+    {
+        "UseURL1" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "URL1" }, "" ] } ]
+        },
+        "UseURLText1" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "URLText1" }, "" ] } ]
+        },
+        "UseURL2" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "URL2" }, "" ] } ]
+        },
+        "UseURLText2" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "URLText2" }, "" ] } ]
         }
     },
     "Resources" :
@@ -331,7 +374,55 @@
                                     " -D ",
                                     { "Ref" : "GuacLdapDN" },
                                     " -v ",
-                                    { "Ref" : "GuacVersion" }
+                                    { "Ref" : "GuacVersion" },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseURL1",
+                                            { "Fn::Join" : [ "", [
+                                                " -L \"",
+                                                { "Ref" : "URL1" },
+                                                "\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseURLText1",
+                                            { "Fn::Join" : [ "", [
+                                                " -T \"",
+                                                { "Ref" : "URLText1" },
+                                                "\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseURL2",
+                                            { "Fn::Join" : [ "", [
+                                                " -l \"",
+                                                { "Ref" : "URL2" },
+                                                "\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseURLText2",
+                                            { "Fn::Join" : [ "", [
+                                                " -t \"",
+                                                { "Ref" : "URLText2" },
+                                                "\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
                                 ]]}
                             }
                         }

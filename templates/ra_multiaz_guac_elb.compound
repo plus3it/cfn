@@ -93,6 +93,30 @@
             "Default" : "0.9.9",
             "MinLength" : "1"
         },
+        "URL1" :
+        {
+            "Description" : "First custom URL/link to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "URLText1" :
+        {
+            "Description" : "Text/Label to display for the First custom URL/link displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "URL2" :
+        {
+            "Description" : "Second custom URL/link to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "URLText2" :
+        {
+            "Description" : "Text/Label to display for the Second custom URL/link displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
         "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Guacamole Instances",
@@ -180,6 +204,10 @@
                     "GuacLdapServer" : {"Ref" : "GuacLdapServer"},
                     "GuacLdapDN" : {"Ref" : "GuacLdapDN"},
                     "GuacVersion" : {"Ref" : "GuacVersion"},
+                    "URL1" : {"Ref" : "URL1"},
+                    "URLText1" : {"Ref" : "URLText1"},
+                    "URL2" : {"Ref" : "URL2"},
+                    "URLText2" : {"Ref" : "URLText2"},
                     "PrivateSubnetIDs" :
                     {
                         "Fn::Join" : [
@@ -199,7 +227,7 @@
                     ]]}
                 }
             }
-      	}
+        }
     },
     "Outputs" :
     {
