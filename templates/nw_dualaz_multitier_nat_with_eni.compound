@@ -361,7 +361,7 @@
                     "PeeredDc1Name" : { "Ref" : "VpcPeerDc1Name" },
                     "PeeredDc1Ip" : { "Ref" : "VpcPeerDc1Ip" },
                     "PeeredDc2Name" : { "Ref" : "VpcPeerDc2Name" },
-                    "PeeredDc2Ip" : { "Ref" : "VpcPeerDc1Ip" },
+                    "PeeredDc2Ip" : { "Ref" : "VpcPeerDc2Ip" },
                     "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
                 }
             }
