@@ -84,11 +84,6 @@
             "Description" : "Private Subnet ID where the second RDSH instance will run.",
             "Type" : "AWS::EC2::Subnet::Id"
         },
-        "Rdsh3PrivateSubnetID" :
-        {
-            "Description" : "Private Subnet ID where the third RDSH instance will run.",
-            "Type" : "AWS::EC2::Subnet::Id"
-        },
         "RdshInstanceType" :{
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Host Instance",
             "Type" : "String",
@@ -178,8 +173,7 @@
                     [ 
                         "VPC",
                         "Rdsh1PrivateSubnetID",
-                        "Rdsh2PrivateSubnetID",
-                        "Rdsh3PrivateSubnetID"
+                        "Rdsh2PrivateSubnetID"                       
                     ]
                 }
             ],
@@ -312,53 +306,7 @@
                     "VPC" : { "Ref" : "VPC" }
                 }
             }
-      	},
-        "Rdsh3Stack" :
-        {
-            "Type" : "AWS::CloudFormation::Stack",
-            "DependsOn" : "Rdsh1Stack",
-            "Properties" :
-            {
-                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdsh_private_autoscale_elb.element",
-                "Parameters" :
-                {
-                    "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" },
-                    "KeyPairName" : { "Ref" : "KeyPairName" },
-                    "AmiNameSearchString" :
-                    {
-                        "Ref" : "RdshAmiNameSearchString"
-                    },
-                    "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
-                    "RdshElbName" :
-                    {
-                        "Fn::GetAtt" :
-                        [
-                            "RdshElbStack",
-                            "Outputs.LoadBalancerName"
-                        ]
-                    },
-                    "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
-                    "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
-                    "DomainDNSName" : { "Ref" : "DomainDNSName" },
-                    "DomainAccessUserGroup" :
-                    {
-                        "Ref" : "DomainAccessUserGroup"
-                    },
-                    "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
-                    "PrivateSubnetID" : { "Ref" : "Rdsh3PrivateSubnetID" },
-                    "RdshLdapContainerOU" : { "Ref" : "RdshLdapContainerOU" },
-                    "SecurityGroupIdRDSH" :
-                    {
-                        "Fn::GetAtt" :
-                        [
-                            "RdshSecurityGroupStack",
-                            "Outputs.RdshSecurityGroupId"
-                        ]
-                    },
-                    "VPC" : { "Ref" : "VPC" }
-                }
-            }
-        }
+        }      
     },
     "Outputs" :
     {
