@@ -139,6 +139,85 @@
             "Type" : "List<AWS::EC2::Subnet::Id>"
         }
     },
+    "Metadata" : 
+    {
+        "AWS::CloudFormation::Interface" : 
+        {
+            "ParameterGroups" : 
+            [
+                {
+                    "Label" : 
+                    { 
+                        "default" : "Guac Instance Configuration"
+                    },
+                    "Parameters" : 
+                    [ 
+                        "GuacAmiNameSearchString",
+                        "InstanceType",
+                        "KeyPairName"
+                        ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"Guac Application Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "GuacLdapServer",
+                        "GuacLdapDN",
+                        "GuacVersion",
+                        "URL1",
+                        "URLText1",
+                        "URL2",
+                        "URLText2"
+                    ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "ForceUpdateToggle",
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity"
+                    ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"ELB Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "SslCertificateName",
+                        "SslCertificateService"
+                    ]
+                },        
+                {   "Label" :
+                    { 
+                        "default":"Network Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "VPC",
+                        "PrivateSubnetIDs",
+                        "PublicSubnetIDs"
+                    ]
+                }
+            ],
+            "ParameterLabels" : 
+            {
+                "GuacAmiNameSearchString" : 
+                { 
+                    "default" : "Guac AMI Search Pattern"
+                }
+            }
+        }
+    },
     "Resources" :
     {
         "GuacSecurityGroupStack" :
