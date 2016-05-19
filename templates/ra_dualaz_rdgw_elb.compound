@@ -123,6 +123,82 @@
             "Type" : "AWS::EC2::Subnet::Id"
         }
     },
+     "Metadata" : 
+    {
+        "AWS::CloudFormation::Interface" : 
+        {
+            "ParameterGroups" : 
+            [
+                {
+                    "Label" : 
+                    { 
+                        "default" : "RDGW Instance Configuration"
+                    },
+                    "Parameters" : 
+                    [ 
+                        "RdgwAmiNameSearchString",
+                        "InstanceTypeRdgw",
+                        "KeyPairName"
+                        ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"RDGW Application Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "DomainDNSName",
+                        "DomainNetBIOSName",
+                        "DomainJoinUser",
+                        "DomainJoinPassword",
+                        "RemoteAccessUserGroup"
+                    ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "ForceUpdateToggle"
+                    ]
+                },
+                                
+                {
+                    "Label" : 
+                    { 
+                        "default":"ELB Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "ElbSslCertificateName",
+                        "ElbSslCertificateService",
+                        "ElbPublicSubnetIDs"                        
+                    ]
+                },        
+                {   "Label" :
+                    { 
+                        "default":"Network Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "VPC",
+                        "Rdgw1PrivateSubnetID",
+                        "Rdgw2PrivateSubnetID"
+                    ]
+                }
+            ],
+            "ParameterLabels" : 
+            {
+                "RdgwAmiNameSearchString" : 
+                { 
+                    "default" : "RDGW AMI Search Pattern"
+                }
+            }    
+        }
+    },
     "Resources" :
     {
         "RdgwSecurityGroupStack" :
