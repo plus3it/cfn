@@ -108,6 +108,79 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
+    "Metadata" : 
+    {
+        "AWS::CloudFormation::Interface" : 
+        {
+            "ParameterGroups" : 
+            [
+                {
+                    "Label" : 
+                    { 
+                        "default" : "RDSH Instance Configuration"
+                    },
+                    "Parameters" : 
+                    [ 
+                        "RdshAmiNameSearchString",
+                        "RdshInstanceType",
+                        "KeyPairName"
+                    ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"RDSH Application Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "DomainDNSName",
+                        "DomainNetBIOSName",
+                        "DomainJoinUser",
+                        "DomainJoinPassword",
+                        "DomainAccessUserGroup",
+                        "RdshLdapContainerOU"
+                    ]
+                },
+                {
+                    "Label" : 
+                    { 
+                        "default":"AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "ForceUpdateToggle"
+                    ]
+                },                               
+                {
+                    "Label" : 
+                    { 
+                        "default":"ELB Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "ElbPrivateSubnetIDs"                        
+                    ]
+                },        
+                {   "Label" :
+                    { 
+                        "default":"Network Configuration"
+                    },
+                    "Parameters" :
+                    [ 
+                        "VPC",
+                        "Rdsh1PrivateSubnetID"                        
+                    ]
+                }
+            ],
+            "ParameterLabels" : 
+            {
+                "RdshAmiNameSearchString" : 
+                { 
+                    "default" : "RDSH AMI Search Pattern"
+                }
+            }    
+        }
+    },
     "Resources" :
     {
         "RdshSecurityGroupStack" :
@@ -122,7 +195,7 @@
                     "UseELB" : "true"
                 }
             }
-      	},
+        },
         "RdshElbStack" :
         {
             "Type" : "AWS::CloudFormation::Stack",
@@ -146,7 +219,7 @@
                     }
                 }
             }
-      	},
+        },
         "Rdsh1Stack" :
         {
             "Type" : "AWS::CloudFormation::Stack",
@@ -192,7 +265,7 @@
                     "VPC" : { "Ref" : "VPC" }
                 }
             }
-      	}
+        }
     },
     "Outputs" :
     {
