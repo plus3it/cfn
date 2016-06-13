@@ -101,6 +101,82 @@
             "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
         }
     },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "VPC Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CIDRVPC"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "Private Subnet Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CIDRPrivateSubnet1"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "Public Subnet Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CIDRPublicSubnet1"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "NAT Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "InstanceTypeNAT",
+                        "KeyPairName",
+                        "IpAddressNAT1"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "VPC Peering Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VpcPeerId",
+                        "VpcPeerCidr"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "VPC Peering Route53 Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VpcPeerDomainDnsName",
+                        "VpcPeerDc1Name",
+                        "VpcPeerDc1Ip",
+                        "VpcPeerDc2Name",
+                        "VpcPeerDc2Ip"
+                    ]
+                }
+            ]
+        }
+    },
     "Conditions" :
     {
         "PeerVpc" :
