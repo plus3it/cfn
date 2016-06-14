@@ -141,6 +141,88 @@
             "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
         }
     },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "VPC Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CIDRVPC"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "Private Subnet Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CIDRPrivateSubnet1",
+                        "CIDRPrivateSubnet2",
+                        "CIDRPrivateSubnet3"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "Public Subnet Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CIDRPublicSubnet1",
+                        "CIDRPublicSubnet2",
+                        "CIDRPublicSubnet3"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "NAT Instances Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "InstanceTypeNAT",
+                        "KeyPairName",
+                        "IpAddressNAT1",
+                        "IpAddressNAT2",
+                        "IpAddressNAT3"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "VPC Peering Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VpcPeerId",
+                        "VpcPeerCidr"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "VPC Peering Route53 Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VpcPeerDomainDnsName",
+                        "VpcPeerDc1Name",
+                        "VpcPeerDc1Ip",
+                        "VpcPeerDc2Name",
+                        "VpcPeerDc2Ip"
+                    ]
+                }
+            ]
+        }
+    },
     "Conditions" :
     {
         "PeerVpc" :
