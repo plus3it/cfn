@@ -129,7 +129,7 @@
                 {
                     "Label" : 
                     { 
-                        "default":"RDSH Application Configuration"
+                        "default" : "RDSH Application Configuration"
                     },
                     "Parameters" :
                     [ 
@@ -144,7 +144,7 @@
                 {
                     "Label" : 
                     { 
-                        "default":"AutoScale Configuration"
+                        "default" : "AutoScale Configuration"
                     },
                     "Parameters" :
                     [ 
@@ -154,7 +154,7 @@
                 {
                     "Label" : 
                     { 
-                        "default":"ELB Configuration"
+                        "default" : "ELB Configuration"
                     },
                     "Parameters" :
                     [ 
@@ -163,7 +163,7 @@
                 },        
                 {   "Label" :
                     { 
-                        "default":"Network Configuration"
+                        "default" : "Network Configuration"
                     },
                     "Parameters" :
                     [ 
