@@ -125,11 +125,7 @@
                 "Region" : { "Ref" : "AWS::Region" },
                 "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" },
                 "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
-<<<<<<< HEAD
             }
-=======
-			}
->>>>>>> 93ea6199a5881a556006c28d4da49556c2f320e2
         },
         "RdgwAutoScalingGroup" :
         {
