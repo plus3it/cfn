@@ -130,7 +130,8 @@
                     "function:cfn-look-up-ami-ids"
                 ]]},
                 "Region" : { "Ref" : "AWS::Region" },
-                "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" }
+                "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" },
+		"ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
             }
         },
         "RdshAutoScalingGroup" :
