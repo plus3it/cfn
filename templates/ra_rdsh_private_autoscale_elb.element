@@ -122,7 +122,7 @@
             "Type" : "Custom::AmiIdLookup",
             "Properties" :
             {
-                "ServiceToken" :				
+                "ServiceToken" :
                 { "Fn::Join" : [ ":", [
                     "arn:aws:lambda",
                     { "Ref" : "AWS::Region" },
@@ -131,7 +131,7 @@
                 ]]},
                 "Region" : { "Ref" : "AWS::Region" },
                 "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" },
-                "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }       
+                "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
             }
         },
         "RdshAutoScalingGroup" :
