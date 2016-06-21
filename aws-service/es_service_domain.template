@@ -1,0 +1,288 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template creates an ElasticSearch domain. It creates a cluster consisting of data and optional dedicated master nodes",
+    "Parameters" :
+    {
+        "DomainName" :
+        {
+            "Description" : "The name for the ES Domain. The name must start with a lowercase alphabet and be at least 3 and no more than 28 characters long. Valid characters are a-z (lowercase letters), 0-9, and - (hyphen)",
+            "Type": "String",
+            "MinLength" : "3",
+            "MaxLength" : "28",
+            "AllowedPattern" : "[a-z]+[a-z0-9-]*"
+        },        
+        "DedicatedMasterEnabled" :
+        {
+            "Description" : "Controls whether a dedicated master node(s) is created. Recommended to leave at \"true\" except for testing",
+            "Type" : "String",
+            "Default" : "true",
+            "AllowedValues" :
+            [
+                "false",
+                "true"
+            ]
+        },
+        "InstanceCount" :
+        {
+            "Description" : "Number of data instances in the cluster",
+            "Type" : "Number",
+            "Default" : "1",
+            "AllowedValues" : 
+            [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5" 
+            ]        
+        },
+        "ZoneAwarenessEnabled" :
+        {
+            "Description" : "Zone awareness allocates the nodes and replica index shards belonging to a cluster across two Availability Zones in the same region. If you enable zone awareness, you also must use the native Amazon ES API to create replica shards for your cluster. Important: Zone awareness requires an even number of instances in the instance count",
+            "Type" : "String",
+            "Default" : "false",
+            "AllowedValues" :
+            [
+                "false",
+                "true"
+            ]
+        },    
+        "InstanceType" :
+        {
+            "Description" : "Choose an instance type for the data nodes",
+            "Type" : "String",
+            "Default" : "t2.micro.elasticsearch",
+            "AllowedValues" :
+            [
+                "t2.micro.elasticsearch",
+                "t2.small.elasticsearch",
+                "t2.medium.elasticsearch",
+                "t2.large.elasticsearch",
+                "c4.large.elasticsearch",
+                "c4.xlarge.elasticsearch",
+                "m4.large.elasticsearch",
+                "m4.xlarge.elasticsearch"
+            ]
+        },
+        "DedicatedMasterType" :
+        {
+            "Description" : "Choose an instance type for the dedicated master nodes. The instance type can be different than the data nodes. Ignored if \"DedicatedMasterEnabled\" is false",
+            "Type" : "String",
+            "Default" : "t2.micro.elasticsearch",
+            "AllowedValues" :
+            [
+                "t2.micro.elasticsearch",
+                "t2.small.elasticsearch",
+                "t2.medium.elasticsearch",
+                "t2.large.elasticsearch",
+                "c4.large.elasticsearch",
+                "c4.xlarge.elasticsearch",
+                "m4.large.elasticsearch",
+                "m4.xlarge.elasticsearch"
+            ]
+        },       
+        "DedicatedMasterCount" :
+        {
+            "Description" : "Number of dedicated master node instances. Ignored if \"DedicatedMasterEnabled\" is false. If true minimum is \"2\"",
+            "Type" : "String",
+            "Default" : "2",
+            "AllowedValues" : 
+            [ 
+                "2",
+                "3",
+                "4",
+                "5" 
+            ]
+        },
+        "VolumeSize" :
+        {
+            "Description" : "Choose EBS volume size for the cluster in GB. The EBS volume size setting is configured per instance. Storage settings do not apply to any dedicated master nodes in the cluster.",
+            "Type" : "Number",
+            "Default" : "10",
+            "MinValue" : "10",
+            "MaxValue" : "35"
+        }    
+    },
+    
+    "Conditions" : 
+    {
+    "DedicatedMasterType" : 
+        {
+            "Fn::Equals" : 
+            [
+                {
+                    "Ref" : "DedicatedMasterEnabled"
+                }, 
+                    "true"
+            ]
+        }
+    },
+    
+    "Metadata" : 
+        {
+            "AWS::CloudFormation::Interface" : 
+                {
+                "ParameterGroups" : 
+                    [
+                        {
+                            "Label" : 
+                        { 
+                            "default" : "Data Configuration"
+                        },
+                            "Parameters" : 
+                            [ 
+                                "DomainName",
+                                "InstanceCount",
+                                "InstanceType",
+                                "VolumeSize",
+                                "ZoneAwarenessEnabled"
+                            ]
+                        },
+                        {
+                            "Label" : 
+                            { 
+                                "default" : "Dedicated Master Configuration"
+                            },
+                            "Parameters" :
+                            [ 
+                                "DedicatedMasterEnabled",
+                                "DedicatedMasterCount",
+                                "DedicatedMasterType"
+                            ]
+                        }
+                ]
+            }
+    },
+    
+    "Resources" : 
+    {
+        "ElasticsearchDomain" : 
+        {
+            "Type": "AWS::Elasticsearch::Domain",
+            "Properties" : 
+            {
+                "DomainName" : 
+                { 
+                    "Ref" : "DomainName"
+                },
+                "ElasticsearchClusterConfig" :
+                {
+                    "DedicatedMasterEnabled" : 
+                    {
+                        "Ref" : "DedicatedMasterEnabled"
+                    },
+                    "InstanceCount" :
+                    { 
+                        "Ref" : "InstanceCount" 
+                    },
+                    "ZoneAwarenessEnabled" : 
+                    {
+                        "Ref" : "ZoneAwarenessEnabled"
+                    },
+                    "InstanceType":
+                    {
+                        "Ref" : "InstanceType"
+                    },
+                    "DedicatedMasterType" :
+                    { 
+                        "Fn::If" : 
+                        [
+                            "DedicatedMasterType",
+                            {
+                                "Ref" : "DedicatedMasterType"
+                            },
+                            {
+                                "Ref" : "AWS::NoValue"
+                            }
+                        ]
+                    },
+                    "DedicatedMasterCount" : 
+                    { 
+                        "Fn::If" :
+                        [
+                            "DedicatedMasterType",
+                            {
+                                "Ref" : "DedicatedMasterCount"
+                            },
+                            {
+                                "Ref" : "AWS::NoValue"
+                            }
+                        ]
+                    }            
+                },    
+                "EBSOptions" :
+                {
+                    "EBSEnabled" : true,
+                    "VolumeSize" : 
+                    {
+                        "Ref" : "VolumeSize"
+                    },
+                    "VolumeType" : "gp2"
+                },
+                "SnapshotOptions" : 
+                    {
+                        "AutomatedSnapshotStartHour" : "0"
+                    },
+                "AccessPolicies" :
+                    {
+                    "Version": "2012-10-17",
+                    "Statement" :
+                    [
+                        {
+                            "Effect" : "Allow",
+                            "Principal" : 
+                            {
+                                "AWS" : "*"
+                            },
+                            "Action" : "es:*",
+                            "Resource" : "*"
+                        }
+                    ]
+                },
+                "AdvancedOptions" :
+                {
+                    "rest.action.multi.allow_explicit_index" : "true"
+                }
+            }
+        }    
+    },
+    "Outputs" :
+    {
+        "ElasticSearchDomainName" :
+        {
+            "Value" : 
+            { 
+                "Ref" : "DomainName"
+            },
+            "Description" : "ElasticSearch Domain Name"
+        },
+        "InstanceCount" :
+        {
+            "Value" :
+            {
+                "Ref" : "InstanceCount"
+            },
+            "Description" : "Number of Data Nodes Instances"
+        },
+        "DedicatedMasterCount" :
+        {
+            "Value" :
+            {
+                "Ref" : "DedicatedMasterCount" 
+            },
+            "Description" : "Number of Dedicated Master Instances"
+        },
+        "DomainEndpoint" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" :
+                [
+                    "ElasticsearchDomain",
+                    "DomainEndpoint"
+                ]
+            },
+            "Description" : "The domain-specific endpoint that is used to submit index, search, and data upload requests to ES domain"        
+        }     
+    }
+}
