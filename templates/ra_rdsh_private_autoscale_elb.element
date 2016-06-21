@@ -122,7 +122,7 @@
             "Type" : "Custom::AmiIdLookup",
             "Properties" :
             {
-                "ServiceToken" :				
+                "ServiceToken" :
                 { "Fn::Join" : [ ":", [
                     "arn:aws:lambda",
                     { "Ref" : "AWS::Region" },
