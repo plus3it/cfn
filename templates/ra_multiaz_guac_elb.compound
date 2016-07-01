@@ -66,6 +66,12 @@
             "MinLength" : "1",
             "Default" : "1"
         },
+         "AmiId" :
+        {
+            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Type" : "String",
+            "Default" : ""
+        },		
         "GuacAmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
@@ -153,6 +159,7 @@
                     "Parameters" : 
                     [ 
                         "GuacAmiNameSearchString",
+                        "AmiId",						
                         "InstanceType",
                         "KeyPairName"
                         ]
@@ -275,6 +282,7 @@
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
                     "AmiNameSearchString" : {"Ref" : "GuacAmiNameSearchString"},
+                    "AmiId" : {"Ref" : "AmiId"},					
                     "InstanceType" : {"Ref" : "InstanceType"},
                     "MinCapacity" : {"Ref" : "MinCapacity"},
                     "MaxCapacity" : {"Ref" : "MaxCapacity"},

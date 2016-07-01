@@ -68,6 +68,12 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
+        "AmiId" :
+        {
+            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Type" : "String",
+            "Default" : ""
+        },		
         "RdshAmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
@@ -236,6 +242,7 @@
                     {
                         "Ref" : "RdshAmiNameSearchString"
                     },
+                    "AmiId" : {"Ref" : "AmiId"},					
                     "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
                     "RdshElbName" :
                     {
@@ -282,6 +289,7 @@
                     {
                         "Ref" : "RdshAmiNameSearchString"
                     },
+                    "AmiId" : {"Ref" : "AmiId"},					
                     "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
                     "RdshElbName" :
                     {
@@ -328,6 +336,7 @@
                     {
                         "Ref" : "RdshAmiNameSearchString"
                     },
+                    "AmiId" : {"Ref" : "AmiId"},					
                     "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
                     "RdshElbName" :
                     {

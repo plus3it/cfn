@@ -106,6 +106,12 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
+        "AmiId" :
+        {
+            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Type" : "String",
+            "Default" : ""
+        },		
         "RdgwAmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
@@ -132,6 +138,7 @@
                     "Parameters" : 
                     [ 
                         "RdgwAmiNameSearchString",
+                        "AmiId",						
                         "InstanceTypeRdgw",
                         "KeyPairName"
                         ]
@@ -251,6 +258,7 @@
                     {
                         "Ref" : "RdgwAmiNameSearchString"
                     },
+                    "AmiId" : {"Ref" : "AmiId"},					
                     "RdgwInstanceType" : { "Ref" : "InstanceTypeRdgw" },
                     "RdgwElbName" :
                     {
