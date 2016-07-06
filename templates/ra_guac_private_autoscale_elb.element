@@ -163,7 +163,7 @@
         "AmiIdLookup":
         {
             "Type": "Custom::AmiIdLookup",
-            "Condition" : "NotToUseAmiId",			
+            "Condition" : "NotToUseAmiId",
             "Properties":
             {
                 "ServiceToken":
