@@ -465,8 +465,8 @@
                     "Fn::If" :
                     [
                         "UseAmiLookup",
-                            {"Fn::GetAtt" : [ "AmiIdLookup", "Id" ]},
-                            {"Ref" : "AmiId"}
+                        {"Fn::GetAtt" : [ "AmiIdLookup", "Id" ]},
+                        {"Ref" : "AmiId"}
                     ]
                 },
                 "InstanceType" : { "Ref" : "InstanceType" },

@@ -66,7 +66,7 @@
             "MinLength" : "1",
             "Default" : "1"
         },
-         "AmiId" :
+        "AmiId" :
         {
             "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
             "Type" : "String",
@@ -162,7 +162,7 @@
                         "AmiId",						
                         "InstanceType",
                         "KeyPairName"
-                        ]
+                    ]
                 },
                 {
                     "Label" : 

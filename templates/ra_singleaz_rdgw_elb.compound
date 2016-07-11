@@ -141,7 +141,7 @@
                         "AmiId",						
                         "InstanceTypeRdgw",
                         "KeyPairName"
-                        ]
+                    ]
                 },
                 {
                     "Label" : 
