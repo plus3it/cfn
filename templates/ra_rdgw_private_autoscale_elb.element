@@ -116,21 +116,17 @@
     },
     "Conditions" :
     {
-        "UseAmiId" :
+        "UseAmiLookup" :
         {
-            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ] } ]
-        },
-        "NotToUseAmiId" :
-        {
-              "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ] 
-        }		
+            "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ]
+        }
     },
     "Resources" :
     {
         "AmiIdLookup" :
         {
             "Type" : "Custom::AmiIdLookup",
-            "Condition" : "NotToUseAmiId",			
+            "Condition" : "UseAmiLookup",			
             "Properties" :
             {
                 "ServiceToken" :
@@ -335,12 +331,15 @@
             },
             "Properties" :
             {
-                "ImageId" : {
-                    "Fn::If" : [
-                               "UseAmiId",
-                               {"Ref" : "AmiId"},
-                               {"Fn::GetAtt": [ "AmiIdLookup", "Id" ]}
-                               ]},
+                "ImageId" :
+                {
+                    "Fn::If" :
+                    [
+                        "UseAmiId",
+                            {"Fn::GetAtt": [ "AmiIdLookup", "Id" ]},
+                            {"Ref" : "AmiId"}
+                    ]
+				},
                 "InstanceType" : { "Ref" : "RdgwInstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
                 "BlockDeviceMappings" :
