@@ -106,6 +106,12 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
+        "AmiId" :
+        {
+            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Type" : "String",
+            "Default" : ""
+        },
         "RdgwAmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
@@ -118,31 +124,32 @@
             "Type" : "AWS::EC2::Subnet::Id"
         }
     },
-     "Metadata" : 
+     "Metadata" :
     {
-        "AWS::CloudFormation::Interface" : 
+        "AWS::CloudFormation::Interface" :
         {
-            "ParameterGroups" : 
+            "ParameterGroups" :
             [
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "RDGW Instance Configuration"
                     },
-                    "Parameters" : 
-                    [ 
+                    "Parameters" :
+                    [
                         "RdgwAmiNameSearchString",
+                        "AmiId",
                         "InstanceTypeRdgw",
                         "KeyPairName"
-                        ]
+                    ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "RDGW Application Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "DomainDNSName",
                         "DomainNetBIOSName",
                         "DomainJoinUser",
@@ -151,45 +158,45 @@
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "AutoScale Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "ForceUpdateToggle"
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "ELB Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "ElbSslCertificateName",
                         "ElbSslCertificateService",
-                        "ElbPublicSubnetIDs"                        
+                        "ElbPublicSubnetIDs"
                     ]
-                },        
+                },
                 {   "Label" :
-                    { 
+                    {
                         "default" : "Network Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "VPC",
-                        "Rdgw1PrivateSubnetID"                       
+                        "Rdgw1PrivateSubnetID"
                     ]
                 }
             ],
-            "ParameterLabels" : 
+            "ParameterLabels" :
             {
-                "RdgwAmiNameSearchString" : 
-                { 
+                "RdgwAmiNameSearchString" :
+                {
                     "default" : "RDGW AMI Search Pattern"
                 }
-            }    
+            }
         }
     },
     "Resources" :
@@ -251,6 +258,7 @@
                     {
                         "Ref" : "RdgwAmiNameSearchString"
                     },
+                    "AmiId" : {"Ref" : "AmiId"},
                     "RdgwInstanceType" : { "Ref" : "InstanceTypeRdgw" },
                     "RdgwElbName" :
                     {

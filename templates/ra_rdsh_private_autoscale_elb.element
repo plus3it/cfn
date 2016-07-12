@@ -8,6 +8,12 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
+        "AmiId" :
+        {
+            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Type" : "String",
+            "Default" : ""
+        },
         "ForceUpdateToggle" :
         {
             "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
@@ -115,11 +121,19 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
+    "Conditions" :
+    {
+        "UseAmiLookup" :
+        {
+            "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ]
+        }
+    },
     "Resources" :
     {
         "AmiIdLookup" :
         {
             "Type" : "Custom::AmiIdLookup",
+            "Condition" : "UseAmiLookup",
             "Properties" :
             {
                 "ServiceToken" :
@@ -331,7 +345,15 @@
             },
             "Properties" :
             {
-                "ImageId" : { "Fn::GetAtt" : [ "AmiIdLookup", "Id" ] },
+                "ImageId" :
+                {
+                    "Fn::If" :
+                    [
+                        "UseAmiId",
+                        {"Fn::GetAtt": [ "AmiIdLookup", "Id" ]},
+                        {"Ref" : "AmiId"}
+                    ]
+                },
                 "InstanceType" : { "Ref" : "RdshInstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
                 "BlockDeviceMappings" :
