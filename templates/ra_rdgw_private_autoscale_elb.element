@@ -13,7 +13,7 @@
             "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
             "Type" : "String",
             "Default" : ""
-        },		
+        },
         "ForceUpdateToggle" :
         {
             "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
@@ -126,7 +126,7 @@
         "AmiIdLookup" :
         {
             "Type" : "Custom::AmiIdLookup",
-            "Condition" : "UseAmiLookup",			
+            "Condition" : "UseAmiLookup",
             "Properties" :
             {
                 "ServiceToken" :

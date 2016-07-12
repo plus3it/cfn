@@ -71,7 +71,7 @@
             "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
             "Type" : "String",
             "Default" : ""
-        },		
+        },
         "GuacAmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
@@ -145,32 +145,32 @@
             "Type" : "List<AWS::EC2::Subnet::Id>"
         }
     },
-    "Metadata" : 
+    "Metadata" :
     {
-        "AWS::CloudFormation::Interface" : 
+        "AWS::CloudFormation::Interface" :
         {
-            "ParameterGroups" : 
+            "ParameterGroups" :
             [
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "Guac Instance Configuration"
                     },
-                    "Parameters" : 
-                    [ 
+                    "Parameters" :
+                    [
                         "GuacAmiNameSearchString",
-                        "AmiId",						
+                        "AmiId",
                         "InstanceType",
                         "KeyPairName"
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "Guac Application Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "GuacLdapServer",
                         "GuacLdapDN",
                         "GuacVersion",
@@ -181,12 +181,12 @@
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "AutoScale Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "ForceUpdateToggle",
                         "DesiredCapacity",
                         "MinCapacity",
@@ -194,32 +194,32 @@
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "ELB Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "SslCertificateName",
                         "SslCertificateService"
                     ]
-                },        
+                },
                 {   "Label" :
-                    { 
+                    {
                         "default" : "Network Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "VPC",
                         "PrivateSubnetIDs",
                         "PublicSubnetIDs"
                     ]
                 }
             ],
-            "ParameterLabels" : 
+            "ParameterLabels" :
             {
-                "GuacAmiNameSearchString" : 
-                { 
+                "GuacAmiNameSearchString" :
+                {
                     "default" : "Guac AMI Search Pattern"
                 }
             }
@@ -282,7 +282,7 @@
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
                     "AmiNameSearchString" : {"Ref" : "GuacAmiNameSearchString"},
-                    "AmiId" : {"Ref" : "AmiId"},					
+                    "AmiId" : {"Ref" : "AmiId"},
                     "InstanceType" : {"Ref" : "InstanceType"},
                     "MinCapacity" : {"Ref" : "MinCapacity"},
                     "MaxCapacity" : {"Ref" : "MaxCapacity"},

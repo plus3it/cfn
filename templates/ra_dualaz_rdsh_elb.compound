@@ -73,7 +73,7 @@
             "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
             "Type" : "String",
             "Default" : ""
-        },		
+        },
         "RdshAmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
@@ -118,32 +118,32 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
-    "Metadata" : 
+    "Metadata" :
     {
-        "AWS::CloudFormation::Interface" : 
+        "AWS::CloudFormation::Interface" :
         {
-            "ParameterGroups" : 
+            "ParameterGroups" :
             [
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "RDSH Instance Configuration"
                     },
-                    "Parameters" : 
-                    [ 
+                    "Parameters" :
+                    [
                         "RdshAmiNameSearchString",
-                        "AmiId",						
+                        "AmiId",
                         "RdshInstanceType",
                         "KeyPairName"
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "RDSH Application Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "DomainDNSName",
                         "DomainNetBIOSName",
                         "DomainJoinUser",
@@ -153,44 +153,44 @@
                     ]
                 },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "AutoScale Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "ForceUpdateToggle"
                     ]
-                },                               
+                },
                 {
-                    "Label" : 
-                    { 
+                    "Label" :
+                    {
                         "default" : "ELB Configuration"
                     },
                     "Parameters" :
-                    [ 
-                        "ElbPrivateSubnetIDs"                        
+                    [
+                        "ElbPrivateSubnetIDs"
                     ]
-                },        
+                },
                 {   "Label" :
-                    { 
+                    {
                         "default" : "Network Configuration"
                     },
                     "Parameters" :
-                    [ 
+                    [
                         "VPC",
                         "Rdsh1PrivateSubnetID",
-                        "Rdsh2PrivateSubnetID"                       
+                        "Rdsh2PrivateSubnetID"
                     ]
                 }
             ],
-            "ParameterLabels" : 
+            "ParameterLabels" :
             {
-                "RdshAmiNameSearchString" : 
-                { 
+                "RdshAmiNameSearchString" :
+                {
                     "default" : "RDSH AMI Search Pattern"
                 }
-            }    
+            }
         }
     },
     "Resources" :
@@ -237,7 +237,7 @@
                     {
                         "Ref" : "RdshAmiNameSearchString"
                     },
-                    "AmiId" : {"Ref" : "AmiId"},					
+                    "AmiId" : {"Ref" : "AmiId"},
                     "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
                     "RdshElbName" :
                     {
@@ -284,7 +284,7 @@
                     {
                         "Ref" : "RdshAmiNameSearchString"
                     },
-                    "AmiId" : {"Ref" : "AmiId"},					
+                    "AmiId" : {"Ref" : "AmiId"},
                     "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
                     "RdshElbName" :
                     {
@@ -315,7 +315,7 @@
                     "VPC" : { "Ref" : "VPC" }
                 }
             }
-        }      
+        }
     },
     "Outputs" :
     {

@@ -13,7 +13,7 @@
             "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
             "Type" : "String",
             "Default" : ""
-        },		
+        },
         "AmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
