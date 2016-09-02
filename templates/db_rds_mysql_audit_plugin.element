@@ -163,6 +163,16 @@
     },
     "Outputs" :
     {
+        "RdsEndpointAddress" :
+        {
+            "Description" : "Endpoint address for the RDS instance",
+            "Value" : { "Fn::GetAtt": [ "RdsInstance", "Endpoint.Address" ] }
+        },
+        "RdsEndpointPort" :
+        {
+            "Description" : "Endpoint port for the RDS instance",
+            "Value" : { "Fn::GetAtt": [ "RdsInstance", "Endpoint.Port" ] }
+        },
         "JDBCConnectionString" :
         {
             "Description" : "JDBC connection string for database",
@@ -173,7 +183,7 @@
                 ":",
                 { "Fn::GetAtt": [ "RdsInstance", "Endpoint.Port" ] },
                 "/",
-                { "Ref": "RdsInstance" }
+                { "Ref": "RdsDbName" }
             ] ] }
         }
     }
