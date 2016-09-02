@@ -1,0 +1,180 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template deploys a MySQL RDS instance",
+    "Parameters" :
+    {
+        "RdsVpcId" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id",
+            "Description" : "VpcId for the RDS instance"
+        },
+        "RdsSubnets" :
+        {
+            "Type" : "List<AWS::EC2::Subnet::Id>",
+            "Description" : "Select at least two subnets, each in different Availability Zones"
+        },
+        "RdsDbName" :
+        {
+            "Default": "MyDatabase_1",
+            "Description" : "The database name",
+            "Type": "String",
+            "AllowedPattern" : "[a-zA-Z0-9_-]*",
+            "MinLength": "1",
+            "MaxLength": "64"
+        },
+        "RdsDbInstanceName" :
+        {
+            "Description" : "The name for the RDS database instance",
+            "Type" : "String",
+            "AllowedPattern" : "^([a-zA-Z])([-a-zA-Z0-9])*",
+            "MinLength": "1",
+            "MaxLength": "63"
+        },
+        "RdsDbUsername" :
+        {
+            "Default": "rdsdbadmin",
+            "Description" : "The database admin account username",
+            "Type": "String",
+            "AllowedPattern" : "^([a-zA-Z])([-a-zA-Z0-9])*",
+            "MinLength": "1",
+            "MaxLength": "16"
+        },
+        "RdsDbPassword" :
+        {
+            "Default": "RdsDbAdmin456$%^",
+            "NoEcho": "true",
+            "Description" : "The database admin account password, these characters are not valid: \", @, and /",
+            "Type": "String",
+            "MinLength": "16",
+            "MaxLength": "41",
+            "AllowedPattern": "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "ConstraintDescription" : "Must contain letters, numbers and symbols."
+        },
+        "RdsDbClass" :
+        {
+            "Default" : "db.t2.micro",
+            "Description" : "Database instance class",
+            "Type" : "String",
+            "AllowedValues" :
+            [
+                "db.t2.micro",
+                "db.t2.small",
+                "db.t2.medium",
+                "db.t2.large",
+                "db.m4.large",
+                "db.m4.xlarge",
+                "db.m4.2xlarge",
+                "db.m4.4xlarge",
+                "db.m4.10xlarge",
+                "db.r3.large",
+                "db.r3.xlarge",
+                "db.r3.2xlarge",
+                "db.r3.4xlarge",
+                "db.r3.8xlarge"
+            ]
+        },
+        "RdsMultiAzDatabase" :
+        {
+            "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
+            "Type": "String",
+            "Default" : "false",
+            "AllowedValues" : [ "true", "false" ],
+            "ConstraintDescription" : "Must be either true or false."
+        },
+        "RdsSecurityGroupIds" :
+        {
+            "Description": "Security groups to attach to the RDS instance",
+            "Type": "List<AWS::EC2::SecurityGroup::Id>"
+        },
+        "RdsDbAllocatedStorage" :
+        {
+            "Default": "5",
+            "Description" : "The size of the database (GB)",
+            "Type": "Number",
+            "MinValue": "5",
+            "MaxValue": "6144",
+            "ConstraintDescription" : "Must be between 5GB and 6144GB."
+        }
+    },
+    "Resources" :
+    {
+        "RdsSubnetGroup" :
+        {
+            "Type" : "AWS::RDS::DBSubnetGroup",
+            "Properties" :
+            {
+                "DBSubnetGroupDescription" : "Subnets available for the RDS DB Instance",
+                "SubnetIds" : { "Ref" : "RdsSubnets" }
+            }
+        },
+        "RdsOptionGroup" :
+        {
+           "Type" : "AWS::RDS::OptionGroup",
+           "DeletionPolicy" : "Retain",
+           "Properties" :
+           {
+              "EngineName" : "mysql",
+              "MajorEngineVersion" : "5.6",
+              "OptionGroupDescription" : "MySQL Option Group with Maria DB Audit Plugin",
+              "OptionConfigurations" :
+              [
+                  {
+                      "OptionName" : "MARIADB_AUDIT_PLUGIN"
+                  }
+              ],
+              "Tags" :
+              [
+                  {
+                      "Key"  : "Name",
+                      "Value" : { "Ref" : "AWS::StackName" }
+                  }
+              ]
+           }
+        },
+        "RdsInstance" :
+        {
+            "Type" : "AWS::RDS::DBInstance",
+            "DeletionPolicy" : "Snapshot",
+            "Properties" :
+            {
+                "DBName" : { "Ref" : "RdsDbName" },
+                "DBInstanceIdentifier" : { "Ref" : "RdsDbInstanceName"},
+                "AllocatedStorage" : { "Ref" : "RdsDbAllocatedStorage" },
+                "DBInstanceClass" : { "Ref" : "RdsDbClass" },
+                "DBSubnetGroupName" : { "Ref" : "RdsSubnetGroup" },
+                "Engine" : "MySQL",
+                "EngineVersion" : "5.6.29",
+                "MasterUsername" : { "Ref" : "RdsDbUsername" },
+                "MultiAZ" : { "Ref": "RdsMultiAzDatabase" },
+                "MasterUserPassword" : { "Ref" : "RdsDbPassword" },
+                "OptionGroupName" : { "Ref" : "RdsOptionGroup" },
+                "StorageType" : "gp2",
+                "VPCSecurityGroups" : { "Ref" : "RdsSecurityGroupIds" },
+                "Tags" :
+                [
+                    {
+                        "Key"  : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "JDBCConnectionString" :
+        {
+            "Description" : "JDBC connection string for database",
+            "Value" :
+            { "Fn::Join" : [ "", [
+                "jdbc:mysql://",
+                { "Fn::GetAtt": [ "RdsInstance", "Endpoint.Address" ] },
+                ":",
+                { "Fn::GetAtt": [ "RdsInstance", "Endpoint.Port" ] },
+                "/",
+                { "Ref": "RdsInstance" }
+            ] ] }
+        }
+    }
+}
