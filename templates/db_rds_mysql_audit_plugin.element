@@ -17,9 +17,9 @@
         "RdsDbName" :
         {
             "Default": "MyDatabase_1",
-            "Description" : "The database name",
+            "Description" : "The database name; must begin with a letter and contain only alphanumeric characters",
             "Type": "String",
-            "AllowedPattern" : "[a-zA-Z0-9_-]*",
+            "AllowedPattern" : "[a-zA-Z0-9_]*",
             "MinLength": "1",
             "MaxLength": "64"
         },
