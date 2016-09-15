@@ -96,5 +96,12 @@ $ChromeInstaller = "${Env:Temp}\googlechromestandaloneenterprise64.msi"
 $ChromeParams = "/i `"${ChromeInstaller}`" /quiet /qn /norestart"
 $null = Start-Process -FilePath msiexec -ArgumentList ${ChromeParams} -NoNewWindow -PassThru -Wait
 
+# Install AWSCLI
+$AWSCLIUrl = "https://s3.amazonaws.com/aws-cli/AWSCLI64.msi"
+$AWSCLIInstaller = "${Env:Temp}\AWSCLI64.msi"
+(new-object net.webclient).DownloadFile("${AWSCLIUrl}","${AWSCLIInstaller}")
+$AWSCLIParams = "/i `"${AWSCLIInstaller}`" /quiet /qn /norestart"
+$null = Start-Process -FilePath msiexec -ArgumentList ${AWSCLIParams} -NoNewWindow -PassThru -Wait
+
 # Restart
 Restart-Computer -Force
