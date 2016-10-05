@@ -517,22 +517,19 @@ then
             echo "ldap-group-base-dn:      ${LDAP_GROUP_BASE},${LDAP_DOMAIN_DN}"
         ) >> /etc/guacamole/guacamole.properties
 
-        if [ "$GUAC_VERSION" == "0.9.7" ]
+        if [[ "$GUAC_VERSION" == "0.9.7" || "$GUAC_VERSION" == "0.9.9" ]]
         then
-            log "Enabling custom RBAC jar for 0.9.7"
+            log "Enabling custom RBAC jar for ${GUAC_VERSION}"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/app-chemistry/files/guacamole-auth-ldap-0.9.7.jar || \
-                die "Unable to download 0.9.7 custom plugin from s3 bucket"
-        elif [ "$GUAC_VERSION" == "0.9.9" ]
-        then
-            log "Enabling custom RBAC jar for 0.9.9"
-            rm -rf "/etc/guacamole/extensions/*"
-            cd "/etc/guacamole/extensions/"
-            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/app-chemistry/files/guacamole-auth-ldap-0.9.9.jar || \
-                die "Unable to download 0.9.9 custom plugin from s3 bucket"
+            curl -s --show-error --retry 5 -O "https://s3.amazonaws.com/app-chemistry/files/guacamole-auth-ldap-${GUAC_VERSION}.jar" || \
+                die "Unable to download ${GUAC_VERSION} custom plugin from s3 bucket"
+            if [[ $(file "/etc/guacamole/extensions/guacamole-auth-ldap-${GUAC_VERSION}.jar" | grep -q "Zip archive data")$? -ne 0 ]]
+            then
+                die "Error: Detected /etc/guacamole/extensions/guacamole-auth-ldap-${GUAC_VERSION}.jar is not zip archive data!"
+            fi
         else
-            log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7 or 0.9.9!"
+            log "Warning: Unknown RBAC support in this GUAC version, ${GUAC_VERSION}. Only 0.9.7 or 0.9.9 are known to work!"
         fi
     fi
 fi
