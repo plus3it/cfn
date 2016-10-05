@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Description:
 #    This script is intended to aid an administrator in quickly
@@ -225,7 +225,7 @@ then
     then
         die "Guacamole username was provided (-G), but the password was not (-s)"
     fi
-    if [ -z "{SSH_USERNAME}" ]
+    if [ -z "${SSH_USERNAME}" ]
     then
         SSH_USERNAME="${GUAC_USERNAME}"
         SSH_PASSWORD="${GUAC_PASSWORD}"
@@ -262,9 +262,9 @@ PWCRYPT=$( python -c "import random,string,crypt,getpass,pwd; \
            randomsalt = ''.join(random.sample(string.ascii_letters,8)); \
            print crypt.crypt('${SSH_PASSWORD}', '\$6\$%s))\$' % randomsalt)" )
 GUACPASS_MD5=$(__md5sum "${GUAC_PASSWORD}")
-GUAC_SOURCE="https://s3.amazonaws.com/dicelab-guacamole"
-GUAC_BINARY="https://s3.amazonaws.com/dicelab-guacamole"
-GUAC_EXTENSIONS="https://s3.amazonaws.com/dicelab-guacamole"
+GUAC_SOURCE="https://s3.amazonaws.com/app-chemistry/files"
+GUAC_BINARY="https://s3.amazonaws.com/app-chemistry/files"
+GUAC_EXTENSIONS="https://s3.amazonaws.com/app-chemistry/files"
 FREERDP_REPO="git://github.com/FreeRDP/FreeRDP.git"
 FREERDP_BRANCH="stable-1.1"
 ADDUSER="/usr/sbin/useradd"
@@ -522,14 +522,14 @@ then
             log "Enabling custom RBAC jar for 0.9.7"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.7.jar || \
+            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/app-chemistry/files/guacamole-auth-ldap-0.9.7.jar || \
                 die "Unable to download 0.9.7 custom plugin from s3 bucket"
         elif [ "$GUAC_VERSION" == "0.9.9" ]
         then
             log "Enabling custom RBAC jar for 0.9.9"
             rm -rf "/etc/guacamole/extensions/*"
             cd "/etc/guacamole/extensions/"
-            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/dicelab-guacamole/guacamole-auth-ldap-0.9.9.jar || \
+            curl -s --show-error --retry 5 -O https://s3.amazonaws.com/app-chemistry/files/guacamole-auth-ldap-0.9.9.jar || \
                 die "Unable to download 0.9.9 custom plugin from s3 bucket"
         else
             log "Warning: Unknown RBAC support in this GUAC version, not 0.9.7 or 0.9.9!"
@@ -589,19 +589,19 @@ done
 
 #Add custom URLs to Guacamole login page, change is not stateful due to sed pattern to be matched/replaced
 if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
-then 
+then
     log "Attempting to add HTML links from parameter input to Guacamole login page"
     sleep 15
     oldhtmltext='            <\/form>\\n\\n'
     newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
     sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
         if [[ $? -ne 0 ]]
-        then 
+        then
             log "sed statement failed to set Guacamole login page links: ${URLTEXT_1}, ${URLTEXT_2}"
         fi
     service tomcat7 restart
         if [[ $? -ne 0 ]]
-        then 
+        then
             log "Final Tomcat restart unsuccessful"
         fi
     log "Successfully added URL(s) to Guacamole login page"
