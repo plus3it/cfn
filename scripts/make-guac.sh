@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Description:
 #    This script is intended to aid an administrator in quickly
@@ -225,7 +225,7 @@ then
     then
         die "Guacamole username was provided (-G), but the password was not (-s)"
     fi
-    if [ -z "{SSH_USERNAME}" ]
+    if [ -z "${SSH_USERNAME}" ]
     then
         SSH_USERNAME="${GUAC_USERNAME}"
         SSH_PASSWORD="${GUAC_PASSWORD}"
@@ -589,19 +589,19 @@ done
 
 #Add custom URLs to Guacamole login page, change is not stateful due to sed pattern to be matched/replaced
 if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
-then 
+then
     log "Attempting to add HTML links from parameter input to Guacamole login page"
     sleep 15
     oldhtmltext='            <\/form>\\n\\n'
     newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
     sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
         if [[ $? -ne 0 ]]
-        then 
+        then
             log "sed statement failed to set Guacamole login page links: ${URLTEXT_1}, ${URLTEXT_2}"
         fi
     service tomcat7 restart
         if [[ $? -ne 0 ]]
-        then 
+        then
             log "Final Tomcat restart unsuccessful"
         fi
     log "Successfully added URL(s) to Guacamole login page"
