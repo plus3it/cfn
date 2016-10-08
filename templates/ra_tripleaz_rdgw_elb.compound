@@ -45,7 +45,7 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
-        "InstanceTypeRdgw" :
+        "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
             "Type" : "String",
@@ -112,7 +112,7 @@
             "Type" : "String",
             "Default" : ""
         },
-        "RdgwAmiNameSearchString" :
+        "AmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
@@ -147,9 +147,9 @@
                     },
                     "Parameters" :
                     [
-                        "RdgwAmiNameSearchString",
+                        "AmiNameSearchString",
                         "AmiId",
-                        "InstanceTypeRdgw",
+                        "InstanceType",
                         "KeyPairName"
                         ]
                 },
@@ -204,7 +204,7 @@
             ],
             "ParameterLabels" :
             {
-                "RdgwAmiNameSearchString" :
+                "AmiNameSearchString" :
                 {
                     "default" : "RDGW AMI Search Pattern"
                 }
@@ -268,11 +268,11 @@
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
-                        "Ref" : "RdgwAmiNameSearchString"
+                        "Ref" : "AmiNameSearchString"
                     },
                     "AmiId" : {"Ref" : "AmiId"},
-                    "RdgwInstanceType" : { "Ref" : "InstanceTypeRdgw" },
-                    "RdgwElbName" :
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -289,7 +289,7 @@
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw1PrivateSubnetID" },
-                    "SecurityGroupIdRDGW" :
+                    "SecurityGroupId" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -314,11 +314,11 @@
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
-                        "Ref" : "RdgwAmiNameSearchString"
+                        "Ref" : "AmiNameSearchString"
                     },
                     "AmiId" : {"Ref" : "AmiId"},
-                    "RdgwInstanceType" : { "Ref" : "InstanceTypeRdgw" },
-                    "RdgwElbName" :
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -335,7 +335,7 @@
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw2PrivateSubnetID" },
-                    "SecurityGroupIdRDGW" :
+                    "SecurityGroupId" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -360,11 +360,11 @@
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
-                        "Ref" : "RdgwAmiNameSearchString"
+                        "Ref" : "AmiNameSearchString"
                     },
                     "AmiId" : {"Ref" : "AmiId"},
-                    "RdgwInstanceType" : { "Ref" : "InstanceTypeRdgw" },
-                    "RdgwElbName" :
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -381,7 +381,7 @@
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdgw3PrivateSubnetID" },
-                    "SecurityGroupIdRDGW" :
+                    "SecurityGroupId" :
                     {
                         "Fn::GetAtt" :
                         [
