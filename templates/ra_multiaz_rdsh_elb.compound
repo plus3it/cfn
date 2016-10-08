@@ -1,0 +1,324 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template creates a Multi-AZ (one-or-more AZs) remote access solution using Remote Desktop Session Hosts, fronted by an Elastic Load Balancer.",
+    "Parameters" :
+    {
+        "DomainAccessUserGroup" :
+        {
+            "Description" : "Domain group of users authorized to use the RDSH",
+            "Type" : "String",
+            "Default" : "Domain Users",
+            "MinLength" : "1"
+        },
+        "DomainJoinPassword" :
+        {
+            "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type" : "String",
+            "MinLength" : "8",
+            "MaxLength" : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho" : "true",
+            "Default" : "Password123"
+        },
+        "DomainJoinUser" :
+        {
+            "Description" : "User name for the account that will join the instance to the domain",
+            "Type" : "String",
+            "Default" : "StackAdmin",
+            "MinLength" : "5",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9_]*"
+        },
+        "DomainDNSName" :
+        {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+            "Type" : "String",
+            "Default" : "example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "DomainNetBIOSName" :
+        {
+            "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
+            "Type" : "String",
+            "Default" : "EXAMPLE",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "DesiredCapacity" :
+        {
+            "Description" : "The number of RDSH instances the autoscale group will spin up initially",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" :
+        {
+            "Description" : "The minimum number of RDSH instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" :
+        {
+            "Description" : "The maximum number of RDSH instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "ForceUpdateToggle" :
+        {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" :
+            [
+                "A",
+                "B"
+            ]
+        },
+        "KeyPairName" :
+        {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type" : "AWS::EC2::KeyPair::KeyName"
+        },
+        "AmiId" :
+        {
+            "Description" : "(Optional) AMI ID -- will supersede AMI Name-based Lambda Search",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "AmiNameSearchString" :
+        {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
+        },
+        "PrivateSubnetIDs" :
+        {
+            "Description" : "List of Private Subnet IDs for the RDSH instances and ELB",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "InstanceType" :
+        {
+            "Description" : "Amazon EC2 instance type for the Remote Desktop Session Host Instance",
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" :
+            [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ]
+        },
+        "LdapContainerOU" :
+        {
+            "Description" : "DN of the LDAP container or OU in which the RDSH instances will be placed",
+            "Type" : "String",
+            "Default" : "CN=Users,DC=example,DC=com",
+            "MinLength" : "1"
+        },
+        "VPC" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "RDSH Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDSH Application Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDNSName",
+                        "DomainNetBIOSName",
+                        "DomainJoinUser",
+                        "DomainJoinPassword",
+                        "DomainAccessUserGroup",
+                        "LdapContainerOU"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity",
+                        "ForceUpdateToggle"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VPC",
+                        "PrivateSubnetIDs"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "AMI Name Search Pattern"
+                }
+            }
+        }
+    },
+    "Resources" :
+    {
+        "RdshSecurityGroupStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdsh_security_group.element",
+                "Parameters" :
+                {
+                    "VPC" : { "Ref" : "VPC" },
+                    "UseELB" : "true"
+                }
+            }
+        },
+        "RdshElbStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "RdshSecurityGroupStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdsh_elb.element",
+                "Parameters" :
+                {
+                    "PrivateSubnetIDs" :
+                    { "Fn::Join" : [ ",",
+                        { "Ref" : "PrivateSubnetIDs" }
+                    ]},
+                    "SecurityGroupId" :
+                    { "Fn::GetAtt" : [
+                        "RdshSecurityGroupStack",
+                        "Outputs.RdshElbSecurityGroupId"
+                    ] }
+                }
+            }
+        },
+        "RdshStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "RdshElbStack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdsh_private_autoscale_elb.element",
+                "Parameters" :
+                {
+                    "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" },
+                    "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
+                    "MinCapacity" : { "Ref" : "MinCapacity" },
+                    "MaxCapacity" : { "Ref" : "MaxCapacity" },
+                    "KeyPairName" : { "Ref" : "KeyPairName" },
+                    "AmiNameSearchString" :
+                    {
+                        "Ref" : "AmiNameSearchString"
+                    },
+                    "AmiId" : {"Ref" : "AmiId"},
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
+                    { "Fn::GetAtt" : [
+                        "RdshElbStack",
+                        "Outputs.LoadBalancerName"
+                    ] },
+                    "DomainJoinPassword" : { "Ref" : "DomainJoinPassword" },
+                    "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
+                    "DomainDNSName" : { "Ref" : "DomainDNSName" },
+                    "DomainAccessUserGroup" :
+                    {
+                        "Ref" : "DomainAccessUserGroup"
+                    },
+                    "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
+                    "PrivateSubnetIDs" :
+                    { "Fn::Join" : [ ",",
+                        { "Ref" : "PrivateSubnetIDs" }
+                    ] },
+                    "LdapContainerOU" : { "Ref" : "LdapContainerOU" },
+                    "SecurityGroupIDs" :
+                    { "Fn::Join" : [ ",", [
+                        { "Fn::GetAtt" : [
+                            "RdshSecurityGroupStack",
+                            "Outputs.RdshSecurityGroupId"
+                        ] }
+                    ] ] }
+                }
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "RdshLoadBalancerName" :
+        {
+            "Description" : "Name of the RDSH Elastic Load Balancer",
+            "Value" :
+            { "Fn::GetAtt" : [
+                "RdshElbStack",
+                "Outputs.LoadBalancerName"
+            ] }
+        },
+        "RdshLoadBalancerDns" :
+        {
+            "Description" : "DNS name for the RDSH ELB",
+            "Value" :
+            { "Fn::GetAtt" : [
+                "RdshElbStack",
+                "Outputs.LoadBalancerDns"
+            ] }
+        },
+        "RdshSecurityGroupId" :
+        {
+            "Description" : "Security Group ID for the RDSH instances",
+            "Value" :
+            { "Fn::GetAtt" : [
+                "RdshSecurityGroupStack",
+                "Outputs.RdshSecurityGroupId"
+            ] }
+        },
+        "RdshElbSecurityGroupId" :
+        {
+            "Description" : "Security Group ID for the RDSH Elastic Load Balancer",
+            "Value" :
+            { "Fn::GetAtt" : [
+                "RdshSecurityGroupStack",
+                "Outputs.RdshElbSecurityGroupId"
+            ] }
+        }
+    }
+}

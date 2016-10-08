@@ -29,7 +29,7 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
         },
         "InstanceType" :
         {
@@ -53,6 +53,27 @@
             "Description" : "Name of the RDSH Elastic Load Balancer",
             "Type" : "String",
             "MinLength" : "1"
+        },
+        "DesiredCapacity" :
+        {
+            "Description" : "The number of instances the autoscale group will spin up initially",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" :
+        {
+            "Description" : "The minimum number of instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" :
+        {
+            "Description" : "The maximum number of instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
         },
         "LdapContainerOU" :
         {
@@ -105,20 +126,15 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "PrivateSubnetID" :
+        "PrivateSubnetIDs" :
         {
-            "Description" : "Private Subnet ID where the RDSH instance will run.",
-            "Type" : "AWS::EC2::Subnet::Id"
+            "Description" : "List of Private Subnet IDs where the RDSH instances will run.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupId" :
+        "SecurityGroupIDs" :
         {
-            "Description" : "ID of the security group for RDSH instances",
-            "Type" : "AWS::EC2::SecurityGroup::Id"
-        },
-        "VPC" :
-        {
-            "Description" : "VPC ID",
-            "Type" : "AWS::EC2::VPC::Id"
+            "Description" : "List of Security Group IDs for RDSH instances",
+            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
         }
     },
     "Conditions" :
@@ -155,7 +171,7 @@
             {
                 "ResourceSignal" :
                 {
-                    "Count" : "1",
+                    "Count" : { "Ref" : "DesiredCapacity" },
                     "Timeout" : "PT30M"
                 }
             },
@@ -163,20 +179,20 @@
             {
                 "AutoScalingRollingUpdate" :
                 {
-                    "MaxBatchSize" : "1",
-                    "MinInstancesInService" : "0",
+                    "MinInstancesInService" : "1",
+                    "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
                     "PauseTime" : "PT30M"
                 }
             },
             "Properties" :
             {
-                "VPCZoneIdentifier" : [ { "Ref" : "PrivateSubnetID" } ],
+                "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
                 "LaunchConfigurationName" : { "Ref" : "RdshLaunchConfig" },
                 "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
-                "MinSize" : "1",
-                "MaxSize" : "1",
-                "DesiredCapacity" : "1",
+                "MinSize" : { "Ref" : "MinCapacity" },
+                "MaxSize" : { "Ref" : "MaxCapacity" },
+                "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
                 "Tags" :
@@ -368,12 +384,7 @@
                         }
                     }
                 ],
-                "SecurityGroups" :
-                [
-                    {
-                        "Ref" : "SecurityGroupId"
-                    }
-                ],
+                "SecurityGroups" : { "Ref" : "SecurityGroupIDs" },
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",
