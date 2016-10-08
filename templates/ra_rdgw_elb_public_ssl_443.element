@@ -44,7 +44,7 @@
             "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
             "Properties" :
             {
-                "CrossZone" : "false",
+                "CrossZone" : "true",
                 "HealthCheck" :
                 {
                     "HealthyThreshold" : "5",
