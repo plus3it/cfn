@@ -72,20 +72,20 @@
             "Type" : "String",
             "Default" : ""
         },
-        "GuacAmiNameSearchString" :
+        "AmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
             "Default" : "amzn-ami-hvm-*.x86_64-gp2"
         },
-        "GuacLdapServer" :
+        "LdapServer" :
         {
             "Description" : "Name of LDAP server Guacamole will authenticate against",
             "Type" : "String",
             "Default" : "ad.example.com",
             "MinLength" : "1"
         },
-        "GuacLdapDN" :
+        "LdapDN" :
         {
             "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
@@ -158,7 +158,7 @@
                     },
                     "Parameters" :
                     [
-                        "GuacAmiNameSearchString",
+                        "AmiNameSearchString",
                         "AmiId",
                         "InstanceType",
                         "KeyPairName"
@@ -171,8 +171,8 @@
                     },
                     "Parameters" :
                     [
-                        "GuacLdapServer",
-                        "GuacLdapDN",
+                        "LdapServer",
+                        "LdapDN",
                         "GuacVersion",
                         "URL1",
                         "URLText1",
@@ -218,7 +218,7 @@
             ],
             "ParameterLabels" :
             {
-                "GuacAmiNameSearchString" :
+                "AmiNameSearchString" :
                 {
                     "default" : "Guac AMI Search Pattern"
                 }
@@ -281,15 +281,15 @@
                 {
                     "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
                     "KeyPairName" : {"Ref" : "KeyPairName"},
-                    "AmiNameSearchString" : {"Ref" : "GuacAmiNameSearchString"},
+                    "AmiNameSearchString" : {"Ref" : "AmiNameSearchString"},
                     "AmiId" : {"Ref" : "AmiId"},
                     "InstanceType" : {"Ref" : "InstanceType"},
                     "MinCapacity" : {"Ref" : "MinCapacity"},
                     "MaxCapacity" : {"Ref" : "MaxCapacity"},
                     "DesiredCapacity" : {"Ref" : "DesiredCapacity"},
                     "ElbName" : { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] },
-                    "GuacLdapServer" : {"Ref" : "GuacLdapServer"},
-                    "GuacLdapDN" : {"Ref" : "GuacLdapDN"},
+                    "LdapServer" : {"Ref" : "LdapServer"},
+                    "LdapDN" : {"Ref" : "LdapDN"},
                     "GuacVersion" : {"Ref" : "GuacVersion"},
                     "URL1" : {"Ref" : "URL1"},
                     "URLText1" : {"Ref" : "URLText1"},
