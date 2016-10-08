@@ -335,7 +335,7 @@
                 {
                     "Fn::If" :
                     [
-                        "UseAmiId",
+                        "UseAmiLookup",
                         {"Fn::GetAtt": [ "AmiIdLookup", "Id" ]},
                         {"Ref" : "AmiId"}
                     ]
