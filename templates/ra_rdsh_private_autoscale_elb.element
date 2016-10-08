@@ -31,7 +31,7 @@
             "Type" : "String",
             "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
         },
-        "RdshInstanceType" :
+        "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
             "Type" : "String",
@@ -48,13 +48,13 @@
                 "m4.xlarge"
             ]
         },
-        "RdshElbName" :
+        "ElbName" :
         {
             "Description" : "Name of the RDSH Elastic Load Balancer",
             "Type" : "String",
             "MinLength" : "1"
         },
-        "RdshLdapContainerOU" :
+        "LdapContainerOU" :
         {
             "Description" : "DN of the LDAP container or OU in which the RDSH instance will be placed",
             "Type" : "String",
@@ -110,7 +110,7 @@
             "Description" : "Private Subnet ID where the RDSH instance will run.",
             "Type" : "AWS::EC2::Subnet::Id"
         },
-        "SecurityGroupIdRDSH" :
+        "SecurityGroupId" :
         {
             "Description" : "ID of the security group for RDSH instances",
             "Type" : "AWS::EC2::SecurityGroup::Id"
@@ -173,7 +173,7 @@
             {
                 "VPCZoneIdentifier" : [ { "Ref" : "PrivateSubnetID" } ],
                 "LaunchConfigurationName" : { "Ref" : "RdshLaunchConfig" },
-                "LoadBalancerNames" : [ { "Ref" : "RdshElbName" } ],
+                "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
                 "MinSize" : "1",
                 "MaxSize" : "1",
                 "DesiredCapacity" : "1",
@@ -285,7 +285,7 @@
                                     { "Ref" : "DomainJoinPassword" },
                                     "' -AsPlainText -Force))) ",
                                     " -OUPath '",
-                                    { "Ref" : "RdshLdapContainerOU" },
+                                    { "Ref" : "LdapContainerOU" },
                                     "' -Restart -Verbose\""
                                 ]]},
                                 "waitAfterCompletion" : "forever"
@@ -354,7 +354,7 @@
                         {"Ref" : "AmiId"}
                     ]
                 },
-                "InstanceType" : { "Ref" : "RdshInstanceType" },
+                "InstanceType" : { "Ref" : "InstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
                 "BlockDeviceMappings" :
                 [
@@ -371,7 +371,7 @@
                 "SecurityGroups" :
                 [
                     {
-                        "Ref" : "SecurityGroupIdRDSH"
+                        "Ref" : "SecurityGroupId"
                     }
                 ],
                 "UserData" :

@@ -74,7 +74,7 @@
             "Type" : "String",
             "Default" : ""
         },
-        "RdshAmiNameSearchString" :
+        "AmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
@@ -90,7 +90,7 @@
             "Description" : "Private Subnet ID where the second RDSH instance will run.",
             "Type" : "AWS::EC2::Subnet::Id"
         },
-        "RdshInstanceType" :{
+        "InstanceType" :{
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Host Instance",
             "Type" : "String",
             "Default" : "t2.micro",
@@ -105,7 +105,7 @@
                 "m4.xlarge"
             ]
         },
-        "RdshLdapContainerOU" :
+        "LdapContainerOU" :
         {
             "Description" : "DN of the LDAP container or OU in which the RDSH instances will be placed",
             "Type" : "String",
@@ -131,9 +131,9 @@
                     },
                     "Parameters" :
                     [
-                        "RdshAmiNameSearchString",
+                        "AmiNameSearchString",
                         "AmiId",
-                        "RdshInstanceType",
+                        "InstanceType",
                         "KeyPairName"
                     ]
                 },
@@ -149,7 +149,7 @@
                         "DomainJoinUser",
                         "DomainJoinPassword",
                         "DomainAccessUserGroup",
-                        "RdshLdapContainerOU"
+                        "LdapContainerOU"
                     ]
                 },
                 {
@@ -186,7 +186,7 @@
             ],
             "ParameterLabels" :
             {
-                "RdshAmiNameSearchString" :
+                "AmiNameSearchString" :
                 {
                     "default" : "RDSH AMI Search Pattern"
                 }
@@ -235,11 +235,11 @@
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
-                        "Ref" : "RdshAmiNameSearchString"
+                        "Ref" : "AmiNameSearchString"
                     },
                     "AmiId" : {"Ref" : "AmiId"},
-                    "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
-                    "RdshElbName" :
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -256,8 +256,8 @@
                     },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdsh1PrivateSubnetID" },
-                    "RdshLdapContainerOU" : { "Ref" : "RdshLdapContainerOU" },
-                    "SecurityGroupIdRDSH" :
+                    "LdapContainerOU" : { "Ref" : "LdapContainerOU" },
+                    "SecurityGroupId" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -282,11 +282,11 @@
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
-                        "Ref" : "RdshAmiNameSearchString"
+                        "Ref" : "AmiNameSearchString"
                     },
                     "AmiId" : {"Ref" : "AmiId"},
-                    "RdshInstanceType" : { "Ref" : "RdshInstanceType" },
-                    "RdshElbName" :
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
                     {
                         "Fn::GetAtt" :
                         [
@@ -303,8 +303,8 @@
                     },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
                     "PrivateSubnetID" : { "Ref" : "Rdsh2PrivateSubnetID" },
-                    "RdshLdapContainerOU" : { "Ref" : "RdshLdapContainerOU" },
-                    "SecurityGroupIdRDSH" :
+                    "LdapContainerOU" : { "Ref" : "LdapContainerOU" },
+                    "SecurityGroupId" :
                     {
                         "Fn::GetAtt" :
                         [
