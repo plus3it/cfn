@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This template creates a Single AZ remote access solution using Remote Desktop Gateway, fronted by an Elastic Load Balancer.",
+    "Description" : "This template creates a Multi-AZ (one-or-more AZs) remote access solution using Remote Desktop Gateways, fronted by an Elastic Load Balancer.",
     "Parameters" :
     {
         "VPC" :
@@ -8,12 +8,12 @@
             "Description" : "VPC ID",
             "Type" : "AWS::EC2::VPC::Id"
         },
-        "ElbSslCertificateName" :
+        "SslCertificateName" :
         {
             "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB. The cert must already exist in the service.",
             "Type" : "String"
         },
-        "ElbSslCertificateService" :
+        "SslCertificateService" :
         {
             "Description" : "The service hosting the SSL certificate. Must be ACM or IAM.",
             "Type" : "String",
@@ -24,10 +24,31 @@
                 "IAM"
             ]
         },
-        "ElbPublicSubnetIDs" :
+        "PublicSubnetIDs" :
         {
-            "Description" : "A list of Public subnet IDs to attach to the load balancer.",
+            "Description" : "List of Public subnet IDs to attach to the load balancer.",
             "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "DesiredCapacity" :
+        {
+            "Description" : "The number of RDSH instances the autoscale group will spin up initially",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" :
+        {
+            "Description" : "The minimum number of RDSH instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" :
+        {
+            "Description" : "The maximum number of RDSH instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
         },
         "ForceUpdateToggle" :
         {
@@ -45,7 +66,7 @@
             "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
             "Type" : "AWS::EC2::KeyPair::KeyName"
         },
-        "InstanceTypeRdgw" :
+        "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
             "Type" : "String",
@@ -108,23 +129,23 @@
         },
         "AmiId" :
         {
-            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Description" : "(Optional) AMI ID -- will supersede AMI Name-based Lambda Search",
             "Type" : "String",
             "Default" : ""
         },
-        "RdgwAmiNameSearchString" :
+        "AmiNameSearchString" :
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
         },
-        "Rdgw1PrivateSubnetID" :
+        "PrivateSubnetIDs" :
         {
-            "Description" : "Private Subnet ID where the RDGW instance will run.",
-            "Type" : "AWS::EC2::Subnet::Id"
+            "Description" : "List of Private Subnet IDs where the RDGW instances will run.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
         }
     },
-     "Metadata" :
+    "Metadata" :
     {
         "AWS::CloudFormation::Interface" :
         {
@@ -137,9 +158,9 @@
                     },
                     "Parameters" :
                     [
-                        "RdgwAmiNameSearchString",
+                        "AmiNameSearchString",
                         "AmiId",
-                        "InstanceTypeRdgw",
+                        "InstanceType",
                         "KeyPairName"
                     ]
                 },
@@ -164,6 +185,9 @@
                     },
                     "Parameters" :
                     [
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity",
                         "ForceUpdateToggle"
                     ]
                 },
@@ -174,9 +198,9 @@
                     },
                     "Parameters" :
                     [
-                        "ElbSslCertificateName",
-                        "ElbSslCertificateService",
-                        "ElbPublicSubnetIDs"
+                        "SslCertificateName",
+                        "SslCertificateService",
+                        "PublicSubnetIDs"
                     ]
                 },
                 {   "Label" :
@@ -186,15 +210,15 @@
                     "Parameters" :
                     [
                         "VPC",
-                        "Rdgw1PrivateSubnetID"
+                        "PrivateSubnetIDs"
                     ]
                 }
             ],
             "ParameterLabels" :
             {
-                "RdgwAmiNameSearchString" :
+                "AmiNameSearchString" :
                 {
-                    "default" : "RDGW AMI Search Pattern"
+                    "default" : "AMI Name Search Pattern"
                 }
             }
         }
@@ -223,27 +247,24 @@
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_rdgw_elb_public_ssl_443.element",
                 "Parameters" :
                 {
-                    "SslCertificateName" : { "Ref" : "ElbSslCertificateName" },
+                    "SslCertificateName" : { "Ref" : "SslCertificateName" },
                     "SslCertificateService" :
                     {
-                        "Ref" : "ElbSslCertificateService"
+                        "Ref" : "SslCertificateService"
                     },
                     "PublicSubnetIDs" :
                     { "Fn::Join" : [ ",",
-                        { "Ref" : "ElbPublicSubnetIDs" }
-                    ]},
+                        { "Ref" : "PublicSubnetIDs" }
+                    ] },
                     "SecurityGroupId" :
-                    {
-                        "Fn::GetAtt" :
-                        [
-                            "RdgwSecurityGroupStack",
-                            "Outputs.RdgwElbSecurityGroupId"
-                        ]
-                    }
+                    { "Fn::GetAtt" : [
+                        "RdgwSecurityGroupStack",
+                        "Outputs.RdgwElbSecurityGroupId"
+                    ] }
                 }
             }
         },
-        "Rdgw1Stack" :
+        "RdgwStack" :
         {
             "Type" : "AWS::CloudFormation::Stack",
             "DependsOn" : "RdgwElbStack",
@@ -253,21 +274,21 @@
                 "Parameters" :
                 {
                     "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" },
+                    "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
+                    "MinCapacity" : { "Ref" : "MinCapacity" },
+                    "MaxCapacity" : { "Ref" : "MaxCapacity" },
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
-                        "Ref" : "RdgwAmiNameSearchString"
+                        "Ref" : "AmiNameSearchString"
                     },
-                    "AmiId" : {"Ref" : "AmiId"},
-                    "RdgwInstanceType" : { "Ref" : "InstanceTypeRdgw" },
-                    "RdgwElbName" :
-                    {
-                        "Fn::GetAtt" :
-                        [
-                            "RdgwElbStack",
-                            "Outputs.LoadBalancerName"
-                        ]
-                    },
+                    "AmiId" : { "Ref" : "AmiId" },
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "ElbName" :
+                    { "Fn::GetAtt" : [
+                        "RdgwElbStack",
+                        "Outputs.LoadBalancerName"
+                    ] },
                     "RemoteAccessUserGroup" :
                     {
                         "Ref" : "RemoteAccessUserGroup"
@@ -276,16 +297,17 @@
                     "DomainJoinUser" : { "Ref" : "DomainJoinUser" },
                     "DomainDNSName" : { "Ref" : "DomainDNSName" },
                     "DomainNetBIOSName" : { "Ref" : "DomainNetBIOSName" },
-                    "PrivateSubnetID" : { "Ref" : "Rdgw1PrivateSubnetID" },
-                    "SecurityGroupIdRDGW" :
-                    {
-                        "Fn::GetAtt" :
-                        [
+                    "PrivateSubnetIDs" :
+                    { "Fn::Join" : [ ",",
+                        { "Ref" : "PrivateSubnetIDs" }
+                    ] },
+                    "SecurityGroupIDs" :
+                    { "Fn::Join" : [ ",", [
+                        { "Fn::GetAtt" : [
                             "RdgwSecurityGroupStack",
                             "Outputs.RdgwSecurityGroupId"
-                        ]
-                    },
-                    "VPC" : { "Ref" : "VPC" }
+                        ] }
+                    ] ] }
                 }
             }
         }
@@ -296,49 +318,37 @@
         {
             "Description" : "Name of the RDGW Elastic Load Balancer",
             "Value" :
-            {
-                "Fn::GetAtt" :
-                [
-                    "RdgwElbStack",
-                    "Outputs.LoadBalancerName"
-                ]
-            }
+            { "Fn::GetAtt" : [
+                "RdgwElbStack",
+                "Outputs.LoadBalancerName"
+            ] }
         },
         "RdgwLoadBalancerDns" :
         {
             "Description" : "DNS name for the RDGW ELB",
             "Value" :
-            {
-                "Fn::GetAtt" :
-                [
-                    "RdgwElbStack",
-                    "Outputs.LoadBalancerDns"
-                ]
-            }
+            { "Fn::GetAtt" : [
+                "RdgwElbStack",
+                "Outputs.LoadBalancerDns"
+            ] }
         },
         "RdgwSecurityGroupId" :
         {
             "Description" : "Security Group ID for the RDGW instances",
             "Value" :
-            {
-                "Fn::GetAtt" :
-                [
-                    "RdgwSecurityGroupStack",
-                    "Outputs.RdgwSecurityGroupId"
-                ]
-            }
+            { "Fn::GetAtt" : [
+                "RdgwSecurityGroupStack",
+                "Outputs.RdgwSecurityGroupId"
+            ] }
         },
         "RdgwElbSecurityGroupId" :
         {
             "Description" : "Security Group ID for the RDGW Elastic Load Balancer",
             "Value" :
-            {
-                "Fn::GetAtt" :
-                [
-                    "RdgwSecurityGroupStack",
-                    "Outputs.RdgwElbSecurityGroupId"
-                ]
-            }
+            { "Fn::GetAtt" : [
+                "RdgwSecurityGroupStack",
+                "Outputs.RdgwElbSecurityGroupId"
+            ] }
         }
     }
 }

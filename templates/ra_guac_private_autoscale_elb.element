@@ -75,14 +75,14 @@
             "Type" : "String",
             "MinLength" : "1"
         },
-        "GuacLdapServer" :
+        "LdapServer" :
         {
             "Description" : "Name of LDAP server Guacamole will authenticate against",
             "Type" : "String",
             "Default" : "ad.example.com",
             "MinLength" : "1"
         },
-        "GuacLdapDN" :
+        "LdapDN" :
         {
             "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
@@ -382,9 +382,9 @@
                                 { "Fn::Join" : [ "", [
                                     "/etc/cfn/scripts/make-guac.sh",
                                     " -H ",
-                                    { "Ref" : "GuacLdapServer" },
+                                    { "Ref" : "LdapServer" },
                                     " -D ",
-                                    { "Ref" : "GuacLdapDN" },
+                                    { "Ref" : "LdapDN" },
                                     " -v ",
                                     { "Ref" : "GuacVersion" },
                                     {

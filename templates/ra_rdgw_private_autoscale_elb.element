@@ -29,9 +29,9 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-*"
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
         },
-        "RdgwInstanceType" :
+        "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Gateway Instance",
             "Type" : "String",
@@ -48,11 +48,32 @@
                 "m4.xlarge"
             ]
         },
-        "RdgwElbName" :
+        "ElbName" :
         {
             "Description" : "Name of the RDGW Elastic Load Balancer",
             "Type" : "String",
             "MinLength" : "1"
+        },
+        "DesiredCapacity" :
+        {
+            "Description" : "The number of instances the autoscale group will spin up initially",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" :
+        {
+            "Description" : "The minimum number of instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" :
+        {
+            "Description" : "The maximum number of instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
         },
         "RemoteAccessUserGroup" :
         {
@@ -98,20 +119,15 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "PrivateSubnetID" :
+        "PrivateSubnetIDs" :
         {
-            "Description" : "Private Subnet ID where the RDGW instance will run.",
-            "Type" : "AWS::EC2::Subnet::Id"
+            "Description" : "List of Private Subnet IDs where the RDGW instances will run.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupIdRDGW" :
+        "SecurityGroupIDs" :
         {
-            "Description" : "ID of the security group for RDGW instances",
-            "Type" : "AWS::EC2::SecurityGroup::Id"
-        },
-        "VPC" :
-        {
-            "Description" : "VPC ID",
-            "Type" : "AWS::EC2::VPC::Id"
+            "Description" : "List of Security Group IDs for RDGW instances",
+            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
         }
     },
     "Conditions" :
@@ -148,7 +164,7 @@
             {
                 "ResourceSignal" :
                 {
-                    "Count" : "1",
+                    "Count" : { "Ref" : "DesiredCapacity" },
                     "Timeout" : "PT30M"
                 }
             },
@@ -156,20 +172,20 @@
             {
                 "AutoScalingRollingUpdate" :
                 {
-                    "MaxBatchSize" : "1",
-                    "MinInstancesInService" : "0",
+                    "MinInstancesInService" : "1",
+                    "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
                     "PauseTime" : "PT30M"
                 }
             },
             "Properties" :
             {
-                "VPCZoneIdentifier" : [ { "Ref" : "PrivateSubnetID" } ],
+                "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
                 "LaunchConfigurationName" : { "Ref" : "RdgwLaunchConfig" },
-                "LoadBalancerNames" : [ { "Ref" : "RdgwElbName" } ],
-                "MinSize" : "1",
-                "MaxSize" : "1",
-                "DesiredCapacity" : "1",
+                "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
+                "MinSize" : { "Ref" : "MinCapacity" },
+                "MaxSize" : { "Ref" : "MaxCapacity" },
+                "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
                 "Tags" :
@@ -340,7 +356,7 @@
                         {"Ref" : "AmiId"}
                     ]
                 },
-                "InstanceType" : { "Ref" : "RdgwInstanceType" },
+                "InstanceType" : { "Ref" : "InstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
                 "BlockDeviceMappings" :
                 [
@@ -354,10 +370,7 @@
                         }
                     }
                 ],
-                "SecurityGroups" :
-                [
-                    { "Ref" : "SecurityGroupIdRDGW" }
-                ],
+                "SecurityGroups" : { "Ref" : "SecurityGroupIDs" },
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",
