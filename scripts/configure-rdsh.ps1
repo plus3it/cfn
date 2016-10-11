@@ -113,5 +113,12 @@ $null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -Pass
 # Install PsGet, a PowerShell Module
 (new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
 
+# Install Visual C++ Build Tools 2015
+$ExeUrl = "http://download.microsoft.com/download/5/f/7/5f7acaeb-8363-451f-9425-68a90f98b238/visualcppbuildtools_full.exe"
+$ExeInstaller = "${Env:Temp}\visualcppbuildtools_full.exe"
+(new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
+$ExeParams = "/Full /Q /S /NoRestart /L ${env:temp}\vcpp.log"
+$null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
+
 # Restart
 Restart-Computer -Force
