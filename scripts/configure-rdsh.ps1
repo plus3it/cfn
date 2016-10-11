@@ -89,5 +89,12 @@ $SignOffShortcut.Description = "Sign Out"
 $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 
+# Install Git for Windows
+$ExeUrl = "https://github.com/git-for-windows/git/releases/download/v2.10.1.windows.1/Git-2.10.1-64-bit.exe"
+$ExeInstaller = "${Env:Temp}\Git-2.10.1-64-bit.exe"
+(new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
+$ExeParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
+$null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
+
 # Restart
 Restart-Computer -Force
