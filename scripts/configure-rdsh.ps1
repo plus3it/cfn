@@ -110,5 +110,8 @@ $ExeInstaller = "${Env:Temp}\AtomSetup.exe"
 $ExeParams = "--silent"
 $null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
 
+# Install PsGet, a PowerShell Module
+(new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
+
 # Restart
 Restart-Computer -Force
