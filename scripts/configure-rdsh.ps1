@@ -96,5 +96,12 @@ $ExeInstaller = "${Env:Temp}\Git-2.10.1-64-bit.exe"
 $ExeParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
 
+# Install Python 3.5
+$ExeUrl = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
+$ExeInstaller = "${Env:Temp}\python-3.5.2-amd64.exe"
+(new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
+$ExeParams = "/quiet"
+$null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
+
 # Restart
 Restart-Computer -Force
