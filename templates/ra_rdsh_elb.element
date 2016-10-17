@@ -30,6 +30,15 @@
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
+                "ConnectionSettings" :
+                {
+                    "IdleTimeout" : "900"
+                },
+                "ConnectionDrainingPolicy" :
+                {
+                    "Enabled" : "true",
+                    "Timeout" : "1800"
+                },
                 "Listeners" :
                 [
                     {
