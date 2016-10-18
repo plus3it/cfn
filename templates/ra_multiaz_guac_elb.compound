@@ -66,9 +66,27 @@
             "MinLength" : "1",
             "Default" : "1"
         },
+        "ScaleUpSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale up to the Desired Capacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale down the number of instances; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownDesiredCapacity" :
+        {
+            "Description" : "(Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset",
+            "Type" : "Number",
+            "Default" : "1"
+        },
         "AmiId" :
         {
-            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Description" : "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
             "Type" : "String",
             "Default" : ""
         },
@@ -187,10 +205,13 @@
                     },
                     "Parameters" :
                     [
-                        "ForceUpdateToggle",
                         "DesiredCapacity",
                         "MinCapacity",
-                        "MaxCapacity"
+                        "MaxCapacity",
+                        "ScaleDownDesiredCapacity",
+                        "ScaleDownSchedule",
+                        "ScaleUpSchedule",
+                        "ForceUpdateToggle"
                     ]
                 },
                 {
@@ -221,6 +242,10 @@
                 "AmiNameSearchString" :
                 {
                     "default" : "Guac AMI Search Pattern"
+                },
+                "ScaleDownDesiredCapacity" :
+                {
+                    "default" : "Scale Down Desired Capacity"
                 }
             }
         }
@@ -287,6 +312,9 @@
                     "MinCapacity" : {"Ref" : "MinCapacity"},
                     "MaxCapacity" : {"Ref" : "MaxCapacity"},
                     "DesiredCapacity" : {"Ref" : "DesiredCapacity"},
+                    "ScaleUpSchedule" : { "Ref" : "ScaleUpSchedule" },
+                    "ScaleDownSchedule" : { "Ref" : "ScaleDownSchedule" },
+                    "ScaleDownDesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
                     "ElbName" : { "Fn::GetAtt" : [ "GuacElbStack", "Outputs.LoadBalancerName" ] },
                     "LdapServer" : {"Ref" : "LdapServer"},
                     "LdapDN" : {"Ref" : "LdapDN"},
