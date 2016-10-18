@@ -103,13 +103,6 @@ $ExeInstaller = "${Env:Temp}\python-3.5.2-amd64.exe"
 $ExeParams = "/quiet /log ${env:temp}\python.log"
 $null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
 
-# Install Atom
-$ExeUrl = "https://atom.io/download/windows"
-$ExeInstaller = "${Env:Temp}\AtomSetup.exe"
-(new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
-$ExeParams = "--silent"
-$null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
-
 # Install PsGet, a PowerShell Module
 (new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
 
