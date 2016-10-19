@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates deploys a Remote Desktop Gateway (RDGW) instance in an autoscale group behind an ELB, and joins the instance to a domain.",
+    "Description" : "This templates deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind an ELB, and joins them to a domain.",
     "Parameters" :
     {
         "KeyPairName" :
@@ -10,7 +10,7 @@
         },
         "AmiId" :
         {
-            "Description" : "AMI Name --Optional-- Will supersede Lambda Search",
+            "Description" : "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
             "Type" : "String",
             "Default" : ""
         },
@@ -75,6 +75,24 @@
             "MinLength" : "1",
             "Default" : "1"
         },
+        "ScaleUpSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale up to the Desired Capacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale down the number of instances; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownDesiredCapacity" :
+        {
+            "Description" : "(Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset",
+            "Type" : "Number",
+            "Default" : "1"
+        },
         "RemoteAccessUserGroup" :
         {
             "Description" : "Domain group of users authorized to use the RDGW",
@@ -135,6 +153,14 @@
         "UseAmiLookup" :
         {
             "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ]
+        },
+        "UseScheduledAction" :
+        {
+            "Fn::And" :
+            [
+                { "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ScaleUpSchedule" }, "" ] } ] },
+                { "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ScaleDownSchedule" }, "" ] } ] }
+            ]
         }
     },
     "Resources" :
@@ -157,6 +183,28 @@
                 "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
             }
         },
+        "ScaleUpScheduledAction" :
+        {
+            "Type" : "AWS::AutoScaling::ScheduledAction",
+            "Condition" : "UseScheduledAction",
+            "Properties" :
+            {
+                "AutoScalingGroupName" : { "Ref" : "RdgwAutoScalingGroup" },
+                "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
+                "Recurrence" : { "Ref" : "ScaleUpSchedule" }
+            }
+        },
+        "ScaleDownScheduledAction" :
+        {
+            "Type" : "AWS::AutoScaling::ScheduledAction",
+            "Condition" : "UseScheduledAction",
+            "Properties" :
+            {
+                "AutoScalingGroupName" : { "Ref" : "RdgwAutoScalingGroup" },
+                "DesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
+                "Recurrence" : { "Ref" : "ScaleDownSchedule" }
+            }
+        },
         "RdgwAutoScalingGroup" :
         {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
@@ -176,6 +224,10 @@
                     "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
                     "PauseTime" : "PT30M"
+                },
+                "AutoScalingScheduledAction" :
+                {
+                    "IgnoreUnmodifiedGroupSizeProperties" : "true"
                 }
             },
             "Properties" :

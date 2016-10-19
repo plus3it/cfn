@@ -50,6 +50,24 @@
             "MinLength" : "1",
             "Default" : "1"
         },
+        "ScaleUpSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale up to the Desired Capacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale down the number of instances; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownDesiredCapacity" :
+        {
+            "Description" : "(Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset",
+            "Type" : "Number",
+            "Default" : "1"
+        },
         "ForceUpdateToggle" :
         {
             "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
@@ -129,7 +147,7 @@
         },
         "AmiId" :
         {
-            "Description" : "(Optional) AMI ID -- will supersede AMI Name-based Lambda Search",
+            "Description" : "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
             "Type" : "String",
             "Default" : ""
         },
@@ -188,6 +206,9 @@
                         "DesiredCapacity",
                         "MinCapacity",
                         "MaxCapacity",
+                        "ScaleDownDesiredCapacity",
+                        "ScaleDownSchedule",
+                        "ScaleUpSchedule",
                         "ForceUpdateToggle"
                     ]
                 },
@@ -219,6 +240,10 @@
                 "AmiNameSearchString" :
                 {
                     "default" : "AMI Name Search Pattern"
+                },
+                "ScaleDownDesiredCapacity" :
+                {
+                    "default" : "Scale Down Desired Capacity"
                 }
             }
         }
@@ -277,6 +302,9 @@
                     "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                     "MinCapacity" : { "Ref" : "MinCapacity" },
                     "MaxCapacity" : { "Ref" : "MaxCapacity" },
+                    "ScaleUpSchedule" : { "Ref" : "ScaleUpSchedule" },
+                    "ScaleDownSchedule" : { "Ref" : "ScaleDownSchedule" },
+                    "ScaleDownDesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
                     "KeyPairName" : { "Ref" : "KeyPairName" },
                     "AmiNameSearchString" :
                     {
