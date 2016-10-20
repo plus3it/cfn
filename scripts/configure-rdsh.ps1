@@ -100,7 +100,7 @@ $null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -Pass
 $ExeUrl = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
 $ExeInstaller = "${Env:Temp}\python-3.5.2-amd64.exe"
 (new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
-$ExeParams = "/quiet /log ${env:temp}\python.log"
+$ExeParams = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
 $null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
 
 # Install PsGet, a PowerShell Module
