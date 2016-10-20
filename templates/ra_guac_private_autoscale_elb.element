@@ -178,6 +178,14 @@
                 { "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ScaleUpSchedule" }, "" ] } ] },
                 { "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ScaleDownSchedule" }, "" ] } ] }
             ]
+        },
+        "UseScalingPolicy" :
+        {
+            "Fn::Or" :
+            [
+                { "Fn::Equals" : [ { "Ref" : "ScaleUpSchedule" }, "" ] },
+                { "Fn::Equals" : [ { "Ref" : "ScaleDownSchedule" }, "" ] }
+            ]
         }
     },
     "Resources" :
@@ -225,6 +233,7 @@
         "GuacScaleUpPolicy" :
         {
             "Type" : "AWS::AutoScaling::ScalingPolicy",
+            "Condition": "UseScalingPolicy",
             "Properties" :
             {
                 "AdjustmentType" : "ChangeInCapacity",
@@ -236,6 +245,7 @@
         "GuacScaleDownPolicy" :
         {
             "Type" : "AWS::AutoScaling::ScalingPolicy",
+            "Condition": "UseScalingPolicy",
             "Properties" :
             {
                 "AdjustmentType" : "ChangeInCapacity",
@@ -247,6 +257,7 @@
         "GuacCPUAlarmLow":
         {
             "Type": "AWS::CloudWatch::Alarm",
+            "Condition": "UseScalingPolicy",
             "Properties":
             {
                 "EvaluationPeriods": "10",
@@ -268,12 +279,13 @@
         "GuacCPUAlarmHigh":
         {
             "Type": "AWS::CloudWatch::Alarm",
+            "Condition": "UseScalingPolicy",
             "Properties":
             {
                 "EvaluationPeriods": "5",
                 "Statistic": "Average",
-                "Threshold": "70",
-                "AlarmDescription": "Scale-up if CPU > 70% for 5 minutes or metric disappears indicating instance is down",
+                "Threshold": "30",
+                "AlarmDescription": "Scale-up if CPU > 30% for 5 minutes or metric disappears indicating instance is down",
                 "Period": "60",
                 "AlarmActions": [ { "Ref": "GuacScaleUpPolicy" } ],
                 "Namespace": "AWS/EC2",
