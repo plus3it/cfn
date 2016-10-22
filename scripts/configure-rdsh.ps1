@@ -90,18 +90,47 @@ $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 
 # Install Git for Windows
-$ExeUrl = "https://github.com/git-for-windows/git/releases/download/v2.10.1.windows.1/Git-2.10.1-64-bit.exe"
-$ExeInstaller = "${Env:Temp}\Git-2.10.1-64-bit.exe"
-(new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
-$ExeParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
-$null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
+$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.10.1.windows.1/Git-2.10.1-64-bit.exe"
+$GitInstaller = "${Env:Temp}\Git-2.10.1-64-bit.exe"
+(new-object net.webclient).DownloadFile("${GitUrl}","${GitInstaller}")
+$GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
+$null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
 
 # Install Python 3.5
-$ExeUrl = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
-$ExeInstaller = "${Env:Temp}\python-3.5.2-amd64.exe"
-(new-object net.webclient).DownloadFile("${ExeUrl}","${ExeInstaller}")
-$ExeParams = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
-$null = Start-Process -FilePath ${ExeInstaller} -ArgumentList ${ExeParams} -PassThru -Wait
+$Py35Url = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
+$Py35Installer = "${Env:Temp}\python-3.5.2-amd64.exe"
+(new-object net.webclient).DownloadFile("${Py35Url}","${Py35Installer}")
+$Py35Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
+$null = Start-Process -FilePath ${Py35Installer} -ArgumentList ${Py35Params} -PassThru -Wait
+
+# Install Haskell Platform (with cabal)
+$HaskellVersion = "7.10.3"
+$HaskellUrl = "https://www.haskell.org/platform/download/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-x86_64-setup.exe"
+$HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-x86_64-setup.exe"
+(new-object net.webclient).DownloadFile("${HaskellUrl}","${HaskellInstaller}")
+$HaskellParams = "/S"
+$null = Start-Process -FilePath ${HaskellInstaller} -ArgumentList ${HaskellParams} -PassThru -Wait
+
+# Update paths, prep for cabal-based installs
+$HaskellPaths = @(
+    "C:\Program Files\Haskell\bin"
+    "C:\Program Files\Haskell Platform\${HaskellVersion}\lib\extralibs\bin"
+    "C:\Program Files\Haskell Platform\${HaskellVersion}\bin"
+    "C:\Program Files\Haskell Platform\${HaskellVersion}\mingw\bin"
+)
+$Env:Path += ";$($HaskellPaths -join ';')"
+
+# Update cabal
+$CabalExe = "cabal.exe"
+$CabalUpdateParams = "update"
+$null = Start-Process -FilePath ${CabalExe} -ArgumentList ${CabalUpdateParams} -PassThru -Wait -NoNewWindow
+
+# Install cabal packages
+$CabalPackages = @(
+  "shellcheck"
+)
+$CabalInstallParams = "install --global ${CabalPackages}"
+$null = Start-Process -FilePath ${CabalExe} -ArgumentList ${CabalInstallParams} -PassThru -Wait -NoNewWindow
 
 # Install PsGet, a PowerShell Module
 (new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
