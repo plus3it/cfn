@@ -90,8 +90,8 @@ $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 
 # Install Git for Windows
-$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.10.1.windows.1/Git-2.10.1-64-bit.exe"
-$GitInstaller = "${Env:Temp}\Git-2.10.1-64-bit.exe"
+$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.11.0.windows.1/Git-2.11.0-64-bit.exe"
+$GitInstaller = "${Env:Temp}\Git-2.11.0-64-bit.exe"
 (new-object net.webclient).DownloadFile("${GitUrl}","${GitInstaller}")
 $GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
