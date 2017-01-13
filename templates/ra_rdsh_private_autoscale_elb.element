@@ -42,6 +42,7 @@
                 "t2.small",
                 "t2.medium",
                 "t2.large",
+                "t2.xlarge",
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
