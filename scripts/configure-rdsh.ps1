@@ -104,9 +104,9 @@ $Py35Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=
 $null = Start-Process -FilePath ${Py35Installer} -ArgumentList ${Py35Params} -PassThru -Wait
 
 # Install Haskell Platform (with cabal)
-$HaskellVersion = "7.10.3"
-$HaskellUrl = "https://www.haskell.org/platform/download/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-x86_64-setup.exe"
-$HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-x86_64-setup.exe"
+$HaskellVersion = "8.0.2"
+$HaskellUrl = "https://www.haskell.org/platform/download/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
+$HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
 (new-object net.webclient).DownloadFile("${HaskellUrl}","${HaskellInstaller}")
 $HaskellParams = "/S"
 $null = Start-Process -FilePath ${HaskellInstaller} -ArgumentList ${HaskellParams} -PassThru -Wait
