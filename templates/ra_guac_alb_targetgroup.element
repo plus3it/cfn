@@ -1,0 +1,39 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template creates an ALB Target Group",
+    "Parameters" :
+    {
+        "VPC" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources" :
+    {
+        "ALBTargetGroup" : 
+        {
+            "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties" :
+            {
+                "HealthCheckIntervalSeconds" : "30",
+                "HealthCheckPort" : "8080",
+                "HealthCheckProtocol" : "HTTP",
+                "HealthCheckTimeoutSeconds" : "10",
+                "HealthyThresholdCount" : "5",
+                "Port" : "8080",
+                "Protocol" : "HTTP",
+                "UnhealthyThresholdCount" : "10",
+                "VpcId" : { "Ref" : "VPC" }
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "TargetGroupName" :
+        {
+            "Description" : "Name of the ALB Target Group",
+            "Value" : { "Ref" : "ALBTargetGroup" }
+        }
+    }
+}

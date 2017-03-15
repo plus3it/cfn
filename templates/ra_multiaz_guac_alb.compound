@@ -1,0 +1,419 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template creates a Multi-AZ (one-or-more AZs) remote access solution using Guacamole, fronted by an Elastic Application Load Balancer.",
+    "Parameters" :
+    {
+        "VPC" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
+        },
+        "SslCertificateName" :
+        {
+            "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB. The cert must already exist in the service.",
+            "Type" : "String"
+        },
+        "SslCertificateService" :
+        {
+            "Description" : "The service hosting the SSL certificate. Must be ACM or IAM.",
+            "Type" : "String",
+            "Default" : "ACM",
+            "AllowedValues" :
+            [
+                "ACM",
+                "IAM"
+            ]
+        },
+        "PublicSubnetIDs" :
+        {
+            "Description" : "A list of Public subnet IDs to attach to the load balancer.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "KeyPairName" :
+        {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type" : "AWS::EC2::KeyPair::KeyName"
+        },
+        "ForceUpdateToggle" :
+        {
+            "Description" : "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" :
+            [
+                "A",
+                "B"
+            ]
+        },
+        "DesiredCapacity" :
+        {
+            "Description" : "The number of Guacamole instances the autoscale group will spin up initially",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MinCapacity" :
+        {
+            "Description" : "The minimum number of Guacamole instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "MaxCapacity" :
+        {
+            "Description" : "The maximum number of Guacamole instances for the autoscale group",
+            "Type" : "String",
+            "MinLength" : "1",
+            "Default" : "1"
+        },
+        "ScaleUpSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale up to the Desired Capacity; ignored if empty or ScaleDownSchedule is unset (E.g. \"0 10 * * Mon-Fri\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownSchedule" :
+        {
+            "Description" : "(Optional) Scheduled Action in cron-format (UTC) to scale down the number of instances; ignored if empty or ScaleUpSchedule is unset (E.g. \"0 0 * * *\")",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "ScaleDownDesiredCapacity" :
+        {
+            "Description" : "(Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset",
+            "Type" : "Number",
+            "Default" : "1"
+        },
+        "AmiId" :
+        {
+            "Description" : "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "AmiNameSearchString" :
+        {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "amzn-ami-hvm-*.x86_64-gp2"
+        },
+        "LdapServer" :
+        {
+            "Description" : "Name of LDAP server Guacamole will authenticate against",
+            "Type" : "String",
+            "Default" : "ad.example.com",
+            "MinLength" : "1"
+        },
+        "LdapDN" :
+        {
+            "Description" : "Distinguished Name (DN) of the LDAP directory",
+            "Type" : "String",
+            "Default" : "DC=ad,DC=example,DC=com",
+            "MinLength" : "1"
+        },
+        "GuacVersion" :
+        {
+            "Description" : "Version of Guacamole to install",
+            "Type" : "String",
+            "Default" : "0.9.9",
+            "MinLength" : "1"
+        },
+        "URL1" :
+        {
+            "Description" : "First custom URL/link to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "URLText1" :
+        {
+            "Description" : "Text/Label to display for the First custom URL/link displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "URL2" :
+        {
+            "Description" : "Second custom URL/link to display on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "URLText2" :
+        {
+            "Description" : "Text/Label to display for the Second custom URL/link displayed on the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "InstanceType" :
+        {
+            "Description" : "Amazon EC2 instance type for the Guacamole Instances",
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" :
+            [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "t2.xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ]
+        },
+        "PrivateSubnetIDs" :
+        {
+            "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        }
+    },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "Guac Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "Guac Application Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "LdapServer",
+                        "LdapDN",
+                        "GuacVersion",
+                        "URL1",
+                        "URLText1",
+                        "URL2",
+                        "URLText2"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity",
+                        "ScaleDownDesiredCapacity",
+                        "ScaleDownSchedule",
+                        "ScaleUpSchedule",
+                        "ForceUpdateToggle"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "ELB Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "SslCertificateName",
+                        "SslCertificateService"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VPC",
+                        "PrivateSubnetIDs",
+                        "PublicSubnetIDs"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "Guac AMI Search Pattern"
+                },
+                "ScaleDownDesiredCapacity" :
+                {
+                    "default" : "Scale Down Desired Capacity"
+                }
+            }
+        }
+    },
+    "Resources" :
+    {
+        "GuacSecurityGroupStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_security_group.element",
+                "Parameters" :
+                {
+                    "VPC" : { "Ref" : "VPC" },
+                    "UseELB" : "true"
+                }
+            }
+        },
+        "GuacTargetGroupStack" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_alb_targetgroup.element",
+                "Parameters"  : {
+                    "VPC" : {
+                        "Ref" : "VPC"
+                    }
+                }
+            }
+        },
+        "GuacAlbStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : [ "GuacSecurityGroupStack", "GuacTargetGroupStack" ],
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_alb_public_ssl_443.element",
+                "Parameters" :
+                {
+                    "SslCertificateName" : { "Ref" : "SslCertificateName" },
+                    "SslCertificateService" : { "Ref" : "SslCertificateService" },
+                    "PublicSubnetIDs" :
+                    {
+                        "Fn::Join" :
+                        [
+                            ",",
+                            { "Ref" : "PublicSubnetIDs" }
+                        ]
+                    },
+                    "SecurityGroupId" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "GuacSecurityGroupStack",
+                            "Outputs.GuacElbSecurityGroupId"
+                        ]
+                    },
+                    "TargetGroupId" :
+                    {
+                        "Fn::GetAtt" :
+                        [
+                            "GuacTargetGroupStack",
+                            "Outputs.TargetGroupName"
+                        ]
+                    }                        
+                }
+            }
+        },
+        "GuacStack" :
+        {
+            "Type" : "AWS::CloudFormation::Stack", 
+            "DependsOn" : [ "GuacAlbStack", "GuacTargetGroupStack" ],
+            "Properties" :
+            {
+                "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/ra_guac_private_autoscale_alb.element",
+                "Parameters" :
+                {
+                    "ForceUpdateToggle" : {"Ref" : "ForceUpdateToggle"},
+                    "KeyPairName" : {"Ref" : "KeyPairName"},
+                    "AmiNameSearchString" : {"Ref" : "AmiNameSearchString"},
+                    "AmiId" : {"Ref" : "AmiId"},
+                    "InstanceType" : {"Ref" : "InstanceType"},
+                    "MinCapacity" : {"Ref" : "MinCapacity"},
+                    "MaxCapacity" : {"Ref" : "MaxCapacity"},
+                    "DesiredCapacity" : {"Ref" : "DesiredCapacity"},
+                    "ScaleUpSchedule" : { "Ref" : "ScaleUpSchedule" },
+                    "ScaleDownSchedule" : { "Ref" : "ScaleDownSchedule" },
+                    "ScaleDownDesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
+                    "GuacAlbTargetGroupName" : { "Fn::GetAtt" : [ "GuacTargetGroupStack", "Outputs.TargetGroupName" ] },
+                    "LdapServer" : {"Ref" : "LdapServer"},
+                    "LdapDN" : {"Ref" : "LdapDN"},
+                    "GuacVersion" : {"Ref" : "GuacVersion"},
+                    "URL1" : {"Ref" : "URL1"},
+                    "URLText1" : {"Ref" : "URLText1"},
+                    "URL2" : {"Ref" : "URL2"},
+                    "URLText2" : {"Ref" : "URLText2"},
+                    "PrivateSubnetIDs" :
+                    {
+                        "Fn::Join" : [
+                            ",",
+                            { "Ref" : "PrivateSubnetIDs" }
+                        ]
+                    },
+                    "SecurityGroupIDs" :
+                    { "Fn::Join" : [ ",", [
+                        {
+                            "Fn::GetAtt" :
+                                [
+                                    "GuacSecurityGroupStack",
+                                    "Outputs.GuacSecurityGroupId"
+                                ]
+                        }
+                    ]]}
+                }
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "GuacLoadBalancerName" :
+        {
+            "Description": "Name of the Guacamole Elastic Load Balancer",
+            "Value":
+            {
+                "Fn::GetAtt" :
+                [
+                    "GuacAlbStack",
+                    "Outputs.LoadBalancerName"
+                ]
+            }
+        },
+        "GuacLoadBalancerDns" :
+        {
+            "Description": "DNS name for the Guacamole ELB",
+            "Value":
+            {
+                "Fn::GetAtt" :
+                    [
+                        "GuacAlbStack",
+                        "Outputs.LoadBalancerDns"
+                    ]
+            }
+        },
+        "GuacSecurityGroupId" :
+        {
+            "Description" : "Security Group ID for the Guacamole instances",
+            "Value":
+            {
+                "Fn::GetAtt" :
+                [
+                    "GuacSecurityGroupStack",
+                    "Outputs.GuacSecurityGroupId"
+                ]
+            }
+        },
+        "GuacAlbSecurityGroupId" :
+        {
+            "Description" : "Security Group ID for the Guacamole Elastic Load Balancer",
+            "Value":
+            {
+                "Fn::GetAtt" :
+                [
+                    "GuacSecurityGroupStack",
+                    "Outputs.GuacElbSecurityGroupId"
+                ]
+            }
+        }
+    }
+}
