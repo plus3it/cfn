@@ -1,0 +1,182 @@
+[
+  {
+    "ParameterKey": "AmiId",
+    "ParameterValue": "__AMIID__"
+  },
+  {
+    "ParameterKey": "ClusterName",
+    "ParameterValue": "__CLUSTERNAME__"
+  },
+  {
+    "ParameterKey": "DnsServerIpAddresses",
+    "ParameterValue": "__DNSIPADDRESSES__"
+  },
+  {
+    "ParameterKey": "DomainDnsName",
+    "ParameterValue": "__DOMAINDNS__"
+  },
+  {
+    "ParameterKey": "DomainNetbiosName",
+    "ParameterValue": "__DOMAINNETBIOS__"
+  },
+  {
+    "ParameterKey": "ExtraSecurityGroupId",
+    "ParameterValue": "__EXTRASGID__"
+  },
+  {
+    "ParameterKey": "InstanceRole",
+    "ParameterValue": "__INSTANCEROLE__"
+  },
+  {
+    "ParameterKey": "KeyPairName",
+    "ParameterValue": "__KEYPAIR__"
+  },
+  {
+    "ParameterKey": "MssqlInstanceType",
+    "ParameterValue": "__MSSQLINSTANCETYPE__"
+  },
+  {
+    "ParameterKey": "MssqlNode1NetbiosName",
+    "ParameterValue": "__NODE1NAME__"
+  },
+  {
+    "ParameterKey": "MssqlNode1PrivateIp",
+    "ParameterValue": "__NODE1IP1__"
+  },
+  {
+    "ParameterKey": "MssqlNode1PrivateIp2",
+    "ParameterValue": "__NODE1IP2__"
+  },
+  {
+    "ParameterKey": "MssqlNode1PrivateIp3",
+    "ParameterValue": "__NODE1IP3__"
+  },
+  {
+    "ParameterKey": "MssqlNode1SubnetId",
+    "ParameterValue": "__NODE1SUBNET__"
+  },
+  {
+    "ParameterKey": "MssqlNode2NetbiosName",
+    "ParameterValue": "__NODE2NAME__"
+  },
+  {
+    "ParameterKey": "MssqlNode2PrivateIp",
+    "ParameterValue": "__NODE2IP1__"
+  },
+  {
+    "ParameterKey": "MssqlNode2PrivateIp2",
+    "ParameterValue": "__NODE1IP2__"
+  },
+  {
+    "ParameterKey": "MssqlNode2PrivateIp3",
+    "ParameterValue": "__NODE1IP3__"
+  },
+  {
+    "ParameterKey": "MssqlNode2SubnetId",
+    "ParameterValue": "__NODE2SUBNET__"
+  },
+  {
+    "ParameterKey": "SqlAdminGroup",
+    "ParameterValue": "__SQLADMINGROUP__"
+  },
+  {
+    "ParameterKey": "SqlProductKey",
+    "ParameterValue": "__SQLPRODUCTKEY__"
+  },
+  {
+    "ParameterKey": "SqlServiceAccount",
+    "ParameterValue": "__SVCACCOUNT__"
+  },
+  {
+    "ParameterKey": "SqlServiceAccountPassword",
+    "ParameterValue": "__SVCACCOUNTPASSWORD__"
+  },
+  {
+    "ParameterKey": "SystemPrepEnvironment",
+    "ParameterValue": "__APPENV__"
+  },
+  {
+    "ParameterKey": "SystemPrepOuPath",
+    "ParameterValue": "__OUPATH__"
+  },
+  {
+    "ParameterKey": "SystemPrepAdminGroups",
+    "ParameterValue": "__OSADMINGROUPS__"
+  },
+  {
+    "ParameterKey": "WitnessInstanceType",
+    "ParameterValue": "__WITNESSINSTANCETYPE__"
+  },
+  {
+    "ParameterKey": "WitnessNetbiosName",
+    "ParameterValue": "__WITNESSNAME__"
+  },
+  {
+    "ParameterKey": "WitnessPrivateIp",
+    "ParameterValue": "__WITNESSIP__"
+  },
+  {
+    "ParameterKey": "WitnessSubnetId",
+    "ParameterValue": "__WITNESSSUBNET__"
+  },
+  {
+    "ParameterKey": "VPC",
+    "ParameterValue": "__VPC__"
+  },
+  {
+    "ParameterKey": "NoPublicIp",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "NoReboot",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "SystemPrepBootstrapUrl",
+    "ParameterValue": "https://s3.amazonaws.com/systemprep/BootStrapScripts/SystemPrep-Bootstrap--Windows.ps1"
+  },
+  {
+    "ParameterKey": "CarbonUrl",
+    "ParameterValue": "https://s3.amazonaws.com/app-chemistry/files/Carbon-2.4.1.zip"
+  },
+  {
+    "ParameterKey": "PsToolsUrl",
+    "ParameterValue": "https://s3.amazonaws.com/app-chemistry/files/PSTools.zip"
+  },
+  {
+    "ParameterKey": "ConfigureSqlAlwaysOnScriptUrl",
+    "ParameterValue": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-sql-alwayson.ps1"
+  },
+  {
+    "ParameterKey": "ConfigureWsfcScriptUrl",
+    "ParameterValue": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-wsfc.ps1"
+  },
+  {
+    "ParameterKey": "SetDnsSearchSuffixScriptUrl",
+    "ParameterValue": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/set-dnssearchsuffix.ps1"
+  },
+  {
+    "ParameterKey": "InstallSqlScriptUrl",
+    "ParameterValue": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/install-sqlserver.ps1"
+  },
+  {
+    "ParameterKey": "InstallWsfcScriptUrl",
+    "ParameterValue": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/install-wsfc.ps1"
+  },
+  {
+    "ParameterKey": "SourcesSxsUrl",
+    "ParameterValue": "https://s3.amazonaws.com/app-chemistry/files/Win2012r2-sources-sxs.zip"
+  },
+  {
+    "ParameterKey": "SqlIsoUrl",
+    "ParameterValue": "https://s3.amazonaws.com/app-chemistry/files/SQLServer2012SP1-FullSlipstream-ENU-x64.iso"
+  },
+  {
+    "ParameterKey": "CfnEndpointUrl",
+    "ParameterValue": "https://cloudformation.us-east-1.amazonaws.com"
+  },
+  {
+    "ParameterKey": "ToggleCfnInitUpdate",
+    "ParameterValue": "A"
+  }
+]
