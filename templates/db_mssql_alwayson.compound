@@ -1,0 +1,2836 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template deploys three Windows instances with the SystemPrep bootstrapper to apply the DISA STIG and makes a two-node MSSQL AlwayOn Cluster with a witness - db_mssql_alwayson.compound",
+    "Parameters" :
+    {
+        "AmiId" :
+        {
+            "Description" : "ID of the AMI to use for all instances",
+            "Type" : "String",
+            "AllowedPattern" : "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$"
+        },
+        "KeyPairName" :
+        {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type" : "AWS::EC2::KeyPair::KeyName"
+        },
+        "MssqlInstanceType" :
+        {
+            "Description" : "EC2 instance type for the MSSQL servers",
+            "Type" : "String",
+            "Default" : "t2.xlarge",
+            "AllowedValues" :
+            [
+                "t2.xlarge",
+                "m4.xlarge",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge"
+            ]
+        },
+        "WitnessInstanceType" :
+        {
+            "Description" : "EC2 instance type for the Witness server",
+            "Type" : "String",
+            "Default" : "t2.medium",
+            "AllowedValues" :
+            [
+                "t2.medium",
+                "t2.large",
+                "m4.large"
+            ]
+        },
+        "InstanceRole" :
+        {
+            "Description" : "IAM instance role to apply to the instance(s)",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "DnsServerIpAddresses" :
+        {
+            "Description" : "(Optional) Sets static DNS Servers on EC2 instances; comma-delimited list of DNS Server IP addresses",
+            "Type" : "CommaDelimitedList",
+            "Default" : ""
+        },
+        "DomainDnsName" :
+        {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. corp.example.com",
+            "Type" : "String",
+            "Default" : "corp.example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "DomainNetbiosName" :
+        {
+            "Description" : "NetBIOS name of the domain (up to 15 characters) for users of earlier versions of Windows e.g. CORP",
+            "Type" : "String",
+            "Default" : "EXAMPLE",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "MssqlNode1NetbiosName" :
+        {
+            "Description" : "NetBIOS name of the 1st MSSQL Node (up to 15 characters)",
+            "Type" : "String",
+            "Default" : "WSFC1NODE1",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "MssqlNode2NetbiosName" :
+        {
+            "Description" : "NetBIOS name of the 2nd MSSQL Node (up to 15 characters)",
+            "Type" : "String",
+            "Default" : "WSFC1NODE2",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "WitnessNetbiosName" :
+        {
+            "Description" : "NetBIOS name of the Witness server (up to 15 characters)",
+            "Type" : "String",
+            "Default" : "WSFC1WITNESS",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "ClusterName" :
+        {
+            "Description" : "NetBIOS name of the Windows Server Failover Cluster (up to 15 characters)",
+            "Type" : "String",
+            "Default" : "WSFC1",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "SqlProductKey" :
+        {
+            "Description" : "(Optional) Specifies the product key for the edition of SQL Server. If this parameter is left blank, Evaluation is used.",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "SqlServiceAccount" :
+        {
+            "Description" : "User name for the SQL Server Service Account. This Account is a Domain User.",
+            "Type" : "String",
+            "Default" : "sqlsa",
+            "MinLength" : "1",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9_-]*"
+        },
+        "SqlServiceAccountPassword" :
+        {
+            "Description" : "Password for the SQL Service account.",
+            "Type" : "String",
+            "MinLength" : "8",
+            "MaxLength" : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho" : "true"
+        },
+        "SqlAdminGroup" :
+        {
+            "Description" : "Name of the domain group that will have admin rights to the MSSQL database",
+            "Type" : "String",
+            "Default" : "SqlAdmins",
+            "MinLength" : "1",
+            "MaxLength" : "30",
+            "AllowedPattern" : "[a-zA-Z0-9_-]*"
+        },
+        "WitnessSubnetId" :
+        {
+            "Description" : "ID of the subnet for the Witness server (e.g., subnet-abcdefgh)",
+            "Type" : "AWS::EC2::Subnet::Id"
+        },
+        "WitnessPrivateIp" :
+        {
+            "Description" : "(Optional) Primary private IP for the Witness; leave blank to auto-select a free IP",
+            "Type" : "String",
+            "Default" : "10.0.128.99",
+            "AllowedPattern" : "^$|.*"
+        },
+        "MssqlNode1SubnetId" :
+        {
+            "Description" : "ID of the subnet for the first MSSQL node  (e.g., subnet-alee2akd)",
+            "Type" : "AWS::EC2::Subnet::Id"
+        },
+        "MssqlNode1PrivateIp" :
+        {
+            "Description" : "Primary private IP for the 1st MSSQL Node",
+            "Type" : "String",
+            "Default" : "10.0.0.100"
+        },
+        "MssqlNode1PrivateIp2" :
+        {
+            "Description" : "Secondary private IP for MSSQL cluster on 1st MSSQL Node",
+            "Type" : "String",
+            "Default" : "10.0.0.101"
+        },
+        "MssqlNode1PrivateIp3" :
+        {
+            "Description" : "Third private IP for Availability Group Listener on 1st MSSQL Node",
+            "Type" : "String",
+            "Default" : "10.0.0.102"
+        },
+        "MssqlNode2SubnetId" :
+        {
+            "Description" : "ID of the subnet for the second MSSQL node (e.g., subnet-alelo21a)",
+            "Type" : "AWS::EC2::Subnet::Id"
+        },
+        "MssqlNode2PrivateIp" :
+        {
+            "Description" : "Primary private IP for the 2nd MSSQL Node",
+            "Type" : "String",
+            "Default" : "10.0.64.100"
+        },
+        "MssqlNode2PrivateIp2" :
+        {
+            "Description" : "Secondary private IP for MSSQL cluster on 2nd MSSQL Node",
+            "Type" : "String",
+            "Default" : "10.0.64.101"
+        },
+        "MssqlNode2PrivateIp3" :
+        {
+            "Description" : "Third private IP for Availability Group Listener on 2nd MSSQL Node",
+            "Type" : "String",
+            "Default" : "10.0.64.102"
+        },
+        "ExtraSecurityGroupId" :
+        {
+            "Description" : "(Optional) An extra security group to apply to the instances -- template always creates security groups required for intra-cluster communication",
+            "Type" : "AWS::EC2::SecurityGroup::Id",
+            "AllowedPattern" : "^$|.*"
+        },
+        "VPC" :
+        {
+            "Description" : "ID of the VPC (e.g., vpc-0343606e)",
+            "Type" : "AWS::EC2::VPC::Id"
+        },
+        "NoPublicIp" :
+        {
+            "Description" : "Controls whether to assign the instances a public IP. Recommended to leave at \"true\" _unless_ launching in a public subnet",
+            "Type" : "String",
+            "Default" : "true",
+            "AllowedValues" :
+            [
+                "false",
+                "true"
+            ]
+        },
+        "NoReboot" :
+        {
+            "Description" : "Controls whether to reboot the instance as the last step of cfn-init execution",
+            "Type" : "String",
+            "Default" : "false",
+            "AllowedValues" :
+            [
+                "false",
+                "true"
+            ]
+        },
+        "SystemPrepBootstrapUrl" :
+        {
+            "Description" : "URL to the SystemPrep Bootstrapper",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com/systemprep/BootStrapScripts/SystemPrep-Bootstrap--Windows.ps1",
+            "AllowedPattern" : "^http://.*\\.ps1$|^https://.*\\.ps1$"
+        },
+        "SystemPrepEnvironment" :
+        {
+            "Description" : "Environment in which the instance is being deployed",
+            "Type" : "String",
+            "Default" : "$false",
+            "AllowedValues" :
+            [
+                "$false",
+                "dev",
+                "test",
+                "prod"
+            ]
+        },
+        "SystemPrepOuPath" :
+        {
+            "Description" : "DN of the OU to place the instance when joining a domain. If blank and \"SystemPrepEnvironment\" enforces a domain join, the instance will be placed in a default container. Leave blank if not joining a domain, or if \"SystemPrepEnvironment\" is \"$false\"",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^(OU=.+,)+(DC=.+)+$"
+        },
+        "SystemPrepAdminGroups" :
+        {
+            "Description" : "Colon-separated list of domain groups that should have admin permissions on the EC2 instance",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "CfnEndpointUrl" :
+        {
+            "Description" : "URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^http://.*$|^https://.*$"
+        },
+        "ToggleCfnInitUpdate" :
+        {
+            "Description" : "A/B toggle that forces a change to instance metadata, triggering the cfn-init update sequence",
+            "Type" : "String",
+            "Default" : "A",
+            "AllowedValues" :
+            [
+                "A",
+                "B"
+            ]
+        },
+        "InstallSqlScriptUrl" :
+        {
+            "Description" : "URL to the SQL Server Install Script",
+            "Type" : "String",
+            "Default" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/install-sqlserver.ps1",
+            "AllowedPattern" : "^http://.*\\.ps1$|^https://.*\\.ps1$"
+        },
+        "InstallWsfcScriptUrl" :
+        {
+            "Description" : "URL to the WSFC Install Script",
+            "Type" : "String",
+            "Default" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/install-wsfc.ps1",
+            "AllowedPattern" : "^http://.*\\.ps1$|^https://.*\\.ps1$"
+        },
+        "ConfigureSqlAlwaysOnScriptUrl" :
+        {
+            "Description" : "URL to the SQL Server AlwaysOn Configuration Script",
+            "Type" : "String",
+            "Default" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-sql-alwayson.ps1",
+            "AllowedPattern" : "^http://.*\\.ps1$|^https://.*\\.ps1$"
+        },
+        "ConfigureWsfcScriptUrl" :
+        {
+            "Description" : "URL to the WSFC Configuration Script",
+            "Type" : "String",
+            "Default" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-wsfc.ps1",
+            "AllowedPattern" : "^http://.*\\.ps1$|^https://.*\\.ps1$"
+        },
+        "SetDnsSearchSuffixScriptUrl" :
+        {
+            "Description" : "URL to the DNS Search Suffix Script",
+            "Type" : "String",
+            "Default" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/set-dnssearchsuffix.ps1",
+            "AllowedPattern" : "^http://.*\\.ps1$|^https://.*\\.ps1$"
+        },
+        "SqlIsoUrl" :
+        {
+            "Description" : "URL to the SQL Server ISO file",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com/app-chemistry/files/SQLServer2012SP1-FullSlipstream-ENU-x64.iso",
+            "AllowedPattern" : "^http://.*\\.iso$|^https://.*\\.iso$"
+        },
+        "PsToolsUrl" :
+        {
+            "Description" : "URL to the PSTools zip file",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com/app-chemistry/files/PSTools.zip",
+            "AllowedPattern" : "^http://.*\\.zip$|^https://.*\\.zip$"
+        },
+        "CarbonUrl" :
+        {
+            "Description" : "URL to the Carbon PowerShell Module zip file",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com/app-chemistry/files/Carbon-2.4.1.zip",
+            "AllowedPattern" : "^http://.*\\.zip$|^https://.*\\.zip$"
+        },
+        "SourcesSxsUrl" :
+        {
+            "Description" : "URL to the sources/sxs zip file for the Windows Server version used by the AMI",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com/app-chemistry/files/Win2012r2-sources-sxs.zip",
+            "AllowedPattern" : "^http://.*\\.zip$|^https://.*\\.zip$"
+        }
+    },
+    "Conditions" :
+    {
+        "UseOuPath" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "SystemPrepOuPath" }, "" ] } ]
+        },
+        "UseAdminGroups" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "SystemPrepAdminGroups" }, "" ] } ]
+        },
+        "UseCfnUrl" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "CfnEndpointUrl" }, "" ] } ]
+        },
+        "UseSqlProductKey" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "SqlProductKey" }, "" ] } ]
+        },
+        "Reboot" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "NoReboot" }, "true" ] } ]
+        },
+        "AssignExtraSecurityGroup" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ExtraSecurityGroupId" }, "true" ] } ]
+        },
+        "AssignInstanceRole" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "InstanceRole" }, "" ] } ]
+        },
+        "AssignPublicIp" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "NoPublicIp" }, "true" ] } ]
+        },
+        "AssignWitnessPrivateIp" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "WitnessPrivateIp" }, "" ] } ]
+        },
+        "AssignInstanceVolume" :
+        {
+            "Fn::Equals" :
+            [
+                { "Fn::FindInMap" :
+                    [
+                        "InstanceTypeMap",
+                        { "Ref" : "MssqlInstanceType" },
+                        "HasInstanceVolume"
+                    ]
+                },
+                "true"
+            ]
+        },
+        "SetStaticDns" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [
+                { "Fn::Join": [ ",", { "Ref": "DnsServerIpAddresses" } ] },
+                ""
+             ]}]
+        }
+    },
+    "Mappings" :
+    {
+        "ShellCommandMap" :
+        {
+            "powershell" :
+            {
+                "command" : "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass"
+            },
+            "cmd" :
+            {
+                "command" : "cmd.exe"
+            }
+        },
+        "InstanceTypeMap" :
+        {
+            "t2.medium" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "m4.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "m4.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.xlarge" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.2xlarge" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.4xlarge" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            }
+        }
+    },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DnsServerIpAddresses",
+                        "MssqlNode1SubnetId",
+                        "MssqlNode2SubnetId",
+                        "WitnessSubnetId",
+                        "VPC"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                      "default" : "EC2 Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiId",
+                        "ExtraSecurityGroupId",
+                        "InstanceRole",
+                        "KeyPairName",
+                        "NoPublicIp",
+                        "NoReboot"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                      "default" : "EC2 Domain Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDnsName",
+                        "DomainNetbiosName"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                      "default" : "EC2 SystemPrep Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "SystemPrepBootstrapUrl",
+                        "SystemPrepEnvironment",
+                        "SystemPrepOuPath",
+                        "SystemPrepAdminGroups"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 MSSQL Cluster Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "MssqlInstanceType",
+                        "MssqlNode1NetbiosName",
+                        "MssqlNode1PrivateIp",
+                        "MssqlNode1PrivateIp2",
+                        "MssqlNode1PrivateIp3",
+                        "MssqlNode2NetbiosName",
+                        "MssqlNode2PrivateIp",
+                        "MssqlNode2PrivateIp2",
+                        "MssqlNode2PrivateIp3",
+                        "ClusterName",
+                        "SqlAdminGroup",
+                        "SqlServiceAccount",
+                        "SqlServiceAccountPassword",
+                        "SqlProductKey",
+                        "CarbonUrl",
+                        "PsToolsUrl",
+                        "ConfigureSqlAlwaysOnScriptUrl",
+                        "ConfigureWsfcScriptUrl",
+                        "InstallSqlScriptUrl",
+                        "InstallWsfcScriptUrl",
+                        "SetDnsSearchSuffixScriptUrl",
+                        "SourcesSxsUrl",
+                        "SqlIsoUrl"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 Witness Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "WitnessInstanceType",
+                        "WitnessPrivateIp",
+                        "WitnessNetbiosName"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "CloudFormation Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "CfnEndpointUrl",
+                        "ToggleCfnInitUpdate"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "ConfigureSqlAlwaysOnScriptUrl" :
+                {
+                    "default" : "Configure Sql AlwaysOn Script Url"
+                },
+                "SetDnsSearchSuffixScriptUrl" :
+                {
+                    "default" : "Set Dns Search Suffix Script Url"
+                },
+                "SqlServiceAccount" :
+                {
+                    "default" : "Sql Service Account"
+                },
+                "SqlServiceAccountPassword" :
+                {
+                    "default" : "Sql Service Account Password"
+                },
+                "ToggleCfnInitUpdate" :
+                {
+                    "default" : "Force Cfn Init Update"
+                }
+            }
+        }
+    },
+    "Resources" :
+    {
+        "WitnessNode" :
+        {
+            "Type" : "AWS::EC2::Instance",
+            "CreationPolicy" :
+            {
+                "ResourceSignal" :
+                {
+                    "Count" : "1",
+                    "Timeout" : "PT60M"
+                }
+            },
+            "Metadata" :
+            {
+                "AWS::CloudFormation::Init" :
+                {
+                    "configSets" :
+                    {
+                        "launch" :
+                        [
+                            "cfnsetup",
+                            "systemprep-launch",
+                            "reboot",
+                            {
+                                "Fn::If" :
+                                [
+                                    "SetStaticDns",
+                                    "set-static-dns",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "configure-witness",
+                            {
+                                "Fn::If" :
+                                [
+                                    "Reboot",
+                                    "reboot",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "finalize"
+                        ],
+                        "update" :
+                        [
+                            "cfnsetup",
+                            "systemprep-update",
+                            {
+                                "Fn::If" :
+                                [
+                                    "Reboot",
+                                    "reboot",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "finalize"
+                        ]
+                    },
+                    "cfnsetup" :
+                    {
+                        "files" :
+                        {
+                            "c:\\cfn\\cfn-hup.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[main]\n",
+                                    "stack=", { "Ref" : "AWS::StackId" }, "\n",
+                                    "region=", { "Ref" : "AWS::Region" }, "\n",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                "role=",
+                                                { "Ref" : "InstanceRole" },
+                                                "\n"
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                "url=",
+                                                { "Ref" : "CfnEndpointUrl" },
+                                                "\n"
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    "interval=1", "\n",
+                                    "verbose=true", "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.WitnessNode.Metadata\n",
+                                    "action=cfn-init.exe -v -c update",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource WitnessNode",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                " --role ",
+                                                { "Ref" : "InstanceRole" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                " --url ",
+                                                { "Ref" : "CfnEndpointUrl" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    " --region ", { "Ref" : "AWS::Region" }, "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\scripts\\systemprep-bootstrapper.ps1" :
+                            {
+                                "source" : { "Ref" : "SystemPrepBootstrapUrl" }
+                            },
+                            "c:\\cfn\\scripts\\set-dnssearchsuffix.ps1" :
+                            {
+                                "source" : { "Ref" : "SetDnsSearchSuffixScriptUrl" }
+                            }
+                        },
+                        "services" :
+                        {
+                            "windows" :
+                            {
+                                "cfn-hup" :
+                                {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files" :
+                                    [
+                                        "c:\\cfn\\cfn-hup.conf",
+                                        "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        },
+                        "commands" :
+                        {
+                            "a-set-execution-policy" :
+                            {
+                                "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "systemprep-launch" :
+                    {
+                        "commands" :
+                        {
+                            "10-systemprep-launch" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\systemprep-bootstrapper.ps1",
+                                    " -NoReboot \"$true\"",
+                                    " -ComputerName \"",
+                                    { "Ref" : "WitnessNetbiosName" },
+                                    "\"",
+                                    " -EntEnv \"",
+                                    { "Ref" : "SystemPrepEnvironment" },
+                                    "\"",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseOuPath",
+                                            { "Fn::Join" : [ "", [
+                                                " -OuPath \"'",
+                                                { "Ref" : "SystemPrepOuPath" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseAdminGroups",
+                                            { "Fn::Join" : [ "", [
+                                                " -AdminGroups \"'",
+                                                { "Ref" : "SystemPrepAdminGroups" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "systemprep-update" :
+                    {
+                        "commands" :
+                        {
+                            "10-systemprep-update" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\systemprep-bootstrapper.ps1",
+                                    " -SaltStates None",
+                                    " -NoReboot \"$true\"",
+                                    " -EntEnv \"",
+                                    { "Ref" : "SystemPrepEnvironment" },
+                                    "\"",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseOuPath",
+                                            { "Fn::Join" : [ "", [
+                                                " -OuPath \"'",
+                                                { "Ref" : "SystemPrepOuPath" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseAdminGroups",
+                                            { "Fn::Join" : [ "", [
+                                                " -AdminGroups \"'",
+                                                { "Ref" : "SystemPrepAdminGroups" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "reboot" :
+                    {
+                        "commands" :
+                        {
+                            "10-reboot" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " \"Restart-Computer -Force -Verbose\""
+                                ] ] },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "set-static-dns" :
+                    {
+                        "commands" :
+                        {
+                            "10-set-dns-servers":
+                            {
+                                "command":
+                                { "Fn::Join": [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                    { "Fn::Join": [ ",",
+                                        {
+                                            "Ref": "DnsServerIpAddresses"
+                                        }
+                                    ]},
+                                    " -Verbose -ErrorAction Stop\""
+                                ]]},
+                                "waitAfterCompletion": "30"
+                            }
+                        }
+                    },
+                    "configure-witness" :
+                    {
+                        "commands" :
+                        {
+                            "10-create-folder" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "New-Item -ItemType directory -Path c:\\ -Name witness -Verbose",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-create-folder2" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "New-Item -ItemType directory -Path c:\\ -Name replica -Verbose",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-create-share" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "New-SmbShare -Name witness -Path c:\\witness -FullAccess everyone -Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "40-create-share2" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "New-SmbShare -Name replica -Path c:\\replica -FullAccess everyone -Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "50-set-share-permissions" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "Invoke-Command -ScriptBlock {",
+                                    "    $acl = Get-Acl c:\\witness;",
+                                    "    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule('",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "\\",
+                                    { "Ref" : "ClusterName" },
+                                    "$','FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow');",
+                                    "    $acl.AddAccessRule($rule);",
+                                    "    Set-Acl c:\\witness $acl -Verbose -ErrorAction Stop",
+                                    "}",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "60-set-share-permissions2" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "Invoke-Command -ScriptBlock {",
+                                    "    $acl = Get-Acl c:\\replica;",
+                                    "    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule('",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "\\",
+                                    { "Ref" : "SqlServiceAccount" },
+                                    "','FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow');",
+                                    "    $acl.AddAccessRule($rule);",
+                                    "    Set-Acl c:\\replica $acl -Verbose -ErrorAction Stop",
+                                    "}",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "70-set-dns-search-suffix" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\set-dnssearchsuffix.ps1",
+                                    " -DnsSearchSuffixes \"",
+                                    { "Ref" : "DomainDnsName" },
+                                    "\"",
+                                    " -Ec2ConfigSetDnsSuffixList \"$false\"",
+                                    " -Verbose -ErrorAction Stop"
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "finalize" :
+                    {
+                        "commands" :
+                        {
+                            "10-signal-success" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    "cfn-signal.exe -e 0",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource WitnessNode",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                " --role ",
+                                                { "Ref" : "InstanceRole" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                " --url ",
+                                                { "Ref" : "CfnEndpointUrl" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    " --region ", { "Ref" : "AWS::Region"}, "\n"
+                                ]]},
+                                "ignoreErrors" : "true",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" :
+            {
+                "ImageId" : { "Ref" : "AmiId" },
+                "InstanceType" : { "Ref" : "WitnessInstanceType" },
+                "IamInstanceProfile" :
+                {
+                    "Fn::If" :
+                    [
+                        "AssignInstanceRole",
+                        { "Ref" : "InstanceRole" },
+                        { "Ref" : "AWS::NoValue" }
+                    ]
+                },
+                "EbsOptimized" :
+                {
+                    "Fn::FindInMap" :
+                    [
+                        "InstanceTypeMap",
+                        { "Ref" : "WitnessInstanceType" },
+                        "SupportsEbsOptimized"
+                    ]
+                },
+                "NetworkInterfaces" :
+                [
+                    {
+                        "DeviceIndex" : 0,
+                        "AssociatePublicIpAddress" :
+                        {
+                            "Fn::If" :
+                            [
+                                "AssignPublicIp",
+                                "true",
+                                "false"
+                            ]
+                        },
+                        "DeleteOnTermination" : "true",
+                        "PrivateIpAddress" :
+                        {
+                            "Fn::If" :
+                            [
+                                "AssignWitnessPrivateIp",
+                                { "Ref" : "WitnessPrivateIp" },
+                                { "Ref" : "AWS::NoValue" }
+                            ]
+                        },
+                        "SubnetId" : { "Ref" : "WitnessSubnetId" },
+                        "GroupSet" :
+                        [
+                            {
+                                "Fn::If" :
+                                [
+                                    "AssignExtraSecurityGroup",
+                                    { "Ref" : "ExtraSecurityGroupId" },
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            { "Ref" : "MssqlSecurityGroup" }
+                        ]
+                    }
+                ],
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "WitnessNetbiosName" }
+                    }
+                ],
+                "BlockDeviceMappings" :
+                [
+                    {
+                        "DeviceName" : "/dev/sda1",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "100",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    }
+                ],
+                "KeyName" : { "Ref" : "KeyPairName" },
+                "UserData" :
+                { "Fn::Base64" : { "Fn::Join" : [ "", [
+                    "<script>", "\n",
+
+                    "cfn-init.exe -v -c launch",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource WitnessNode ",
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceRole",
+                            { "Fn::Join" : [ "", [
+                                " --role ", { "Ref" : "InstanceRole" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "UseCfnUrl",
+                            { "Fn::Join" : [ "", [
+                                " --url ", { "Ref" : "CfnEndpointUrl" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+
+                    "if %ERRORLEVEL% equ 0 goto success\n\n",
+
+                    " :error\n",
+                    "cfn-signal.exe -e 1",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource WitnessNode ",
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceRole",
+                            { "Fn::Join" : [ "", [
+                                " --role ", { "Ref" : "InstanceRole"}
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "UseCfnUrl",
+                            { "Fn::Join" : [ "", [
+                                " --url ", { "Ref" : "CfnEndpointUrl" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+                    "echo \"ERROR: cfn-init failed! Aborting!\"", "\n",
+                    "exit /b 1\n\n",
+
+                    " :success\n",
+
+                    "</script>"
+                ] ] } }
+            }
+        },
+        "MssqlNode1" :
+        {
+            "Type" : "AWS::EC2::Instance",
+            "CreationPolicy" :
+            {
+                "ResourceSignal" :
+                {
+                    "Count" : "1",
+                    "Timeout" : "PT90M"
+                }
+            },
+            "Metadata" :
+            {
+                "AWS::CloudFormation::Init" :
+                {
+                    "configSets" :
+                    {
+                        "launch" :
+                        [
+                            "cfnsetup",
+                            "systemprep-launch",
+                            "reboot",
+                            {
+                                "Fn::If" :
+                                [
+                                    "SetStaticDns",
+                                    "set-static-dns",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "installsql",
+                            "installwsfc",
+                            "reboot",
+                            "finalize"
+                        ],
+                        "update" :
+                        [
+                            "cfnsetup",
+                            "systemprep-update",
+                            {
+                                "Fn::If" :
+                                [
+                                    "Reboot",
+                                    "reboot",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "finalize"
+                        ]
+                    },
+                    "cfnsetup" :
+                    {
+                        "files" :
+                        {
+                            "c:\\cfn\\cfn-hup.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[main]\n",
+                                    "stack=", { "Ref" : "AWS::StackId" }, "\n",
+                                    "region=", { "Ref" : "AWS::Region" }, "\n",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                "role=",
+                                                { "Ref" : "InstanceRole" },
+                                                "\n"
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                "url=",
+                                                { "Ref" : "CfnEndpointUrl" },
+                                                "\n"
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    "interval=1", "\n",
+                                    "verbose=true", "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.MssqlNode1.Metadata\n",
+                                    "action=cfn-init.exe -v -c update",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource MssqlNode1",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                " --role ",
+                                                { "Ref" : "InstanceRole" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                " --url ",
+                                                { "Ref" : "CfnEndpointUrl" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    " --region ", { "Ref" : "AWS::Region" }, "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\scripts\\systemprep-bootstrapper.ps1" :
+                            {
+                                "source" : { "Ref" : "SystemPrepBootstrapUrl" }
+                            },
+                            "c:\\cfn\\scripts\\install-sqlserver.ps1" :
+                            {
+                                "source" : { "Ref" : "InstallSqlScriptUrl" }
+                            },
+                            "c:\\cfn\\scripts\\install-wsfc.ps1" :
+                            {
+                                "source" : { "Ref" : "InstallWsfcScriptUrl" }
+                            },
+                            "c:\\cfn\\scripts\\set-dnssearchsuffix.ps1" :
+                            {
+                                "source" : { "Ref" : "SetDnsSearchSuffixScriptUrl" }
+                            }
+                        },
+                        "services" :
+                        {
+                            "windows" :
+                            {
+                                "cfn-hup" :
+                                {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files" :
+                                    [
+                                        "c:\\cfn\\cfn-hup.conf",
+                                        "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        },
+                        "commands" :
+                        {
+                            "a-set-execution-policy" :
+                            {
+                                "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "systemprep-launch" :
+                    {
+                        "commands" :
+                        {
+                            "10-systemprep-launch" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\systemprep-bootstrapper.ps1",
+                                    " -NoReboot \"$true\"",
+                                    " -ComputerName \"",
+                                    { "Ref" : "MssqlNode1NetbiosName" },
+                                    "\"",
+                                    " -EntEnv \"",
+                                    { "Ref" : "SystemPrepEnvironment" },
+                                    "\"",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseOuPath",
+                                            { "Fn::Join" : [ "", [
+                                                " -OuPath \"'",
+                                                { "Ref" : "SystemPrepOuPath" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseAdminGroups",
+                                            { "Fn::Join" : [ "", [
+                                                " -AdminGroups \"'",
+                                                { "Ref" : "SystemPrepAdminGroups" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "systemprep-update" :
+                    {
+                        "commands" :
+                        {
+                            "10-systemprep-update" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\systemprep-bootstrapper.ps1",
+                                    " -SaltStates None",
+                                    " -NoReboot \"$true\"",
+                                    " -EntEnv \"",
+                                    { "Ref" : "SystemPrepEnvironment" },
+                                    "\"",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseOuPath",
+                                            { "Fn::Join" : [ "", [
+                                                " -OuPath \"'",
+                                                { "Ref" : "SystemPrepOuPath" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseAdminGroups",
+                                            { "Fn::Join" : [ "", [
+                                                " -AdminGroups \"'",
+                                                { "Ref" : "SystemPrepAdminGroups" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "reboot" :
+                    {
+                        "commands" :
+                        {
+                            "10-reboot" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " \"Restart-Computer -Force -Verbose\""
+                                ] ] },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "set-static-dns" :
+                    {
+                        "commands" :
+                        {
+                            "10-set-dns-servers":
+                            {
+                                "command":
+                                { "Fn::Join": [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                    { "Fn::Join": [ ",",
+                                        {
+                                            "Ref": "DnsServerIpAddresses"
+                                        }
+                                    ]},
+                                    " -Verbose -ErrorAction Stop\""
+                                ]]},
+                                "waitAfterCompletion": "30"
+                            }
+                        }
+                    },
+                    "installsql" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-sqlserver" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " C:\\cfn\\scripts\\install-sqlserver.ps1",
+                                    " -DomainNetbiosName ",
+                                    "'",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "'",
+                                    " -SqlAdminGroup ",
+                                    "'",
+                                    { "Ref" : "SqlAdminGroup" },
+                                    "'",
+                                    " -SqlServiceAccount ",
+                                    "'",
+                                    { "Ref" : "SqlServiceAccount" },
+                                    "'",
+                                    " -SqlServiceAccountPassword ",
+                                    "'",
+                                    { "Ref" : "SqlServiceAccountPassword" },
+                                    "'",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseSqlProductKey",
+                                            { "Fn::Join" : [ "", [
+                                                " -SqlProductKey '",
+                                                { "Ref" : "SqlProductKey" },
+                                                "'"
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    " -SqlIsoUrl ",
+                                    "'",
+                                    { "Ref" : "SqlIsoUrl" },
+                                    "'",
+                                    " -SourcesSxsUrl ",
+                                    "'",
+                                    { "Ref" : "SourcesSxsUrl" },
+                                    "'",
+                                    " -Verbose",
+                                    " -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "installwsfc" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-wsfc" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " C:\\cfn\\scripts\\install-wsfc.ps1",
+                                    " -RemoteNodeFqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "MssqlNode2NetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -RemoteNodeIpAddress ",
+                                    { "Ref" : "MssqlNode2PrivateIp" },
+                                    " -WitnessFqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "WitnessNetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -WitnessIpAddress ",
+                                    { "Fn::GetAtt" : [
+                                        "WitnessNode",
+                                        "PrivateIp"
+                                    ] },
+                                    " -CarbonUrl ",
+                                    "'",
+                                    { "Ref" : "CarbonUrl" },
+                                    "'",
+                                    " -Verbose",
+                                    " -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-set-dns-search-suffix" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\set-dnssearchsuffix.ps1",
+                                    " -DnsSearchSuffixes \"",
+                                    { "Ref" : "DomainDnsName" },
+                                    "\"",
+                                    " -Ec2ConfigSetDnsSuffixList \"$false\"",
+                                    " -Verbose -ErrorAction Stop"
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "finalize" :
+                    {
+                        "commands" :
+                        {
+                            "10-signal-success" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    "cfn-signal.exe -e 0",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource MssqlNode1",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                " --role ",
+                                                { "Ref" : "InstanceRole" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                " --url ",
+                                                { "Ref" : "CfnEndpointUrl" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    " --region ", { "Ref" : "AWS::Region"}, "\n"
+                                ]]},
+                                "ignoreErrors" : "true",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" :
+            {
+                "ImageId" : { "Ref" : "AmiId" },
+                "InstanceType" : { "Ref" : "MssqlInstanceType" },
+                "IamInstanceProfile" :
+                {
+                    "Fn::If" :
+                    [
+                        "AssignInstanceRole",
+                        { "Ref" : "InstanceRole" },
+                        { "Ref" : "AWS::NoValue" }
+                    ]
+                },
+                "EbsOptimized" :
+                {
+                    "Fn::FindInMap" :
+                    [
+                        "InstanceTypeMap",
+                        { "Ref" : "MssqlInstanceType" },
+                        "SupportsEbsOptimized"
+                    ]
+                },
+                "NetworkInterfaces" :
+                [
+                    {
+                        "DeviceIndex" : 0,
+                        "AssociatePublicIpAddress" :
+                        {
+                            "Fn::If" :
+                            [
+                                "AssignPublicIp",
+                                "true",
+                                "false"
+                            ]
+                        },
+                        "DeleteOnTermination" : "true",
+                        "SubnetId" : { "Ref" : "MssqlNode1SubnetId" },
+                        "PrivateIpAddresses" :
+                        [
+                            {
+                                "Primary" : "true",
+                                "PrivateIpAddress" :
+                                {
+                                    "Ref" : "MssqlNode1PrivateIp"
+                                }
+                            },
+                            {
+                                "Primary" : "false",
+                                "PrivateIpAddress" :
+                                {
+                                    "Ref" : "MssqlNode1PrivateIp2"
+                                }
+                            },
+                            {
+                                "Primary" : "false",
+                                "PrivateIpAddress" :
+                                {
+                                    "Ref" : "MssqlNode1PrivateIp3"
+                                }
+                            }
+                        ],
+                        "GroupSet" :
+                        [
+                            {
+                                "Fn::If" :
+                                [
+                                    "AssignExtraSecurityGroup",
+                                    { "Ref" : "ExtraSecurityGroupId" },
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            { "Ref" : "MssqlSecurityGroup" }
+                        ]
+                    }
+                ],
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "MssqlNode1NetbiosName" }
+                    }
+                ],
+                "BlockDeviceMappings" :
+                [
+                    {
+                        "DeviceName" : "/dev/sda1",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "100",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceVolume",
+                            {
+                                "DeviceName" : "/dev/xvdca",
+                                "VirtualName" : "ephemeral0"
+                            },
+                            { "Ref" : "AWS::NoValue" }
+                        ]
+                    },
+                    {
+                        "DeviceName" : "/dev/xvdf",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "500",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    },
+                    {
+                        "DeviceName" : "/dev/xvdh",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "500",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    },
+                    {
+                        "DeviceName" : "/dev/xvdg",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "500",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    }
+                ],
+                "KeyName" : { "Ref" : "KeyPairName" },
+                "UserData" :
+                { "Fn::Base64" : { "Fn::Join" : [ "", [
+                    "<script>", "\n",
+
+                    "cfn-init.exe -v -c launch",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource MssqlNode1 ",
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceRole",
+                            { "Fn::Join" : [ "", [
+                                " --role ", { "Ref" : "InstanceRole" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "UseCfnUrl",
+                            { "Fn::Join" : [ "", [
+                                " --url ", { "Ref" : "CfnEndpointUrl" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+
+                    "if %ERRORLEVEL% equ 0 goto success\n\n",
+
+                    " :error\n",
+                    "cfn-signal.exe -e 1",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource MssqlNode1 ",
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceRole",
+                            { "Fn::Join" : [ "", [
+                                " --role ", { "Ref" : "InstanceRole" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "UseCfnUrl",
+                            { "Fn::Join" : [ "", [
+                                " --url ", { "Ref" : "CfnEndpointUrl" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+                    "echo \"ERROR: cfn-init failed! Aborting!\"", "\n",
+                    "exit /b 1\n\n",
+
+                    " :success\n",
+
+                    "</script>"
+                ] ] } }
+            }
+        },
+        "MssqlNode2" :
+        {
+            "Type" : "AWS::EC2::Instance",
+            "DependsOn" : [
+                "MssqlNode1",
+                "WitnessNode"
+            ],
+            "CreationPolicy" :
+            {
+                "ResourceSignal" :
+                {
+                    "Count" : "1",
+                    "Timeout" : "PT90M"
+                }
+            },
+            "Metadata" :
+            {
+                "AWS::CloudFormation::Init" :
+                {
+                    "configSets" :
+                    {
+                        "launch" :
+                        [
+                            "cfnsetup",
+                            "systemprep-launch",
+                            "reboot",
+                            {
+                                "Fn::If" :
+                                [
+                                    "SetStaticDns",
+                                    "set-static-dns",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "installsql",
+                            "installwsfc",
+                            "reboot",
+                            "configwsfc",
+                            "configsql",
+                            "finalize"
+                        ],
+                        "update" :
+                        [
+                            "cfnsetup",
+                            "systemprep-update",
+                            {
+                                "Fn::If" :
+                                [
+                                    "Reboot",
+                                    "reboot",
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            "finalize"
+                        ]
+                    },
+                    "cfnsetup" :
+                    {
+                        "files" :
+                        {
+                            "c:\\cfn\\cfn-hup.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[main]\n",
+                                    "stack=", { "Ref" : "AWS::StackId" }, "\n",
+                                    "region=", { "Ref" : "AWS::Region" }, "\n",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                "role=",
+                                                { "Ref" : "InstanceRole" },
+                                                "\n"
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                "url=",
+                                                { "Ref" : "CfnEndpointUrl" },
+                                                "\n"
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    "interval=1", "\n",
+                                    "verbose=true", "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.MssqlNode1.Metadata\n",
+                                    "action=cfn-init.exe -v -c update",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource MssqlNode1",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                " --role ",
+                                                { "Ref" : "InstanceRole" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                " --url ",
+                                                { "Ref" : "CfnEndpointUrl" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    " --region ", { "Ref" : "AWS::Region" }, "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\scripts\\systemprep-bootstrapper.ps1" :
+                            {
+                                "source" : { "Ref" : "SystemPrepBootstrapUrl" }
+                            },
+                            "c:\\cfn\\scripts\\install-sqlserver.ps1" :
+                            {
+                                "source" : { "Ref" : "InstallSqlScriptUrl" }
+                            },
+                            "c:\\cfn\\scripts\\install-wsfc.ps1" :
+                            {
+                                "source" : { "Ref" : "InstallWsfcScriptUrl" }
+                            },
+                            "c:\\cfn\\scripts\\configure-sql-alwayson.ps1" :
+                            {
+                                "source" : { "Ref" : "ConfigureSqlAlwaysOnScriptUrl" }
+                            },
+                            "c:\\cfn\\scripts\\configure-wsfc.ps1" :
+                            {
+                                "source" : { "Ref" : "ConfigureWsfcScriptUrl" }
+                            },
+                            "c:\\cfn\\scripts\\set-dnssearchsuffix.ps1" :
+                            {
+                                "source" : { "Ref" : "SetDnsSearchSuffixScriptUrl" }
+                            }
+                        },
+                        "services" :
+                        {
+                            "windows" :
+                            {
+                                "cfn-hup" :
+                                {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files" :
+                                    [
+                                        "c:\\cfn\\cfn-hup.conf",
+                                        "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        },
+                        "commands" :
+                        {
+                            "a-set-execution-policy" :
+                            {
+                                "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "systemprep-launch" :
+                    {
+                        "commands" :
+                        {
+                            "10-systemprep-launch" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\systemprep-bootstrapper.ps1",
+                                    " -NoReboot \"$true\"",
+                                    " -ComputerName \"",
+                                    { "Ref" : "MssqlNode2NetbiosName" },
+                                    "\"",
+                                    " -EntEnv \"",
+                                    { "Ref" : "SystemPrepEnvironment" },
+                                    "\"",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseOuPath",
+                                            { "Fn::Join" : [ "", [
+                                                " -OuPath \"'",
+                                                { "Ref" : "SystemPrepOuPath" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseAdminGroups",
+                                            { "Fn::Join" : [ "", [
+                                                " -AdminGroups \"'",
+                                                { "Ref" : "SystemPrepAdminGroups" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "systemprep-update" :
+                    {
+                        "commands" :
+                        {
+                            "10-systemprep-update" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\systemprep-bootstrapper.ps1",
+                                    " -SaltStates None",
+                                    " -NoReboot \"$true\"",
+                                    " -EntEnv \"",
+                                    { "Ref" : "SystemPrepEnvironment" },
+                                    "\"",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseOuPath",
+                                            { "Fn::Join" : [ "", [
+                                                " -OuPath \"'",
+                                                { "Ref" : "SystemPrepOuPath" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseAdminGroups",
+                                            { "Fn::Join" : [ "", [
+                                                " -AdminGroups \"'",
+                                                { "Ref" : "SystemPrepAdminGroups" },
+                                                "'\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    }
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "reboot" :
+                    {
+                        "commands" :
+                        {
+                            "10-reboot" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " \"Restart-Computer -Force -Verbose\""
+                                ] ] },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "set-static-dns" :
+                    {
+                        "commands" :
+                        {
+                            "10-set-dns-servers":
+                            {
+                                "command":
+                                { "Fn::Join": [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " -Command ",
+                                    "\"",
+                                    "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                    { "Fn::Join": [ ",",
+                                        {
+                                            "Ref": "DnsServerIpAddresses"
+                                        }
+                                    ]},
+                                    " -Verbose -ErrorAction Stop\""
+                                ]]},
+                                "waitAfterCompletion": "30"
+                            }
+                        }
+                    },
+                    "installsql" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-sqlserver" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " C:\\cfn\\scripts\\install-sqlserver.ps1",
+                                    " -DomainNetbiosName ",
+                                    "'",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "'",
+                                    " -SqlAdminGroup ",
+                                    "'",
+                                    { "Ref" : "SqlAdminGroup" },
+                                    "'",
+                                    " -SqlServiceAccount ",
+                                    "'",
+                                    { "Ref" : "SqlServiceAccount" },
+                                    "'",
+                                    " -SqlServiceAccountPassword ",
+                                    "'",
+                                    { "Ref" : "SqlServiceAccountPassword" },
+                                    "'",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseSqlProductKey",
+                                            { "Fn::Join" : [ "", [
+                                                " -SqlProductKey '",
+                                                { "Ref" : "SqlProductKey" },
+                                                "'"
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    " -SqlIsoUrl ",
+                                    "'",
+                                    { "Ref" : "SqlIsoUrl" },
+                                    "'",
+                                    " -SourcesSxsUrl ",
+                                    "'",
+                                    { "Ref" : "SourcesSxsUrl" },
+                                    "'",
+                                    " -Verbose",
+                                    " -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "installwsfc" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-wsfc" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " C:\\cfn\\scripts\\install-wsfc.ps1",
+                                    " -RemoteNodeFqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "MssqlNode1NetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -RemoteNodeIpAddress ",
+                                    { "Ref" : "MssqlNode1PrivateIp" },
+                                    " -WitnessFqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "WitnessNetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -WitnessIpAddress ",
+                                    { "Fn::GetAtt" : [
+                                        "WitnessNode",
+                                        "PrivateIp"
+                                    ] },
+                                    " -CarbonUrl ",
+                                    "'",
+                                    { "Ref" : "CarbonUrl" },
+                                    "'",
+                                    " -Verbose",
+                                    " -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-set-dns-search-suffix" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\set-dnssearchsuffix.ps1",
+                                    " -DnsSearchSuffixes \"",
+                                    { "Ref" : "DomainDnsName" },
+                                    "\"",
+                                    " -Ec2ConfigSetDnsSuffixList \"$false\"",
+                                    " -Verbose -ErrorAction Stop"
+                                ]]},
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configwsfc" :
+                    {
+                        "commands" :
+                        {
+                            "10-configure-wsfc" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " C:\\cfn\\scripts\\configure-wsfc.ps1",
+                                    " -DomainNetbiosName ",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    " -ClusterName ",
+                                    { "Ref" : "ClusterName" },
+                                    " -Node1Fqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "MssqlNode1NetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -Node2Fqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "MssqlNode2NetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -Node1ClusterIp ",
+                                    { "Ref" : "MssqlNode1PrivateIp2" },
+                                    " -Node2ClusterIp ",
+                                    { "Ref" : "MssqlNode2PrivateIp2" },
+                                    " -WitnessFqdn ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "WitnessNetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -SqlServiceAccount ",
+                                    { "Ref" : "SqlServiceAccount" },
+                                    " -SqlServiceAccountPassword ",
+                                    "'",
+                                    { "Ref" : "SqlServiceAccountPassword" },
+                                    "'",
+                                    " -PsToolsUrl ",
+                                    "'",
+                                    { "Ref" : "PsToolsUrl" },
+                                    "'",
+                                    " -Verbose",
+                                    " -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configsql" :
+                    {
+                        "commands" :
+                        {
+                            "10-configure-sql-alwayson" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " C:\\cfn\\scripts\\configure-sql-alwayson.ps1",
+                                    " -DomainNetbiosName ",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    " -ClusterNodes ",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "MssqlNode1NetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    ",",
+                                    { "Fn::Join" : [ "", [
+                                        { "Ref" : "MssqlNode2NetbiosName" },
+                                        ".",
+                                        { "Ref" : "DomainDnsName" }
+                                    ] ] },
+                                    " -SqlServiceAccount ",
+                                    { "Ref" : "SqlServiceAccount" },
+                                    " -SqlServiceAccountPassword ",
+                                    "'",
+                                    { "Ref" : "SqlServiceAccountPassword" },
+                                    "'",
+                                    " -Verbose",
+                                    " -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "finalize" :
+                    {
+                        "commands" :
+                        {
+                            "10-signal-success" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    "cfn-signal.exe -e 0",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource MssqlNode2",
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "AssignInstanceRole",
+                                            { "Fn::Join" : [ "", [
+                                                " --role ",
+                                                { "Ref" : "InstanceRole" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseCfnUrl",
+                                            { "Fn::Join" : [ "", [
+                                                " --url ",
+                                                { "Ref" : "CfnEndpointUrl" }
+                                            ] ] },
+                                            ""
+                                        ]
+                                    },
+                                    " --region ", { "Ref" : "AWS::Region"}, "\n"
+                                ]]},
+                                "ignoreErrors" : "true",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" :
+            {
+                "ImageId" : { "Ref" : "AmiId" },
+                "InstanceType" : { "Ref" : "MssqlInstanceType" },
+                "IamInstanceProfile" :
+                {
+                    "Fn::If" :
+                    [
+                        "AssignInstanceRole",
+                        { "Ref" : "InstanceRole" },
+                        { "Ref" : "AWS::NoValue" }
+                    ]
+                },
+                "EbsOptimized" :
+                {
+                    "Fn::FindInMap" :
+                    [
+                        "InstanceTypeMap",
+                        { "Ref" : "MssqlInstanceType" },
+                        "SupportsEbsOptimized"
+                    ]
+                },
+                "NetworkInterfaces" :
+                [
+                    {
+                        "DeviceIndex" : 0,
+                        "AssociatePublicIpAddress" :
+                        {
+                            "Fn::If" :
+                            [
+                                "AssignPublicIp",
+                                "true",
+                                "false"
+                            ]
+                        },
+                        "DeleteOnTermination" : "true",
+                        "SubnetId" : { "Ref" : "MssqlNode2SubnetId" },
+                        "PrivateIpAddresses" :
+                        [
+                            {
+                                "Primary" : "true",
+                                "PrivateIpAddress" :
+                                {
+                                    "Ref" : "MssqlNode2PrivateIp"
+                                }
+                            },
+                            {
+                                "Primary" : "false",
+                                "PrivateIpAddress" :
+                                {
+                                    "Ref" : "MssqlNode2PrivateIp2"
+                                }
+                            },
+                            {
+                                "Primary" : "false",
+                                "PrivateIpAddress" :
+                                {
+                                    "Ref" : "MssqlNode2PrivateIp3"
+                                }
+                            }
+                        ],
+                        "GroupSet" :
+                        [
+                            {
+                                "Fn::If" :
+                                [
+                                    "AssignExtraSecurityGroup",
+                                    { "Ref" : "ExtraSecurityGroupId" },
+                                    { "Ref" : "AWS::NoValue" }
+                                ]
+                            },
+                            { "Ref" : "MssqlSecurityGroup" }
+                        ]
+                    }
+                ],
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "MssqlNode2NetbiosName" }
+                    }
+                ],
+                "BlockDeviceMappings" :
+                [
+                    {
+                        "DeviceName" : "/dev/sda1",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "100",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceVolume",
+                            {
+                                "DeviceName" : "/dev/xvdca",
+                                "VirtualName" : "ephemeral0"
+                            },
+                            { "Ref" : "AWS::NoValue" }
+                        ]
+                    },
+                    {
+                        "DeviceName" : "/dev/xvdf",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "500",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    },
+                    {
+                        "DeviceName" : "/dev/xvdh",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "500",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    },
+                    {
+                        "DeviceName" : "/dev/xvdg",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "500",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    }
+                ],
+                "KeyName" : { "Ref" : "KeyPairName" },
+                "UserData" :
+                { "Fn::Base64" : { "Fn::Join" : [ "", [
+                    "<script>", "\n",
+
+                    "cfn-init.exe -v -c launch",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource MssqlNode2 ",
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceRole",
+                            { "Fn::Join" : [ "", [
+                                " --role ", { "Ref" : "InstanceRole" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "UseCfnUrl",
+                            { "Fn::Join" : [ "", [
+                                " --url ", { "Ref" : "CfnEndpointUrl" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+
+                    "if %ERRORLEVEL% equ 0 goto success\n\n",
+
+                    " :error\n",
+                    "cfn-signal.exe -e 1",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource MssqlNode2 ",
+                    {
+                        "Fn::If" :
+                        [
+                            "AssignInstanceRole",
+                            { "Fn::Join" : [ "", [
+                                " --role ", { "Ref" : "InstanceRole" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    {
+                        "Fn::If" :
+                        [
+                            "UseCfnUrl",
+                            { "Fn::Join" : [ "", [
+                                " --url ", { "Ref" : "CfnEndpointUrl" }
+                            ] ] },
+                            ""
+                        ]
+                    },
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+                    "echo \"ERROR: cfn-init failed! Aborting!\"", "\n",
+                    "exit /b 1\n\n",
+
+                    " :success\n",
+
+                    "</script>"
+                ] ] } }
+            }
+        },
+        "MssqlSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enable WSFC and SQL AlwaysOn Availability Group communications",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        },
+        "MssqlClientSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enable SQL Client Connections from instances inside the VPC",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : ["", [
+                            { "Ref" : "AWS::StackName" },
+                            "-Clients"
+                        ] ] }
+                    }
+                ]
+            }
+        },
+        "MssqlSelfIngressAllPorts" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref": "MssqlSecurityGroup" },
+                "IpProtocol" : "-1",
+                "SourceSecurityGroupId" : { "Ref": "MssqlSecurityGroup" }
+            }
+        },
+        "ClientToMssqlIngressTcp1433" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref": "MssqlSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "1433",
+                "ToPort" : "1433",
+                "SourceSecurityGroupId" : { "Ref": "MssqlClientSecurityGroup" }
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "MssqlNode1NetbiosName" :
+        {
+            "Value" : { "Ref" : "MssqlNode1NetbiosName" },
+            "Description" : "NetBIOS name of the 1st MSSQL Node"
+        },
+        "MssqlNode1InstanceId" :
+        {
+            "Value" : { "Ref" : "MssqlNode1" },
+            "Description" : "Instance ID of the 1st MSSQL Node"
+        },
+        "MssqlNode2NetbiosName" :
+        {
+            "Value" : { "Ref" : "MssqlNode2NetbiosName" },
+            "Description" : "NetBIOS name of the 2nd MSSQL Node"
+        },
+        "MssqlNode2InstanceId" :
+        {
+            "Value" : { "Ref" : "MssqlNode2" },
+            "Description" : "Instance ID of the 2nd MSSQL Node"
+        },
+        "MssqlWitnessNetbiosName" :
+        {
+            "Value" : { "Ref" : "WitnessNetbiosName" },
+            "Description" : "NetBIOS name of the Witness Node"
+        },
+        "MssqlWitnessInstanceId" :
+        {
+            "Value" : { "Ref" : "WitnessNode" },
+            "Description" : "Instance ID of the Witness Node"
+        }
+    }
+}
