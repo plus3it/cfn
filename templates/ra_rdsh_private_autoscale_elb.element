@@ -221,7 +221,7 @@
                 "ResourceSignal" :
                 {
                     "Count" : { "Ref" : "DesiredCapacity" },
-                    "Timeout" : "PT30M"
+                    "Timeout" : "PT40M"
                 }
             },
             "UpdatePolicy" :
@@ -231,7 +231,8 @@
                     "MinInstancesInService" : "1",
                     "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT30M"
+                    "PauseTime" : "PT40M",
+                    "SuspendProcesses" : [ "ScheduledActions" ]
                 },
                 "AutoScalingScheduledAction" :
                 {
