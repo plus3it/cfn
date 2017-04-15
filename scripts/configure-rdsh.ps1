@@ -90,11 +90,18 @@ $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 
 # Install Git for Windows
-$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.11.0.windows.1/Git-2.11.0-64-bit.exe"
-$GitInstaller = "${Env:Temp}\Git-2.11.0-64-bit.exe"
+$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.12.2.windows.2/Git-2.12.2.2-64-bit.exe"
+$GitInstaller = "${Env:Temp}\Git-2.12.2.2-64-bit.exe"
 (new-object net.webclient).DownloadFile("${GitUrl}","${GitInstaller}")
 $GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
+
+# Update git system config, aws credential helper needs to be listed first
+$GitCmd = "C:\Program Files\Git\cmd\git.exe"
+& "$GitCmd" config --system --unset credential.helper
+& "$GitCmd" config --system --add 'credential.https://git-codecommit.us-east-1.amazonaws.com.helper' '!aws codecommit credential-helper $@'
+& "$GitCmd" config --system --add 'credential.https://git-codecommit.us-east-1.amazonaws.com.usehttppath' 'true'
+& "$GitCmd" config --system --add 'credential.helper' 'manager'
 
 # Install Python 3.5
 $Py35Url = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
