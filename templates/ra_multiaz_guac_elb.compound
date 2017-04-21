@@ -114,7 +114,7 @@
         {
             "Description" : "Version of Guacamole to install",
             "Type" : "String",
-            "Default" : "0.9.9",
+            "Default" : "0.9.12-incubating",
             "MinLength" : "1"
         },
         "URL1" :
