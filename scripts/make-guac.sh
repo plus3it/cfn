@@ -5,7 +5,7 @@
 #    setting up a baseline configuration of the Guacamole
 #    management-protocol HTTP-tunneling service. When the script
 #    exits successfully:
-#    * The Tomcat7 servlet-service will have been downloaded and
+#    * The Tomcat8 servlet-service will have been downloaded and
 #      enabled
 #    * The Guacamole service will have been configured to tunnel
 #      SSH based connections to the Guacamole host to a remote,
@@ -118,6 +118,7 @@ usage()
       then this parameter is required for successful modification.
   -t  Text to be displayed for the URL provided with -l.  If -l is specified,
       then this parameter is required for successful modification.
+  -B  Text for branding of the homepage. Default is "Apache Guacamole".
 EOT
 }  # ----------  end of function usage  ----------
 
@@ -139,10 +140,10 @@ URL_1=
 URLTEXT_1=
 URL_2=
 URLTEXT_2=
-
+BRANDTEXT=
 
 # Parse command-line parameters
-while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t: opt
+while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t:B: opt
 do
     case "${opt}" in
         h)
@@ -196,6 +197,9 @@ do
             ;;
         t)
             URLTEXT_2="${OPTARG}"
+            ;;
+        B)
+            BRANDTEXT="${OPTARG}"
             ;;
         \?)
             usage
@@ -292,7 +296,7 @@ log "Clean yum cache"
 retry 5 yum clean all
 
 log "Installing OS standard Tomcat"
-retry 5 yum -y install tomcat7 || die "Failed to install tomcat"
+retry 5 yum -y install tomcat8 || die "Failed to install tomcat"
 
 log "Installing utils and libraries to build freerdp from source"
 retry 5 yum -y install git gcc cmake openssl-devel libX11-devel libXext-devel \
@@ -346,7 +350,7 @@ make install
 ldconfig
 
 log "Enabling services to start at next boot"
-for SVC in tomcat7 guacd
+for SVC in tomcat8 guacd
 do
     chkconfig ${SVC} on
 done
@@ -370,15 +374,15 @@ log "Downloading Guacamole client from project repo"
 cd /root
 retry 5 wget --timeout=10 ${GUAC_BINARY}/guacamole-${GUAC_VERSION}.war || \
     die "Could not download ${GUAC_BINARY}"
-mv guacamole-${GUAC_VERSION}.war /var/lib/tomcat7/webapps/ROOT.war || \
+mv guacamole-${GUAC_VERSION}.war /var/lib/tomcat8/webapps/ROOT.war || \
     die "Could not move ${GUAC_BINARY}"
 
 
 # Gotta make SELinux happy...
 if [[ $(getenforce) = "Enforcing" ]] || [[ $(getenforce) = "Permissive" ]]
 then
-    chcon -R --reference=/var/lib/tomcat7/webapps \
-        /var/lib/tomcat7/webapps/ROOT.war
+    chcon -R --reference=/var/lib/tomcat8/webapps \
+        /var/lib/tomcat8/webapps/ROOT.war
     if [[ $(getsebool httpd_can_network_relay | \
         cut -d ">" -f 2 | sed 's/[ ]*//g') = "off" ]]
     then
@@ -402,7 +406,7 @@ log "Writing /etc/guacamole/logback.xml"
     printf "\n"
     printf "\t<!-- Appender for debugging -->\n"
     printf "\t<appender name=\"GUAC-DEBUG\" class=\"ch.qos.logback.core.FileAppender\">\n"
-    printf "\t\t<file>/var/log/tomcat7/guacamole.log</file>\n"
+    printf "\t\t<file>/var/log/tomcat8/guacamole.log</file>\n"
     printf "\t\t<encoder>\n"
     printf "\t\t\t<pattern>%%d{HH:mm:ss.SSS} [%%thread] %%-5level %%logger{36} - %%msg%%n</pattern>\n"
     printf "\t\t</encoder>\n"
@@ -573,7 +577,7 @@ fi
 
 # Start services
 log "Attempting to start proxy-related services"
-for SVC in rsyslog guacd tomcat7
+for SVC in rsyslog guacd tomcat8
 do
     log "Stopping and starting ${SVC}"
     /sbin/service ${SVC} stop && /sbin/service ${SVC} start
@@ -584,24 +588,65 @@ do
 done
 
 
-#Add custom URLs to Guacamole login page, change is not stateful due to sed pattern to be matched/replaced
+#Add custom URLs to Guacamole login page using Guac extensions.
 if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
 then
     log "Attempting to add HTML links from parameter input to Guacamole login page"
-    sleep 15
-    oldhtmltext='            <\/form>\\n\\n'
-    newhtmltext='            <div class="login">\\n                  <p style="text-align:center"><a target="_blank" href="'$URL_1'">'$URLTEXT_1'</a></p>\\n            <p style="text-align:center"><a target="_blank" href="'$URL_2'">'$URLTEXT_2'</a></p></div>\\n\\n            </form>\\n\\n'
-    sed -i "s|$oldhtmltext|$newhtmltext|" /usr/share/tomcat7/webapps/ROOT/guacamole.min.js
-        if [[ $? -ne 0 ]]
-        then
-            log "sed statement failed to set Guacamole login page links: ${URLTEXT_1}, ${URLTEXT_2}"
-        fi
-    service tomcat7 restart
-        if [[ $? -ne 0 ]]
-        then
-            log "Final Tomcat restart unsuccessful"
-        fi
-    log "Successfully added URL(s) to Guacamole login page"
+    log "Writing Guac manifest file"
+    (
+        printf "{\n"
+        printf "\"guacamoleVersion\" : \"$GUAC_VERSION\",\n"
+        printf "\"name\" : \"Custom Extension\",\n"
+        printf "\"namespace\" : \"custom-extension\",\n"
+        printf "\"html\" : [ \"custom-urls.html\" ]\n"
+        printf "}\n"
+    ) > /etc/guacamole/extensions/guac-manifest.json
+    log "Writing Guac html extension file to add in custom URLs"
+    (
+        printf "<meta name=\"after\" content=\".login-ui .login-dialog\">\n"
+        printf "\n"
+        printf "<div class=\"welcome\">\n"
+        printf "<p>\n"
+        printf "<a target=\"_blank\" href=\"$URL_1\">$URLTEXT_1</a>\n"
+        printf "</p>\n"
+        printf "<p>\n"
+        printf "<a target=\"_blank\" href=\"$URL_2\">$URLTEXT_2</a>\n"
+        printf "</p>\n"
+        printf "</div>\n"
+    ) > /etc/guacamole/extensions/custom-urls.html
+
+   #Zip extension files into custom.jar
+   cd "/etc/guacamole/extensions"
+   zip "custom.jar" "custom-urls.html" "guac-manifest.json"
+   log "Successfully added URL(s) to Guacamole login page"
 else
-    log "URL parameters were blank, not changing Guacamole login page"
+    log "URL parameters were blank, not adding links"
+fi
+
+#Customize branding to title page. Attempt to use extensions, but does not seem to take. Search and replace file en.json instead. Not preferred, but will do for now.
+if [[ -n "${BRANDTEXT}" ]]
+then
+   sleep 15
+   sed -i "s|Apache Guacamole|$BRANDTEXT|g" /var/lib/tomcat8/webapps/ROOT/translations/en.json
+        if [[ $? -ne 0 ]]
+        then
+            log "sed statement failed to set custom branding text: ${BRANDTEXT}"
+        fi
+   log "Successfully added branding text to Guacamole login page"
+else
+   log "Branding text is blank, keeping default text"
+fi
+
+#Stop and start tomcat and guac services
+/etc/init.d/guacd stop
+/etc/init.d/tomcat8 stop
+/etc/init.d/tomcat8 start
+if [[ $? -ne 0 ]]
+then
+    log "Final Tomcat restart unsuccessful"
+fi
+/etc/init.d/guacd start
+if [[ $? -ne 0 ]]
+then
+    log "Final Guacd restart unsuccessful"
 fi

@@ -141,6 +141,12 @@
             "Type" : "String",
             "Default" : ""
         },
+        "BrandText" :
+        {
+            "Description" : "Text/Label to display branding for the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
         "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Guacamole Instances",
@@ -197,7 +203,8 @@
                         "URL1",
                         "URLText1",
                         "URL2",
-                        "URLText2"
+                        "URLText2",
+                        "BrandText"
                     ]
                 },
                 {

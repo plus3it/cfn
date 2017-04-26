@@ -139,6 +139,12 @@
             "Type" : "String",
             "Default" : "Example Redmine"
         },
+        "BrandText" :
+        {
+            "Description" : "Text/Label to display branding for the Guac Login page",
+            "Type" : "String",
+            "Default" : ""
+        },
         "PrivateSubnetIDs" :
         {
             "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
@@ -167,6 +173,10 @@
         "UseURLText2" :
         {
             "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "URLText2" }, "" ] } ]
+        },
+        "UseBrandText" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "BrandText" }, "" ] } ]
         },
         "UseAmiLookup" :
         {
@@ -495,6 +505,18 @@
                                             { "Fn::Join" : [ "", [
                                                 " -t \"",
                                                 { "Ref" : "URLText2" },
+                                                "\""
+                                            ]]},
+                                            ""
+                                        ]
+                                    },
+                                    {
+                                        "Fn::If" :
+                                        [
+                                            "UseBrandText",
+                                            { "Fn::Join" : [ "", [
+                                                " -B \"",
+                                                { "Ref" : "BrandText" },
                                                 "\""
                                             ]]},
                                             ""
