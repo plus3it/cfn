@@ -575,19 +575,6 @@ then
     mkdir /var/tmp/guacamole
 fi
 
-# Start services
-log "Attempting to start proxy-related services"
-for SVC in rsyslog guacd tomcat8
-do
-    log "Stopping and starting ${SVC}"
-    /sbin/service ${SVC} stop && /sbin/service ${SVC} start
-    if [[ $? -ne 0 ]]
-    then
-      die "Failed to start ${SVC}."
-    fi
-done
-
-
 #Add custom URLs to Guacamole login page using Guac extensions.
 if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
 then
@@ -637,16 +624,14 @@ else
    log "Branding text is blank, keeping default text"
 fi
 
-#Stop and start tomcat and guac services
-/etc/init.d/guacd stop
-/etc/init.d/tomcat8 stop
-/etc/init.d/tomcat8 start
-if [[ $? -ne 0 ]]
-then
-    log "Final Tomcat restart unsuccessful"
-fi
-/etc/init.d/guacd start
-if [[ $? -ne 0 ]]
-then
-    log "Final Guacd restart unsuccessful"
-fi
+# Start services
+log "Attempting to start proxy-related services"
+for SVC in rsyslog tomcat8 guacd
+do
+    log "Stopping and starting ${SVC}"
+    /sbin/service ${SVC} stop && /sbin/service ${SVC} start
+    if [[ $? -ne 0 ]]
+    then
+      die "Failed to start ${SVC}."
+    fi
+done
