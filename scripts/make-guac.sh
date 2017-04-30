@@ -123,6 +123,65 @@ EOT
 }  # ----------  end of function usage  ----------
 
 
+#Guac manifest file for using extensions
+write_manifest()
+{
+    log "Writing Guac manifest file"
+    (
+        printf "{\n"
+        printf "\"guacamoleVersion\" : \"$GUAC_VERSION\",\n"
+        printf "\"name\" : \"Custom Extension\",\n"
+        printf "\"namespace\" : \"custom-extension\",\n"
+        printf "\"html\" : [ \"custom-urls.html\" ],\n"
+        printf "\"translations\" : [ \"translations/en.json\" ]\n"
+        printf "}\n"
+    ) > /etc/guacamole/extensions/guac-manifest.json
+    if ! ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
+    then
+        sed -i '/html/d' /etc/guacamole/extensions/guac-manifest.json
+    fi
+    cd "/etc/guacamole/extensions"
+    zip -u "custom.jar" "guac-manifest.json"
+}  # ----------  end of function write_manifest  ----------
+
+
+#Guac links extension file
+write_links()
+{
+    log "Writing Guac html extension file to add in custom URLs"
+    (
+        printf "<meta name=\"after\" content=\".login-ui .login-dialog\">\n"
+        printf "\n"
+        printf "<div class=\"welcome\">\n"
+        printf "<p>\n"
+        printf "<a target=\"_blank\" href=\"$URL_1\">${URLTEXT_1}</a>\n"
+        printf "</p>\n"
+        printf "<p>\n"
+        printf "<a target=\"_blank\" href=\"$URL_2}\">${URLTEXT_2}</a>\n"
+        printf "</p>\n"
+        printf "</div>\n"
+    ) > /etc/guacamole/extensions/custom-urls.html
+    cd "/etc/guacamole/extensions"
+    zip -u "custom.jar" "custom-urls.html"
+    log "Successfully added URL(s) to Guacamole login page"
+}  # ----------  end of function write_links  ----------
+
+#Guac branding extension file
+write_brand()
+{
+    log "Writing Guac translations extension file to add in custom branding text"
+    mkdir -p /etc/guacamole/extensions/translations
+    (
+        printf "{\n"
+        printf "\"APP\" : { \"NAME\" : \"${BRANDTEXT}\" }\n"
+        printf "}\n"
+    ) > /etc/guacamole/extensions/translations/en.json
+    cd "/etc/guacamole/extensions"
+    zip -u "custom.jar" translations/en.json
+    log "Successfully added branding text to Guacamole login page"
+}  # ----------  end of function write_brand  ----------
+
+
 # Define default values
 LDAP_HOSTNAME=
 LDAP_DOMAIN_DN=
@@ -141,6 +200,7 @@ URLTEXT_1=
 URL_2=
 URLTEXT_2=
 BRANDTEXT=
+
 
 # Parse command-line parameters
 while getopts :hH:D:U:R:A:C:P:v:G:g:S:s:L:T:l:t:B: opt
@@ -575,9 +635,35 @@ then
     mkdir /var/tmp/guacamole
 fi
 
+
+#Add custom URLs to Guacamole login page using Guac extensions.
+if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
+then
+    write_manifest
+    write_links
+else
+    log "URL parameters were blank, not adding links"
+fi
+
+
+#Add custom branding text to title page.
+if [[ -n "${BRANDTEXT}" ]]
+then
+    log "Writing Guac translations extension file to add in custom branding text"
+    mkdir -p /etc/guacamole/extensions/translations
+    if [ ! -f "/etc/guacamole/extensions/guac-manifest.json" ]
+    then
+        write_manifest
+    fi
+    write_brand
+else
+   log "Branding text was blank, keeping default text"
+fi
+
+
 # Start services
 log "Attempting to start proxy-related services"
-for SVC in rsyslog guacd tomcat8
+for SVC in  rsyslog tomcat8 guacd
 do
     log "Stopping and starting ${SVC}"
     /sbin/service ${SVC} stop && /sbin/service ${SVC} start
@@ -586,67 +672,3 @@ do
       die "Failed to start ${SVC}."
     fi
 done
-
-
-#Add custom URLs to Guacamole login page using Guac extensions.
-if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
-then
-    log "Attempting to add HTML links from parameter input to Guacamole login page"
-    log "Writing Guac manifest file"
-    (
-        printf "{\n"
-        printf "\"guacamoleVersion\" : \"$GUAC_VERSION\",\n"
-        printf "\"name\" : \"Custom Extension\",\n"
-        printf "\"namespace\" : \"custom-extension\",\n"
-        printf "\"html\" : [ \"custom-urls.html\" ]\n"
-        printf "}\n"
-    ) > /etc/guacamole/extensions/guac-manifest.json
-    log "Writing Guac html extension file to add in custom URLs"
-    (
-        printf "<meta name=\"after\" content=\".login-ui .login-dialog\">\n"
-        printf "\n"
-        printf "<div class=\"welcome\">\n"
-        printf "<p>\n"
-        printf "<a target=\"_blank\" href=\"$URL_1\">$URLTEXT_1</a>\n"
-        printf "</p>\n"
-        printf "<p>\n"
-        printf "<a target=\"_blank\" href=\"$URL_2\">$URLTEXT_2</a>\n"
-        printf "</p>\n"
-        printf "</div>\n"
-    ) > /etc/guacamole/extensions/custom-urls.html
-
-   #Zip extension files into custom.jar
-   cd "/etc/guacamole/extensions"
-   zip "custom.jar" "custom-urls.html" "guac-manifest.json"
-   log "Successfully added URL(s) to Guacamole login page"
-else
-    log "URL parameters were blank, not adding links"
-fi
-
-#Customize branding to title page. Attempt to use extensions, but does not seem to take. Search and replace file en.json instead. Not preferred, but will do for now.
-if [[ -n "${BRANDTEXT}" ]]
-then
-   sleep 15
-   sed -i "s|Apache Guacamole|$BRANDTEXT|g" /var/lib/tomcat8/webapps/ROOT/translations/en.json
-        if [[ $? -ne 0 ]]
-        then
-            log "sed statement failed to set custom branding text: ${BRANDTEXT}"
-        fi
-   log "Successfully added branding text to Guacamole login page"
-else
-   log "Branding text is blank, keeping default text"
-fi
-
-#Stop and start tomcat and guac services
-/etc/init.d/guacd stop
-/etc/init.d/tomcat8 stop
-/etc/init.d/tomcat8 start
-if [[ $? -ne 0 ]]
-then
-    log "Final Tomcat restart unsuccessful"
-fi
-/etc/init.d/guacd start
-if [[ $? -ne 0 ]]
-then
-    log "Final Guacd restart unsuccessful"
-fi
