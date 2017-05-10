@@ -154,10 +154,10 @@ write_links()
         printf "\n"
         printf "<div class=\"welcome\">\n"
         printf "<p>\n"
-        printf "<a target=\"_blank\" href=\"$URL_1\">${URLTEXT_1}</a>\n"
+        printf "<a target=\"_blank\" href=\"${URL_1}\">${URLTEXT_1}</a>\n"
         printf "</p>\n"
         printf "<p>\n"
-        printf "<a target=\"_blank\" href=\"$URL_2}\">${URLTEXT_2}</a>\n"
+        printf "<a target=\"_blank\" href=\"${URL_2}\">${URLTEXT_2}</a>\n"
         printf "</p>\n"
         printf "</div>\n"
     ) > /etc/guacamole/extensions/custom-urls.html
