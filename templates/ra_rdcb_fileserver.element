@@ -1,0 +1,1246 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This template deploys a Connection Broker (master) and a file server for home directories and profiles.",
+    "Parameters" :
+    {
+        "KeyPairName" :
+        {
+            "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type" : "AWS::EC2::KeyPair::KeyName"
+        },
+        "AmiId" :
+        {
+            "Description" : "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
+            "Type" : "String",
+            "Default" : ""
+        },
+        "AmiNameSearchString" :
+        {
+            "Description" : "Search pattern to match against an AMI Name",
+            "Type" : "String",
+            "Default" : "Windows_Server-2016-English-Full-Base-*"
+        },
+        "InstanceType" :
+        {
+            "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" :
+            [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "t2.xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "r3.large",
+                "r3.xlarge"
+            ]
+        },
+        "DomainDirectoryId" :
+        {
+            "Description" : "ID of the AWS Directory Service domain, e.g. d-xxxxxxxxxx",
+            "Type" : "String",
+            "AllowedPattern" : "d-[a-zA-Z0-9]{10}"
+        },
+        "DomainDnsName" :
+        {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain, e.g. example.com",
+            "Type" : "String",
+            "Default" : "example.com",
+            "MinLength" : "3",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9-]+\\..+"
+        },
+        "DomainNetbiosName" :
+        {
+            "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
+            "Type" : "String",
+            "Default" : "EXAMPLE",
+            "MinLength" : "1",
+            "MaxLength" : "15",
+            "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "DomainAccessUserGroup" :
+        {
+            "Description" : "Domain group of users authorized to use the remote access solution",
+            "Type" : "String",
+            "Default" : "Domain Users",
+            "MinLength" : "1"
+        },
+        "DataVolumeSize" :
+        {
+            "Description" : "Size of the data volume to attach to the instance",
+            "Type" : "Number",
+            "Default" : "5",
+            "MinValue" : "1",
+            "MaxValue" : "16384"
+        },
+        "DataVolumeSnapshotId" :
+        {
+            "Description" : "(Optional) Snapshot ID of an existing EBS volume. Leave blank to instantiate an empty volume",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|snap-[a-zA-Z0-9]{8}|snap-[a-zA-Z0-9]{17}"
+        },
+        "NoPublicIp" :
+        {
+            "Description" : "Controls whether to assign the instances a public IP. Recommended to leave at \"true\" _unless_ launching in a public subnet",
+            "Type" : "String",
+            "Default" : "true",
+            "AllowedValues" :
+            [
+                "false",
+                "true"
+            ]
+        },
+        "Ec2SubnetId" :
+        {
+            "Description" : "Private Subnet ID where the file server will run",
+            "Type" : "AWS::EC2::Subnet::Id"
+        },
+        "Ec2SubnetAz" :
+        {
+            "Description" : "Availability zone of the private subnet",
+            "Type" : "AWS::EC2::AvailabilityZone::Name"
+        },
+        "ExtraSecurityGroupIds" :
+        {
+            "Description" : "List of extra Security Group IDs to attach to the RDCB EC2 instance",
+            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+        },
+        "RdcbClusterFqdn" :
+        {
+            "Description" : "DNS alias/friendly-name of the RDCB cluster",
+            "Type": "String",
+            "AllowedPattern": ".*[^.]$",
+            "ConstraintDescription" : "FQDN must not end in a period (.)"
+        },
+        "RdsDbAllocatedStorage" :
+        {
+            "Default": "20",
+            "Description" : "The size of the database (GB)",
+            "Type": "Number",
+            "MinValue": "20",
+            "MaxValue": "4096",
+            "ConstraintDescription" : "Maximum value is 4096. Minimum value is 20 for SQL EX/WEB. Minimum value is 200 for SQL SE/EE"
+        },
+        "RdsDbClass" :
+        {
+            "Default" : "db.t2.medium",
+            "Description" : "Database instance class",
+            "Type" : "String",
+            "AllowedValues" :
+            [
+                "db.t2.micro",
+                "db.t2.small",
+                "db.t2.medium",
+                "db.t2.large",
+                "db.m3.large",
+                "db.m3.xlarge",
+                "db.m3.2xlarge",
+                "db.m4.large",
+                "db.m4.xlarge",
+                "db.m4.2xlarge",
+                "db.m4.4xlarge",
+                "db.m4.10xlarge",
+                "db.r3.large",
+                "db.r3.xlarge",
+                "db.r3.2xlarge",
+                "db.r3.4xlarge",
+                "db.r3.8xlarge"
+            ]
+        },
+        "RdsSnapshotArn" :
+        {
+            "Description" : "ARN of an RDS Snapshot that contains an empty instantiation of the Connection Broker schema",
+            "Default": "arn:aws:rds:us-east-1:701759196663:snapshot:cb-ws2016-2017-05-04",
+            "Type": "String",
+            "AllowedPattern" : "^arn:aws:rds:.*:[0-9]{12}:snapshot:.*"
+        },
+        "RdsSubnets" :
+        {
+            "Type" : "List<AWS::EC2::Subnet::Id>",
+            "Description" : "Select at least two subnets, each in different Availability Zones"
+        },
+        "RdsSqlEngine" :
+        {
+            "Description" : "SQL Server engine",
+            "Type": "String",
+            "Default" : "sqlserver-ex",
+            "AllowedValues" :
+            [
+                "sqlserver-ex",
+                "sqlserver-web",
+                "sqlserver-se",
+                "sqlserver-ee"
+            ]
+        },
+        "RdsDbName" :
+        {
+            "Default": "cbdb",
+            "Description" : "The database name; must match database name associated with the RdsSnapshot",
+            "Type": "String",
+            "AllowedPattern" : "^[a-zA-Z0-9_@#][a-zA-Z0-9_@#$]*",
+            "MinLength": "1",
+            "MaxLength": "116"
+        },
+        "RdsDbUsername" :
+        {
+            "Default": "connectionbroker",
+            "Description" : "The database admin account username; must match account name associated with the RdsSnapshot",
+            "Type": "String",
+            "AllowedPattern" : "^([a-zA-Z])([-a-zA-Z0-9])*",
+            "MinLength": "1",
+            "MaxLength": "16"
+        },
+        "RdsDbPassword" :
+        {
+            "Default": "connectionbroker",
+            "NoEcho": "true",
+            "Description" : "The database admin account password; must match password associated with the RdsSnapshot; these characters are not valid: \", @, and /",
+            "Type": "String",
+            "AllowedPattern": ".*[^\"@/].*",
+            "ConstraintDescription" : "Must not contain \", @, or /"
+        },
+        "RdsMultiAzDatabase" :
+        {
+            "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
+            "Type": "String",
+            "Default" : "false",
+            "AllowedValues" : [ "true", "false" ],
+            "ConstraintDescription" : "Must be either true or false. Default is false"
+        },
+        "SsmRdcbCredential" :
+        {
+            "Description" : "SSM Parameter Name for a SecureString containing the domain credential for the RDCB service account; SSM Parameter Value format is '@{Username = \"<user>\"; Password = \"<password>\"}'",
+            "Type" : "String",
+            "MinLength" : "1",
+            "MaxLength" : "1024",
+            "AllowedPattern" : "^(?!^([aA][wW][sS]|[sS][sS][mM]))(?=^[a-zA-Z0-9_.-]*$).*$"
+        },
+        "SsmKeyId" :
+        {
+            "Description" : "KMS Key ID used to encrypt/decrypt the SsmRdcbCredential",
+            "Type" : "String",
+            "AllowedPattern" : "^[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}$"
+        },
+        "VpcCidr" :
+        {
+            "Description" : "VPC CIDR",
+            "Type" : "String",
+            "Default" : "10.0.0.0/16",
+            "AllowedPattern" : "(\\d{1,3}[.]){3}\\d{1,3}/\\d{1,2}"
+        },
+        "VpcId" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Conditions" :
+    {
+        "AssignPublicIp" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "NoPublicIp" }, "true" ] } ]
+        },
+        "UseAmiLookup" :
+        {
+            "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ]
+        },
+        "UseVolumeSnapshot" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "DataVolumeSnapshotId" }, "" ] } ]
+        }
+    },
+    "Mappings" :
+    {
+        "ShellCommandMap" :
+        {
+            "powershell" :
+            {
+                "command" : "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass "
+            },
+            "cmd" :
+            {
+                "command" : "cmd.exe /c "
+            },
+            "psexec" :
+            {
+                "command" : "c:\\cfn\\files\\pstools\\psexec.exe -accepteula -nobanner -h "
+            }
+        },
+        "InstanceTypeMap" :
+        {
+            "t2.micro" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.small" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.medium" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "c4.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "c4.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "m4.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "m4.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.large" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.xlarge" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            }
+        }
+    },
+    "Resources" :
+    {
+        "AmiIdLookup" :
+        {
+            "Type" : "Custom::AmiIdLookup",
+            "Condition" : "UseAmiLookup",
+            "Properties" :
+            {
+                "ServiceToken" :
+                { "Fn::Join" : [ ":", [
+                    "arn:aws:lambda",
+                    { "Ref" : "AWS::Region" },
+                    { "Ref" : "AWS::AccountId" },
+                    "function:cfn-look-up-ami-ids"
+                ]]},
+                "Region" : { "Ref" : "AWS::Region" },
+                "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" }
+            }
+        },
+        "RdcbEc2SecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Logical container for an RDCB EC2 instance",
+                "VpcId" : { "Ref" : "VpcId" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : [ "", [
+                            "rdcb-ec2-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "RdcbRdsSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Logical container for an RDCB RDS instance",
+                "VpcId" : { "Ref" : "VpcId" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : [ "", [
+                            "rdcb-rds-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "VpcCidrToEc2IngressAll" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "RdcbEc2SecurityGroup" },
+                "IpProtocol" : "-1",
+                "CidrIp" : { "Ref" : "VpcCidr" }
+            }
+        },
+        "Ec2ToRdsIngressTcp1433" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "RdcbRdsSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "1433",
+                "ToPort" : "1433",
+                "SourceSecurityGroupId" : { "Ref" : "RdcbEc2SecurityGroup" }
+            }
+        },
+        "DataVolume" :
+        {
+           "Type" : "AWS::EC2::Volume",
+           "DeletionPolicy" : "Snapshot",
+           "Properties" :
+           {
+              "AvailabilityZone" : { "Ref" : "Ec2SubnetAz" },
+              "Size" : { "Ref" : "DataVolumeSize" },
+              "SnapshotId" :
+              {
+                  "Fn::If" :
+                  [
+                      "UseVolumeSnapshot",
+                      { "Ref" : "DataVolumeSnapshotId" },
+                      { "Ref" : "AWS::NoValue" }
+                  ]
+              },
+              "VolumeType" : "gp2",
+              "Tags" :
+              [
+                  {
+                      "Key" : "Name",
+                      "Value" : { "Ref" : "AWS::StackName" }
+                  },
+                  {
+                      "Key" : "Consistency Group",
+                      "Value" : "BackupGroup01"
+                  }
+              ]
+           }
+        },
+        "Ec2IamInstanceProfile" :
+        {
+            "Type" : "AWS::IAM::InstanceProfile",
+            "Properties" :
+            {
+                "Path" : "/",
+                "Roles" : [ { "Ref" : "Ec2IamRole" } ]
+            }
+        },
+        "Ec2IamRole" :
+        {
+            "Type" : "AWS::IAM::Role",
+            "Properties" :
+            {
+                "AssumeRolePolicyDocument" :
+                {
+                   "Version" : "2012-10-17",
+                   "Statement" :
+                   [ {
+                      "Effect" : "Allow",
+                      "Principal" :
+                      {
+                         "Service" : [ "ec2.amazonaws.com" ]
+                      },
+                      "Action" : [ "sts:AssumeRole" ]
+                   } ]
+                },
+                "ManagedPolicyArns" :
+                [
+                    "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+                ],
+                "Path" : "/"
+            }
+        },
+        "Ec2IamRolePolicy" :
+        {
+            "Type" : "AWS::IAM::Policy",
+            "Properties" :
+            {
+                "PolicyName" :
+                { "Fn::Join" : [ "", [
+                    "rdcb-ec2-",
+                    { "Ref" : "AWS::StackName" }
+                ]]},
+                "PolicyDocument" :
+                {
+                    "Version" : "2012-10-17",
+                    "Statement" :
+                    [
+                        {
+                            "Sid" : "AllowRestrictedSnapshotActions",
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ec2:CreateTags"
+                            ],
+                            "Resource" : "*",
+                            "Condition" :
+                            {
+                                "StringLike":
+                                {
+                                    "ec2:ParentVolume" :
+                                    { "Fn::Join" : [ "", [
+                                        "arn:aws:ec2:",
+                                        { "Ref" : "AWS::Region" },
+                                        ":*:volume/",
+                                        { "Ref" : "DataVolume" }
+                                    ] ] }
+                                }
+                            }
+                        },
+                        {
+                            "Sid" : "AllowSnapshotActions",
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ec2:CreateSnapshot",
+                                "ec2:DeleteSnapshot",
+                                "ec2:DescribeSnapshots",
+                                "ec2:DescribeVolumes"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Sid" : "AllowSsmGetParameters",
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ssm:GetParameters"
+                            ],
+                            "Resource" :
+                            [
+                                { "Fn::Join" : [ "", [
+                                    "arn:aws:ssm:*:*:parameter/",
+                                    { "Ref" : "SsmRdcbCredential" }
+                                ] ] }
+                            ]
+                        },
+                        {
+                            "Sid" : "AllowKmsDecrypt",
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "kms:Decrypt"
+                            ],
+                            "Resource" :
+                            [
+                                { "Fn::Join" : [ "", [
+                                    "arn:aws:kms:*:*:key/",
+                                    { "Ref" : "SsmKeyId" }
+                                ] ] }
+                            ]
+                        }
+                    ]
+                },
+                "Roles" : [ { "Ref" : "Ec2IamRole" } ]
+            }
+        },
+        "RdsIamRole" :
+        {
+            "Type" : "AWS::IAM::Role",
+            "Properties" :
+            {
+                "AssumeRolePolicyDocument" :
+                {
+                   "Version" : "2012-10-17",
+                   "Statement" :
+                   [{
+                      "Effect" : "Allow",
+                      "Principal" :
+                      {
+                         "Service" : [ "monitoring.rds.amazonaws.com" ]
+                      },
+                      "Action" : [ "sts:AssumeRole" ]
+                   }]
+                },
+                "Path" : "/"
+            }
+        },
+        "RdsIamRolePolicy" :
+        {
+            "Type" : "AWS::IAM::Policy",
+            "Properties" :
+            {
+                "PolicyName" :
+                { "Fn::Join" : [ "", [
+                    "rdcb-rds-",
+                    { "Ref" : "AWS::StackName" }
+                ]]},
+                "PolicyDocument" :
+                {
+                    "Version" : "2012-10-17",
+                    "Statement" :
+                    [
+                        {
+                            "Sid": "EnableCreationAndManagementOfRDSCloudwatchLogGroups",
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:PutRetentionPolicy"
+                            ],
+                            "Resource": [
+                                "arn:aws:logs:*:*:log-group:RDS*"
+                            ]
+                        },
+                        {
+                            "Sid": "EnableCreationAndManagementOfRDSCloudwatchLogStreams",
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents",
+                                "logs:DescribeLogStreams",
+                                "logs:GetLogEvents"
+                            ],
+                            "Resource": [
+                                "arn:aws:logs:*:*:log-group:RDS*:log-stream:*"
+                            ]
+                        }
+                    ]
+                },
+                "Roles" : [ { "Ref" : "RdsIamRole" } ]
+            }
+        },
+        "RdsSubnetGroup" :
+        {
+            "Type" : "AWS::RDS::DBSubnetGroup",
+            "Properties" :
+            {
+                "DBSubnetGroupDescription" : "Subnets available for the RDS DB Instance",
+                "SubnetIds" : { "Ref" : "RdsSubnets" }
+            }
+        },
+        "RdsInstance" :
+        {
+            "Type" : "AWS::RDS::DBInstance",
+            "DeletionPolicy" : "Delete",
+            "Properties" :
+            {
+                "AllocatedStorage" : { "Ref" : "RdsDbAllocatedStorage" },
+                "BackupRetentionPeriod" : "0",
+                "DBInstanceClass" : { "Ref" : "RdsDbClass" },
+                "DBSnapshotIdentifier" : { "Ref" : "RdsSnapshotArn" },
+                "DBSubnetGroupName" : { "Ref" : "RdsSubnetGroup" },
+                "Engine" : { "Ref" : "RdsSqlEngine" },
+                "MasterUserPassword" : { "Ref" : "RdsDbPassword" },
+                "MonitoringInterval" : "1",
+                "MonitoringRoleArn" : { "Fn::GetAtt" : ["RdsIamRole", "Arn"] },
+                "MultiAZ" : { "Ref": "RdsMultiAzDatabase" },
+                "StorageType" : "gp2",
+                "VPCSecurityGroups" : [ { "Ref" : "RdcbRdsSecurityGroup" } ],
+                "Tags" :
+                [
+                    {
+                        "Key"  : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        },
+        "RdCbFileServerInstance" :
+        {
+            "Type" : "AWS::EC2::Instance",
+            "CreationPolicy" :
+            {
+                "ResourceSignal" :
+                {
+                    "Count" : "1",
+                    "Timeout" : "PT60M"
+                }
+            },
+            "Metadata" :
+            {
+                "AWS::CloudFormation::Init" :
+                {
+                    "configSets" :
+                    {
+                        "launch" :
+                        [
+                            "join-domain",
+                            "cfnsetup",
+                            "install-roles",
+                            "reboot",
+                            "configure-fileshares",
+                            "configure-backups",
+                            "configure-admins",
+                            "configure-rdcb",
+                            "reboot",
+                            "finalize"
+                        ],
+                        "update" :
+                        [
+                            "cfnsetup",
+                            "finalize"
+                        ]
+                    },
+                    "cfnsetup" :
+                    {
+                        "files" :
+                        {
+                            "c:\\cfn\\cfn-hup.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[main]\n",
+                                    "stack=", { "Ref" : "AWS::StackId" }, "\n",
+                                    "region=", { "Ref" : "AWS::Region" }, "\n",
+                                    "interval=1", "\n",
+                                    "verbose=true", "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" :
+                            {
+                                "content" :
+                                { "Fn::Join" : [ "", [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.RdCbFileServerInstance.Metadata\n",
+                                    "action=cfn-init.exe -v -c update",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource RdCbFileServerInstance",
+                                    " --region ", { "Ref" : "AWS::Region" }, "\n"
+                                ] ] }
+                            },
+                            "c:\\cfn\\scripts\\snap-by-group.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapByCgroup.ps1"
+                            },
+                            "c:\\cfn\\scripts\\snap-maintenance.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapMaint.ps1"
+                            },
+                            "c:\\cfn\\scripts\\configure-fileshares.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-fileshares.ps1"
+                            },
+                            "c:\\cfn\\scripts\\configure-ebsbackups.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-ebsbackups.ps1"
+                            },
+                            "c:\\cfn\\scripts\\configure-rdcb.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1"
+                            },
+                            "c:\\cfn\\scripts\\unzip-archive.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/unzip-archive.ps1"
+                            },
+                            "c:\\cfn\\files\\pstools.zip" :
+                            {
+                                "source" : "https://download.sysinternals.com/files/PSTools.zip"
+                            },
+                            "c:\\cfn\\files\\msodbcsql.msi" :
+                            {
+                                "source" : "https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi"
+                            }
+                        },
+                        "services" :
+                        {
+                            "windows" :
+                            {
+                                "cfn-hup" :
+                                {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files" :
+                                    [
+                                        "c:\\cfn\\cfn-hup.conf",
+                                        "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        },
+                        "commands" :
+                        {
+                            "a-set-execution-policy" :
+                            {
+                                "command" : "powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "b-online-disks" :
+                            {
+                                "command" : "powershell.exe \"foreach ($disk in (Get-CimInstance -ClassName Win32_DiskDrive)) { Set-Disk -Number $disk.Index -IsOffline $false }\"",
+                                "waitAfterCompletion" : "0",
+                                "ignoreErrors" : "true"
+                            },
+                            "c-initialize-disks" :
+                            {
+                                "command" : "powershell.exe C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeDisks.ps1",
+                                "waitAfterCompletion" : "0",
+                                "ignoreErrors" : "true"
+                            },
+                            "d-unzip-pstools" :
+                            {
+                                "command" : "powershell.exe c:\\cfn\\scripts\\unzip-archive.ps1 c:\\cfn\\files\\pstools.zip c:\\cfn\\files\\pstools",
+                                "waitAfterCompletion" : "0",
+                                "ignoreErrors" : "true"
+                            }
+                        }
+                    },
+                    "reboot" :
+                    {
+                        "commands" :
+                        {
+                            "10-reboot" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " \"Restart-Computer -Force -Verbose\""
+                                ] ] },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "join-domain" :
+                    {
+                        "commands" :
+                        {
+                            "10-join-domain" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command ",
+                                    "Write-Host \"Waiting for SSM to complete domain join, which reboots the instance automatically\""
+                                ] ] },
+                                "waitAfterCompletion" : "forever"
+                            }
+                        }
+                    },
+                    "install-roles" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-roles" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command ",
+                                    "\"",
+                                    "Install-WindowsFeature FS-FileServer,RDS-Connection-Broker,RDS-RD-Server,RDS-Licensing,RDS-Licensing-UI -Verbose",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configure-fileshares" :
+                    {
+                        "commands" :
+                        {
+                            "10-configure-fileshares" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "c:\\cfn\\scripts\\configure-fileshares.ps1",
+                                    " -DomainNetbiosName '",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "' -GroupName '",
+                                    { "Ref" : "DomainAccessUserGroup" },
+                                    "' -Verbose -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configure-backups" :
+                    {
+                        "commands" :
+                        {
+                            "10-configure-backups" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "c:\\cfn\\scripts\\configure-ebsbackups.ps1",
+                                    " -SnapshotScript 'C:\\cfn\\scripts\\snap-by-group.ps1'",
+                                    " -MaintenanceScript 'C:\\cfn\\scripts\\snap-maintenance.ps1'",
+                                    " -ConsistencyGroup 'BackupGroup01'",
+                                    " -Verbose -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configure-admins" :
+                    {
+                        "commands" :
+                        {
+                            "10-configure-admins" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command \"",
+                                    "Invoke-Command -ScriptBlock {",
+                                    "$ErrorActionPreference = 'Stop'; ",
+                                    "Import-Module RemoteDesktop,RemoteDesktopServices; ",
+                                    "$admin = (Invoke-Expression ((Get-SSMParameterValue -Name '",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "' -WithDecryption $true).Parameters | ? {$_.Name -eq '",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "' }).Value).Username + '@",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "'; ",
+                                    "if (-not ($admin -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) { ",
+                                    "[Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', $admin); ",
+                                    "} } -Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configure-rdcb" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-msodbc" :
+                            {
+                                "command": "msiexec /i c:\\cfn\\files\\msodbcsql.msi /qn IACCEPTMSODBCSQLLICENSETERMS=YES",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-configure-rdcb" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command \"",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "psexec",
+                                            "command"
+                                        ]
+                                    },
+                                    " -u \\\"",
+                                    { "Ref" : "DomainNetbiosName" }, "\\",
+                                    "$((Invoke-Expression ((Get-SSMParameterValue -Name '",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "' }).Value).Username)",
+                                    "\\\" -p \\\"",
+                                    "$((Invoke-Expression ((Get-SSMParameterValue -Name '",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "' }).Value).Password)",
+                                    "\\\" ",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "c:\\cfn\\scripts\\configure-rdcb.ps1",
+                                    " -DbHostFqdn ",
+                                    { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] },
+                                    " -DbName ",
+                                    { "Ref" : "RdsDbName" },
+                                    " -DbUser ",
+                                    { "Ref" : "RdsDbUsername"},
+                                    " -DbPassword ",
+                                    { "Ref" : "RdsDbPassword"},
+                                    " -RdcbClusterFqdn ",
+                                    { "Ref" : "RdcbClusterFqdn" },
+                                    " -Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "configure-rdcb-old" :
+                    {
+                        "commands" :
+                        {
+                            "10-install-msodbc" :
+                            {
+                                "command": "msiexec /i c:\\cfn\\files\\msodbcsql.msi /qn IACCEPTMSODBCSQLLICENSETERMS=YES",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-configure-rdcb" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "psexec",
+                                            "command"
+                                        ]
+                                    },
+                                    " -u \"",
+                                    { "Ref" : "DomainNetbiosName" }, "\\",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "\" -p \"",
+                                    { "Ref" : "SsmRdcbCredential" },
+                                    "\" ",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "c:\\cfn\\scripts\\configure-rdcb.ps1",
+                                    " -DbHostFqdn ",
+                                    { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] },
+                                    " -DbName ",
+                                    { "Ref" : "RdsDbName" },
+                                    " -DbUser ",
+                                    { "Ref" : "RdsDbUsername"},
+                                    " -DbPassword ",
+                                    { "Ref" : "RdsDbPassword"},
+                                    " -RdcbClusterFqdn ",
+                                    { "Ref" : "RdcbClusterFqdn" },
+                                    " -Verbose -ErrorAction Stop"
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    },
+                    "finalize" :
+                    {
+                        "commands" :
+                        {
+                            "10-signal-success" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    "cfn-signal.exe -e 0",
+                                    " --stack ", { "Ref" : "AWS::StackName" },
+                                    " --resource RdCbFileServerInstance",
+                                    " --region ", { "Ref" : "AWS::Region"}, "\n"
+                                ]]},
+                                "ignoreErrors" : "true",
+                                "waitAfterCompletion" : "0"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" :
+            {
+                "ImageId" : { "Ref" : "AmiId" },
+                "InstanceType" : { "Ref" : "InstanceType" },
+                "DisableApiTermination" : "true",
+                "Monitoring" : "true",
+                "KeyName" : { "Ref" : "KeyPairName" },
+                "IamInstanceProfile" : { "Ref" : "Ec2IamInstanceProfile" },
+                "EbsOptimized" :
+                {
+                    "Fn::FindInMap" :
+                    [
+                        "InstanceTypeMap",
+                        { "Ref" : "InstanceType" },
+                        "SupportsEbsOptimized"
+                    ]
+                },
+                "BlockDeviceMappings" :
+                [
+                    {
+                        "DeviceName" : "/dev/sda1",
+                        "Ebs" :
+                        {
+                            "VolumeSize" : "50",
+                            "VolumeType" : "gp2",
+                            "DeleteOnTermination" : "true"
+                        }
+                    }
+                ],
+                "Volumes" :
+                [
+                    {
+                        "Device" : "/dev/xvdf",
+                        "VolumeId" : { "Ref" : "DataVolume" }
+                    }
+                ],
+                "NetworkInterfaces" :
+                [
+                    {
+                        "DeviceIndex" : 0,
+                        "AssociatePublicIpAddress" :
+                        {
+                            "Fn::If" :
+                            [
+                                "AssignPublicIp",
+                                "true",
+                                "false"
+                            ]
+                        },
+                        "DeleteOnTermination" : "true",
+                        "SubnetId" : { "Ref" : "Ec2SubnetId" },
+                        "GroupSet" :
+                        { "Fn::Split" : [ ",",
+                            { "Fn::Join" : [ ",", [
+                                { "Ref" : "RdcbEc2SecurityGroup" },
+                                { "Fn::Join" : [ ",",
+                                    { "Ref" : "ExtraSecurityGroupIds" }
+                                ]}
+                            ]]}
+                        ]}
+                    }
+                ],
+                "SsmAssociations" :
+                [ {
+                    "DocumentName" :
+                    { "Fn::Join" : [ "", [
+                        "awsconfig_Domain_",
+                        { "Ref" : "DomainDirectoryId" },
+                        "_",
+                        { "Ref" : "DomainDnsName" }
+                    ] ] },
+                } ],
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ],
+                "UserData" :
+                { "Fn::Base64" : { "Fn::Join" : [ "", [
+                    "<script>", "\n",
+
+                    "cfn-init.exe -v -c launch",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource RdCbFileServerInstance ",
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+
+                    "if %ERRORLEVEL% equ 0 goto success\n\n",
+
+                    " :error\n",
+                    "cfn-signal.exe -e 1",
+                    " --stack ", { "Ref" : "AWS::StackName" },
+                    " --resource RdCbFileServerInstance ",
+                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+                    "echo \"ERROR: cfn-init failed! Aborting!\"", "\n",
+                    "exit /b 1\n\n",
+
+                    " :success\n",
+
+                    "</script>"
+                ] ] } }
+            }
+        },
+        "Ec2RecoveryAlarm" :
+        {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" :
+            {
+                "AlarmName" : { "Ref" : "AWS::StackName" },
+                "AlarmDescription" : "Trigger a recovery when instance status check fails for 15 consecutive minutes.",
+                "Namespace" : "AWS/EC2" ,
+                "MetricName" : "StatusCheckFailed_System",
+                "Statistic" : "Minimum",
+                "Period" : "60",
+                "EvaluationPeriods" : "15",
+                "ComparisonOperator" : "GreaterThanThreshold",
+                "Threshold" : "0",
+                "AlarmActions" :
+                [ { "Fn::Join" : [ "", [
+                    "arn:aws:automate:",
+                    { "Ref" : "AWS::Region" },
+                    ":ec2:recover"
+                ] ] } ],
+                "Dimensions" :
+                [ {
+                    "Name" : "InstanceId",
+                    "Value": { "Ref" : "RdCbFileServerInstance" }
+                } ]
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "RdcbEc2InstanceId" :
+        {
+            "Description" : "Instance ID of the RDCB File Server",
+            "Value" : { "Ref" : "RdCbFileServerInstance" }
+        },
+        "RdcbRdsDbInstanceId" :
+        {
+            "Description" : "DB Instance Identifier for the RDCB RDS Instance",
+            "Value" : { "Ref" : "RdsInstance" }
+        },
+        "RdcbRdsDbEndpointAddress" :
+        {
+            "Description" : "DB Endpoint Address for the RDCB RDS Instance",
+            "Value" : { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] }
+        }
+    }
+}
