@@ -46,7 +46,9 @@
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
-                "m4.xlarge"
+                "m4.xlarge",
+                "r3.large",
+                "r3.xlarge"
             ]
         },
         "ElbName" :
@@ -169,6 +171,67 @@
                 { "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ScaleUpSchedule" }, "" ] } ] },
                 { "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "ScaleDownSchedule" }, "" ] } ] }
             ]
+        }
+    },
+    "Mappings" :
+    {
+        "InstanceTypeMap" :
+        {
+            "t2.micro" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.small" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.medium" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "t2.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "false"
+            },
+            "c4.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "c4.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "m4.large" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "m4.xlarge" :
+            {
+                "HasInstanceVolume" : "false",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.large" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            },
+            "r3.xlarge" :
+            {
+                "HasInstanceVolume" : "true",
+                "SupportsEbsOptimized" : "true"
+            }
         }
     },
     "Resources" :
@@ -426,6 +489,15 @@
                 },
                 "InstanceType" : { "Ref" : "InstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
+                "EbsOptimized" :
+                {
+                    "Fn::FindInMap" :
+                    [
+                        "InstanceTypeMap",
+                        { "Ref" : "InstanceType" },
+                        "SupportsEbsOptimized"
+                    ]
+                },
                 "BlockDeviceMappings" :
                 [
                     {
