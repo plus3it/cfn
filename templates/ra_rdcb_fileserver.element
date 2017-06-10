@@ -840,7 +840,7 @@
                                         ]
                                     },
                                     "-Command ",
-                                    "Write-Host \"Waiting for SSM to complete domain join, which reboots the instance automatically\""
+                                    "Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose"
                                 ] ] },
                                 "waitAfterCompletion" : "forever"
                             }

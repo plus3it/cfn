@@ -110,25 +110,6 @@
             "Default" : "Domain Users",
             "MinLength" : "1"
         },
-        "DomainJoinPassword" :
-        {
-            "Description" : "Password for the domain join user. Must be at least 8 characters containing letters, numbers and symbols",
-            "Type" : "String",
-            "MinLength" : "8",
-            "MaxLength" : "32",
-            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "NoEcho" : "true",
-            "Default" : "Password123"
-        },
-        "DomainJoinUser" :
-        {
-            "Description" : "User name for the account that will join the instance to the domain",
-            "Type" : "String",
-            "Default" : "StackAdmin",
-            "MinLength" : "5",
-            "MaxLength" : "25",
-            "AllowedPattern" : "[a-zA-Z0-9_]*"
-        },
         "DomainDNSName" :
         {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
@@ -175,6 +156,21 @@
     },
     "Mappings" :
     {
+        "ShellCommandMap" :
+        {
+            "powershell" :
+            {
+                "command" : "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass "
+            },
+            "cmd" :
+            {
+                "command" : "cmd.exe /c "
+            },
+            "psexec" :
+            {
+                "command" : "c:\\cfn\\files\\pstools\\psexec.exe -accepteula -nobanner -h "
+            }
+        },
         "InstanceTypeMap" :
         {
             "t2.micro" :
@@ -252,6 +248,149 @@
                 "Region" : { "Ref" : "AWS::Region" },
                 "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" },
                 "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
+            }
+        },
+        "Ec2IamInstanceProfile" :
+        {
+            "Type" : "AWS::IAM::InstanceProfile",
+            "Properties" :
+            {
+                "Path" : "/",
+                "Roles" : [ { "Ref" : "Ec2IamRole" } ]
+            }
+        },
+        "Ec2IamRole" :
+        {
+            "Type" : "AWS::IAM::Role",
+            "Properties" :
+            {
+                "AssumeRolePolicyDocument" :
+                {
+                   "Version" : "2012-10-17",
+                   "Statement" :
+                   [ {
+                      "Effect" : "Allow",
+                      "Principal" :
+                      {
+                         "Service" : [ "ec2.amazonaws.com" ]
+                      },
+                      "Action" : [ "sts:AssumeRole" ]
+                   } ]
+                },
+                "Path" : "/"
+            }
+        },
+        "Ec2IamRolePolicy" :
+        {
+            "Type" : "AWS::IAM::Policy",
+            "Properties" :
+            {
+                "PolicyName" :
+                { "Fn::Join" : [ "", [
+                    "ra-rdsh-",
+                    { "Ref" : "AWS::StackName" }
+                ]]},
+                "PolicyDocument" :
+                {
+                    "Version" : "2012-10-17",
+                    "Statement" :
+                    [
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ssm:DescribeAssociation",
+                                "ssm:GetDeployablePatchSnapshotForInstance",
+                                "ssm:GetDocument",
+                                "ssm:ListAssociations",
+                                "ssm:ListInstanceAssociations",
+                                "ssm:PutInventory",
+                                "ssm:UpdateAssociationStatus",
+                                "ssm:UpdateInstanceAssociationStatus",
+                                "ssm:UpdateInstanceInformation"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ec2messages:AcknowledgeMessage",
+                                "ec2messages:DeleteMessage",
+                                "ec2messages:FailMessage",
+                                "ec2messages:GetEndpoint",
+                                "ec2messages:GetMessages",
+                                "ec2messages:SendReply"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "cloudwatch:PutMetricData"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ec2:DescribeInstanceStatus"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ds:CreateComputer",
+                                "ds:DescribeDirectories"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:DescribeLogGroups",
+                                "logs:DescribeLogStreams",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "s3:ListBucket"
+                            ],
+                            "Resource" : "arn:aws:s3:::amazon-ssm-packages-*"
+                        }
+                    ]
+                },
+                "Roles" : [ { "Ref" : "Ec2IamRole" } ]
+            }
+        },
+        "SsmAssociation" :
+        {
+            "Type" : "AWS::SSM::Association",
+            "Properties" :
+            {
+                "Name" : "AWS-JoinDirectoryServiceDomain",
+                "Parameters" :
+                {
+                    "directoryId" : [ { "Ref" : "DomainDirectoryId" } ],
+                    "directoryName" : [ { "Ref" : "DomainDnsName" } ],
+                    "directoryOU" : [ { "Ref" : "LdapContainerOU" } ]
+                },
+                "Targets" :
+                [ {
+                    "Key" : "tag:aws:cloudformation:stack-id",
+                    "Values" : [ { "Ref" : "AWS::StackId" } ]
+                } ]
             }
         },
         "ScaleUpScheduledAction" :
@@ -336,8 +475,8 @@
                     {
                         "config" :
                         [
+                            "join-domain",
                             "setup",
-                            "join",
                             "installRDS",
                             "finalize"
                         ],
@@ -397,30 +536,24 @@
                             }
                         }
                     },
-                    "join" :
+                    "join-domain" :
                     {
                         "commands" :
                         {
-                            "20-join-domain" :
+                            "10-join-domain" :
                             {
                                 "command" :
                                 { "Fn::Join" : [ "", [
-                                    "powershell.exe -Command \"",
-                                    "Add-Computer -DomainName ",
-                                    { "Ref" : "DomainDNSName" },
-                                    " -Credential ",
-                                    "(New-Object System.Management.Automation.PSCredential('",
-                                    { "Ref" : "DomainNetBIOSName" },
-                                    "\\",
-                                    { "Ref" : "DomainJoinUser" },
-                                    "',",
-                                    "(ConvertTo-SecureString '",
-                                    { "Ref" : "DomainJoinPassword" },
-                                    "' -AsPlainText -Force))) ",
-                                    " -OUPath '",
-                                    { "Ref" : "LdapContainerOU" },
-                                    "' -Restart -Verbose\""
-                                ]]},
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command ",
+                                    "Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose"
+                                ] ] },
                                 "waitAfterCompletion" : "forever"
                             }
                         }
@@ -483,12 +616,13 @@
                     "Fn::If" :
                     [
                         "UseAmiLookup",
-                        {"Fn::GetAtt": [ "AmiIdLookup", "Id" ]},
+                        {"Fn::GetAtt" : [ "AmiIdLookup", "Id" ]},
                         {"Ref" : "AmiId"}
                     ]
                 },
                 "InstanceType" : { "Ref" : "InstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
+                "IamInstanceProfile" : { "Ref" : "Ec2IamInstanceProfile" },
                 "EbsOptimized" :
                 {
                     "Fn::FindInMap" :
@@ -510,7 +644,7 @@
                         }
                     }
                 ],
-                "SecurityGroups" : { "Ref" : "SecurityGroupIDs" },
+                "SecurityGroups" : { "Ref" : "Ec2SecurityGroupIDs" },
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",
