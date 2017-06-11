@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates deploys Guacamole (Guac) instances in an autoscale group behind an ALB.",
+    "Description" : "This templates deploys Guacamole (Guac) instances in an AutoScale Group behind an ALB",
     "Parameters" :
     {
         "KeyPairName" :
@@ -18,7 +18,7 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "amzn-ami-hvm-*.x86_64-gp2"
+            "Default" : "amzn-ami-hvm-2017.03*.2017*-x86_64-gp2"
         },
         "InstanceType" :
         {
@@ -70,13 +70,7 @@
             "Description" : "The maximum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
-            "Default" : "1"
-        },
-        "GuacAlbTargetGroupName" :
-        {
-            "Description" : "Name of the ALB Guac Target Group",
-            "Type" : "String",
-            "MinLength" : "1"
+            "Default" : "2"
         },
         "ScaleUpSchedule" :
         {
@@ -114,7 +108,7 @@
         {
             "Description" : "Version of Guacamole to install",
             "Type" : "String",
-            "Default" : "0.9.9",
+            "Default" : "0.9.12-incubating",
             "MinLength" : "1"
         },
         "URL1" :
@@ -149,13 +143,34 @@
         },
         "PrivateSubnetIDs" :
         {
-            "Description" : "List of Private Subnet IDs where the Guacamole instances will run.",
+            "Description" : "List of Private Subnet IDs where the Guacamole instances will run",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupIDs" :
+        "PublicSubnetIDs" :
         {
-            "Description" : "List of security group IDs for Guacamole instances",
-            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+            "Description" : "A list of Public subnet IDs to attach to the Application Load Balancer",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "SslCertificateName" :
+        {
+            "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ALB -- the cert must already exist in the service",
+            "Type" : "String"
+        },
+        "SslCertificateService" :
+        {
+            "Description" : "The service hosting the SSL certificate",
+            "Type" : "String",
+            "Default" : "ACM",
+            "AllowedValues" :
+            [
+                "ACM",
+                "IAM"
+            ]
+        },
+        "VPC" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
     "Conditions" :
@@ -183,6 +198,10 @@
         "UseAmiLookup" :
         {
             "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ]
+        },
+        "UseACM" :
+        {
+            "Fn::Equals" : [ { "Ref" : "SslCertificateService" }, "ACM" ]
         },
         "UseScheduledAction" :
         {
@@ -264,22 +283,98 @@
     },
     "Resources" :
     {
-        "AmiIdLookup":
+        "AmiIdLookup" :
         {
-            "Type": "Custom::AmiIdLookup",
+            "Type" : "Custom::AmiIdLookup",
             "Condition" : "UseAmiLookup",
-            "Properties":
+            "Properties" :
             {
-                "ServiceToken":
+                "ServiceToken" :
                 { "Fn::Join" : [ ":", [
                     "arn:aws:lambda",
                     { "Ref" : "AWS::Region" },
                     { "Ref" : "AWS::AccountId" },
                     "function:cfn-look-up-ami-ids"
                 ]]},
-                "Region": { "Ref" : "AWS::Region" },
+                "Region" : { "Ref" : "AWS::Region" },
                 "AmiNameSearchString" : { "Ref" : "AmiNameSearchString" },
                 "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
+            }
+        },
+        "Ec2SecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enable Guacamole remote access",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : ["", [
+                            "ra-guac-ec2-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "AlbToGuacIngressTcp80" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "Ec2SecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8080",
+                "ToPort" : "8080",
+                "SourceSecurityGroupId" : { "Ref" : "AlbSecurityGroup" }
+            }
+        },
+        "AlbSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enable Guacamole remote access from the Internet",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : ["", [
+                            "ra-guac-alb-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PublicToAlbIngressTcp443" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "AlbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "443",
+                "ToPort" : "443",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
+        "AlbToGuacEgressTcp80" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "AlbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8080",
+                "ToPort" : "8080",
+                "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
             }
         },
         "ScaleUpScheduledAction" :
@@ -288,7 +383,7 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleUpSchedule" }
             }
@@ -299,80 +394,151 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleDownSchedule" }
             }
         },
-        "GuacScaleUpPolicy" :
+        "ScaleUpPolicy" :
         {
             "Type" : "AWS::AutoScaling::ScalingPolicy",
-            "Condition": "UseScalingPolicy",
+            "Condition" : "UseScalingPolicy",
             "Properties" :
             {
                 "AdjustmentType" : "ChangeInCapacity",
-                "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "Cooldown" : "60",
                 "ScalingAdjustment" : "1"
             }
         },
-        "GuacScaleDownPolicy" :
+        "ScaleDownPolicy" :
         {
             "Type" : "AWS::AutoScaling::ScalingPolicy",
-            "Condition": "UseScalingPolicy",
+            "Condition" : "UseScalingPolicy",
             "Properties" :
             {
                 "AdjustmentType" : "ChangeInCapacity",
-                "AutoScalingGroupName" : { "Ref" : "GuacAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "Cooldown" : "60",
                 "ScalingAdjustment" : "-1"
             }
         },
-        "GuacCPUAlarmLow":
+        "CPUAlarmLow" :
         {
-            "Type": "AWS::CloudWatch::Alarm",
-            "Condition": "UseScalingPolicy",
-            "Properties":
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Condition" : "UseScalingPolicy",
+            "Properties" :
             {
-                "EvaluationPeriods": "10",
-                "Statistic": "Average",
-                "Threshold": "10",
-                "AlarmDescription": "Scale-down if CPU < 10% for 10 minutes",
-                "Period": "60",
-                "AlarmActions": [ { "Ref": "GuacScaleDownPolicy" } ],
-                "Namespace": "AWS/EC2",
-                "Dimensions":
+                "EvaluationPeriods" : "10",
+                "Statistic" : "Average",
+                "Threshold" : "10",
+                "AlarmDescription" : "Scale-down if CPU < 10% for 10 minutes",
+                "Period" : "60",
+                "AlarmActions" : [ { "Ref" : "ScaleDownPolicy" } ],
+                "Namespace" : "AWS/EC2",
+                "Dimensions" :
                 [{
-                   "Name": "AutoScalingGroupName",
-                   "Value": { "Ref": "GuacAutoScalingGroup" }
+                   "Name" : "AutoScalingGroupName",
+                   "Value" : { "Ref" : "AutoScalingGroup" }
                 }],
-                "ComparisonOperator": "LessThanThreshold",
-                "MetricName": "CPUUtilization"
+                "ComparisonOperator" : "LessThanThreshold",
+                "MetricName" : "CPUUtilization"
             }
         },
-        "GuacCPUAlarmHigh":
+        "CPUAlarmHigh" :
         {
-            "Type": "AWS::CloudWatch::Alarm",
-            "Condition": "UseScalingPolicy",
-            "Properties":
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Condition" : "UseScalingPolicy",
+            "Properties" :
             {
-                "EvaluationPeriods": "5",
-                "Statistic": "Average",
-                "Threshold": "30",
-                "AlarmDescription": "Scale-up if CPU > 30% for 5 minutes or metric disappears indicating instance is down",
-                "Period": "60",
-                "AlarmActions": [ { "Ref": "GuacScaleUpPolicy" } ],
-                "Namespace": "AWS/EC2",
-                "Dimensions":
+                "EvaluationPeriods" : "5",
+                "Statistic" : "Average",
+                "Threshold" : "30",
+                "AlarmDescription" : "Scale-up if CPU > 30% for 5 minutes or metric disappears indicating instance is down",
+                "Period" : "60",
+                "AlarmActions" : [ { "Ref" : "ScaleUpPolicy" } ],
+                "Namespace" : "AWS/EC2",
+                "Dimensions" :
                 [{
-                   "Name": "AutoScalingGroupName",
-                   "Value": { "Ref": "GuacAutoScalingGroup" }
+                   "Name" : "AutoScalingGroupName",
+                   "Value" : { "Ref" : "AutoScalingGroup" }
                 }],
-                "ComparisonOperator": "GreaterThanThreshold",
-                "MetricName": "CPUUtilization"
+                "ComparisonOperator" : "GreaterThanThreshold",
+                "MetricName" : "CPUUtilization"
             }
         },
-        "GuacAutoScalingGroup" :
+        "ALB" :
+        {
+            "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties" :
+            {
+                "Scheme" : "internet-facing",
+                "SecurityGroups" : [ { "Ref" : "AlbSecurityGroup" } ],
+                "Subnets" : { "Ref" : "PublicSubnetIDs" },
+                "Tags" :
+                [ {
+                    "Key" : "Name",
+                    "Value" : { "Ref" : "AWS::StackName" }
+                } ]
+            }
+        },
+        "Listener" :
+        {
+            "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties" :
+            {
+                "DefaultActions" :
+                [{
+                    "Type" : "forward",
+                    "TargetGroupArn" : { "Ref" : "ALBTargetGroup" }
+                }],
+                "LoadBalancerArn" : { "Ref" : "ALB" },
+                "Port" : "443",
+                "Protocol" : "HTTPS",
+                "Certificates" :
+                [{
+                    "CertificateArn" :
+                    {
+                        "Fn::If" :
+                        [
+                            "UseACM",
+                            { "Fn::Join" : [ ":", [
+                                "arn:aws:acm",
+                                { "Ref" : "AWS::Region" },
+                                { "Ref" : "AWS::AccountId" },
+                                { "Fn::Join" : [ "", [
+                                    "certificate/",
+                                    { "Ref" : "SslCertificateName" }
+                                ] ] }
+                            ] ] },
+                            { "Fn::Join" : [ "", [
+                                "arn:aws:iam::",
+                                { "Ref" : "AWS::AccountId" },
+                                ":server-certificate/",
+                                { "Ref" : "SslCertificateName" }
+                            ] ] }
+                        ]
+                    }
+                }]
+            }
+        },
+        "ALBTargetGroup" :
+        {
+            "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties" :
+            {
+                "HealthCheckIntervalSeconds" : "30",
+                "HealthCheckPort" : "8080",
+                "HealthCheckProtocol" : "HTTP",
+                "HealthCheckTimeoutSeconds" : "10",
+                "HealthyThresholdCount" : "5",
+                "Port" : "8080",
+                "Protocol" : "HTTP",
+                "UnhealthyThresholdCount" : "10",
+                "VpcId" : { "Ref" : "VPC" }
+            }
+        },
+        "AutoScalingGroup" :
         {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "UpdatePolicy" :
@@ -400,28 +566,22 @@
             "Properties" :
             {
                 "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
-                "LaunchConfigurationName" : { "Ref" : "GuacLaunchConfig" },
-                "TargetGroupARNs" : [ { "Ref" : "GuacAlbTargetGroupName" } ],
+                "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
+                "TargetGroupARNs" : [ { "Ref" : "ALBTargetGroup" } ],
                 "MinSize" : { "Ref" : "MinCapacity" },
                 "MaxSize" : { "Ref" : "MaxCapacity" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
                 "Tags" :
-                [
-                    {
-                        "Key" : "Name",
-                        "Value" :
-                        { "Fn::Join" : ["", [
-                            "ra-guac-",
-                            { "Ref" : "AWS::StackName" }
-                        ]]},
-                        "PropagateAtLaunch" : "true"
-                    }
-                ]
+                [ {
+                    "Key" : "Name",
+                    "Value" : { "Ref" : "AWS::StackName" },
+                    "PropagateAtLaunch" : "true"
+                } ]
             }
         },
-        "GuacLaunchConfig" :
+        "LaunchConfig" :
         {
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
             "Metadata" :
@@ -467,10 +627,10 @@
                                 { "Fn::Join" : ["", [
                                     "[cfn-auto-reloader-hook]\n",
                                     "triggers=post.update\n",
-                                    "path=Resources.GuacLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                    "path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n",
                                     "action=/opt/aws/bin/cfn-init -v -c update ",
                                     "         --stack ", { "Ref" : "AWS::StackName" },
-                                    "         --resource GuacLaunchConfig ",
+                                    "         --resource LaunchConfig ",
                                     "         --region ", { "Ref" : "AWS::Region" }, "\n",
                                     "runas=root\n"
                                 ]]},
@@ -599,7 +759,7 @@
                                 { "Fn::Join" : [ "", [
                                     "/opt/aws/bin/cfn-signal -e 0 ",
                                     "   --stack ", { "Ref" : "AWS::StackName" },
-                                    "   --resource GuacAutoScalingGroup ",
+                                    "   --resource AutoScalingGroup ",
                                     "   --region ", { "Ref" : "AWS::Region"}, "\n"
                                 ]]},
                                 "ignoreErrors" : "true"
@@ -641,7 +801,7 @@
                         }
                     }
                 ],
-                "SecurityGroups" : { "Ref" : "SecurityGroupIDs" },
+                "SecurityGroups" :[ { "Ref" : "Ec2SecurityGroup" } ],
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "#!/bin/bash -xe\n\n",
@@ -697,7 +857,7 @@
                     "# Execute cfn-init\n",
                     "/opt/aws/bin/cfn-init -v -c config",
                     " --stack ", { "Ref" : "AWS::StackName" },
-                    " --resource GuacLaunchConfig ",
+                    " --resource LaunchConfig ",
                     " --region ", { "Ref" : "AWS::Region" }, " ||",
                     " ( echo 'ERROR: cfn-init failed! Aborting!';",
                     " /opt/aws/bin/cfn-signal -e 1",
@@ -708,6 +868,34 @@
                     " )\n\n"
                 ]]}}
             }
+        }
+    },
+    "Outputs" :
+    {
+        "LoadBalancerName" :
+        {
+            "Description" : "Name of the ALB",
+            "Value" : { "Ref" : "ALB" }
+        },
+        "LoadBalancerDns" :
+        {
+            "Description" : "DNS name for the ALB",
+            "Value" : { "Fn::GetAtt" : [ "ALB", "DNSName" ] }
+        },
+        "TargetGroupName" :
+        {
+            "Description" : "Name of the ALB Target Group",
+            "Value" : { "Ref" : "ALBTargetGroup" }
+        },
+        "Ec2SecurityGroupId" :
+        {
+            "Value" : { "Ref" : "Ec2SecurityGroup" },
+            "Description" : "Security Group ID for Guacamole instances"
+        },
+        "AlbSecurityGroupId" :
+        {
+            "Value" : { "Ref" : "AlbSecurityGroup" },
+            "Description" : "Security Group ID for the Guacamole Application Load Balancer"
         }
     }
 }
