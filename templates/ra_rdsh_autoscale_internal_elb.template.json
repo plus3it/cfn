@@ -29,7 +29,7 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
+            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017*"
         },
         "InstanceType" :
         {
@@ -51,12 +51,6 @@
                 "r3.xlarge"
             ]
         },
-        "ElbName" :
-        {
-            "Description" : "Name of the RDSH Elastic Load Balancer",
-            "Type" : "String",
-            "MinLength" : "1"
-        },
         "DesiredCapacity" :
         {
             "Description" : "The number of instances the autoscale group will spin up initially",
@@ -76,7 +70,7 @@
             "Description" : "The maximum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
-            "Default" : "1"
+            "Default" : "2"
         },
         "ScaleUpSchedule" :
         {
@@ -110,7 +104,13 @@
             "Default" : "Domain Users",
             "MinLength" : "1"
         },
-        "DomainDNSName" :
+        "DomainDirectoryId" :
+        {
+            "Description" : "ID of the AWS Directory Service domain, e.g. d-xxxxxxxxxx",
+            "Type" : "String",
+            "AllowedPattern" : "d-[a-zA-Z0-9]{10}"
+        },
+        "DomainDnsName" :
         {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
             "Type" : "String",
@@ -128,15 +128,15 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "PrivateSubnetIDs" :
+        "SubnetIDs" :
         {
-            "Description" : "List of Private Subnet IDs where the RDSH instances will run.",
+            "Description" : "List of Subnet IDs where the RDSH instances and ELB we be launched",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupIDs" :
+        "VPC" :
         {
-            "Description" : "List of Security Group IDs for RDSH instances",
-            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
     "Conditions" :
@@ -399,7 +399,7 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "RdshAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleUpSchedule" }
             }
@@ -410,12 +410,131 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "RdshAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleDownSchedule" }
             }
         },
-        "RdshAutoScalingGroup" :
+        "Ec2SecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Allow Remote Access to the RDSH instances",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : [ "", [
+                            "ra-rdsh-ec2-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "ElbToRdshIngressTcp3389" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "Ec2SecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
+            }
+        },
+        "ElbSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Allow connectivity through the RDSH ELB to RDSH instances",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "ra-rdsh-elb-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PublicToElbIngressTcp3389" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
+        "ElbToRdshEgressTcp3389" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
+            }
+        },
+        "ELB" :
+        {
+            "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties":
+            {
+                "CrossZone" : "false",
+                "HealthCheck" :
+                {
+                    "HealthyThreshold" : "5",
+                    "Interval" : "60",
+                    "Target" : "TCP:3389",
+                    "Timeout" : "5",
+                    "UnhealthyThreshold" : "10"
+                },
+                "ConnectionSettings" :
+                {
+                    "IdleTimeout" : "900"
+                },
+                "ConnectionDrainingPolicy" :
+                {
+                    "Enabled" : "true",
+                    "Timeout" : "1800"
+                },
+                "Listeners" :
+                [
+                    {
+                        "InstancePort" : "3389",
+                        "InstanceProtocol" : "TCP",
+                        "LoadBalancerPort" : "3389",
+                        "Protocol" : "TCP"
+                    }
+                ],
+                "Policies" : [],
+                "Scheme" : "internal",
+                "SecurityGroups" : [ { "Ref" : "ElbSecurityGroup" } ],
+                "Subnets" : { "Ref" : "SubnetIDs" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        },
+        "AutoScalingGroup" :
         {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "CreationPolicy" :
@@ -433,7 +552,7 @@
                     "MinInstancesInService" : "1",
                     "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT40M",
+                    "PauseTime" : "PT50M",
                     "SuspendProcesses" : [ "ScheduledActions" ]
                 },
                 "AutoScalingScheduledAction" :
@@ -443,9 +562,9 @@
             },
             "Properties" :
             {
-                "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
-                "LaunchConfigurationName" : { "Ref" : "RdshLaunchConfig" },
-                "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
+                "VPCZoneIdentifier" : { "Ref" : "SubnetIDs" },
+                "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
+                "LoadBalancerNames" : [ { "Ref" : "ELB" } ],
                 "MinSize" : { "Ref" : "MinCapacity" },
                 "MaxSize" : { "Ref" : "MaxCapacity" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
@@ -455,16 +574,13 @@
                 [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
-                            "ra-rdsh-",
-                            { "Ref" : "AWS::StackName" }
-                        ]]},
+                        "Value" : { "Ref" : "AWS::StackName" },
                         "PropagateAtLaunch" : "true"
                     }
                 ]
             }
         },
-        "RdshLaunchConfig" :
+        "LaunchConfig" :
         {
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
             "Metadata" :
@@ -507,10 +623,10 @@
                                 { "Fn::Join" : [ "", [
                                     "[cfn-auto-reloader-hook]\n",
                                     "triggers=post.update\n",
-                                    "path=Resources.RdshLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                    "path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n",
                                     "action=cfn-init.exe -v -c update",
                                     " --stack ", { "Ref" : "AWS::StackName" },
-                                    " --resource RdshLaunchConfig ",
+                                    " --resource LaunchConfig ",
                                     " --region ", { "Ref" : "AWS::Region"}, "\n"
                                 ]]}
                             },
@@ -599,7 +715,7 @@
                                 { "Fn::Join" : [ "", [
                                     "cfn-signal.exe -e 0",
                                     " --stack ", { "Ref" : "AWS::StackName" },
-                                    " --resource RdshAutoScalingGroup ",
+                                    " --resource AutoScalingGroup ",
                                     " --region ", { "Ref" : "AWS::Region"}
                                 ]]},
                                 "ignoreErrors" : "true",
@@ -644,7 +760,7 @@
                         }
                     }
                 ],
-                "SecurityGroups" : { "Ref" : "Ec2SecurityGroupIDs" },
+                "SecurityGroups" : [ { "Ref" : "Ec2SecurityGroup" } ],
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",
@@ -653,11 +769,34 @@
                     "\n",
                     "cfn-init.exe -v -c config",
                     " --stack ", { "Ref" : "AWS::StackName" },
-                    " --resource RdshLaunchConfig ",
+                    " --resource LaunchConfig ",
                     " --region ", { "Ref" : "AWS::Region"}, "\n",
                     "</script>\n"
                 ]]}}
             }
+        }
+    },
+    "Outputs" :
+    {
+        "LoadBalancerName" :
+        {
+            "Description" : "Name of the Elastic Load Balancer",
+            "Value" : { "Ref" : "ELB" }
+        },
+        "LoadBalancerDns" :
+        {
+            "Description" : "DNS name for the ELB",
+            "Value" : { "Fn::GetAtt" : [ "ELB", "DNSName" ] }
+        },
+        "Ec2SecurityGroupId" :
+        {
+            "Value" : { "Ref" : "Ec2SecurityGroup" },
+            "Description" : "Security Group ID for RDSH EC2 instances"
+        },
+        "ElbSecurityGroupId" :
+        {
+            "Value" : { "Ref" : "ElbSecurityGroup" },
+            "Description" : "Security Group ID for the RDSH Elastic Load Balancer"
         }
     }
 }
