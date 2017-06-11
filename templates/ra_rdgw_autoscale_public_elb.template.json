@@ -51,12 +51,6 @@
                 "r3.xlarge"
             ]
         },
-        "ElbName" :
-        {
-            "Description" : "Name of the RDGW Elastic Load Balancer",
-            "Type" : "String",
-            "MinLength" : "1"
-        },
         "DesiredCapacity" :
         {
             "Description" : "The number of instances the autoscale group will spin up initially",
@@ -76,7 +70,7 @@
             "Description" : "The maximum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
-            "Default" : "1"
+            "Default" : "2"
         },
         "ScaleUpSchedule" :
         {
@@ -103,7 +97,13 @@
             "Default" : "Domain Admins",
             "MinLength" : "1"
         },
-        "DomainDNSName" :
+        "DomainDirectoryId" :
+        {
+            "Description" : "ID of the AWS Directory Service domain, e.g. d-xxxxxxxxxx",
+            "Type" : "String",
+            "AllowedPattern" : "d-[a-zA-Z0-9]{10}"
+        },
+        "DomainDnsName" :
         {
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
             "Type" : "String",
@@ -112,7 +112,7 @@
             "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "DomainNetBIOSName" :
+        "DomainNetbiosName" :
         {
             "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
             "Type" : "String",
@@ -121,19 +121,44 @@
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
-        "PrivateSubnetIDs" :
+        "PublicSubnetIDs" :
         {
-            "Description" : "List of Private Subnet IDs where the RDGW instances will run.",
+            "Description" : "A list of Public subnet IDs to attach to the load balancer",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
-        "SecurityGroupIDs" :
+        "PrivateSubnetIDs" :
         {
-            "Description" : "List of Security Group IDs for RDGW instances",
-            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+            "Description" : "List of Private Subnet IDs where the RDGW instances will run",
+            "Type" : "List<AWS::EC2::Subnet::Id>"
+        },
+        "SslCertificateName" :
+        {
+            "Description" : "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ELB -- the cert must already exist in the service",
+            "Type" : "String"
+        },
+        "SslCertificateService" :
+        {
+            "Description" : "The service hosting the SSL certificate",
+            "Type" : "String",
+            "Default" : "ACM",
+            "AllowedValues" :
+            [
+                "ACM",
+                "IAM"
+            ]
+        },
+        "VPC" :
+        {
+            "Description" : "VPC ID",
+            "Type" : "AWS::EC2::VPC::Id"
         }
     },
     "Conditions" :
     {
+        "UseACM" :
+        {
+            "Fn::Equals" : [ { "Ref" : "SslCertificateService" }, "ACM" ]
+        },
         "UseAmiLookup" :
         {
             "Fn::Equals" : [ { "Ref" : "AmiId" }, "" ]
@@ -407,6 +432,144 @@
                 "Recurrence" : { "Ref" : "ScaleDownSchedule" }
             }
         },
+        "Ec2SecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enable RDGW access from the ELB",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "ra-rdgw-ec2-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "ElbToRdgwIngressTcp443" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "Ec2SecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "443",
+                "ToPort" : "443",
+                "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
+            }
+        },
+        "ElbSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enable RDGW access from the Internet",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Fn::Join" : ["", [
+                            "ra-rdgw-elb-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
+        "PublicToElbIngressTcp443" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "443",
+                "ToPort" : "443",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
+        "ElbToRdgwEgressTcp443" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "443",
+                "ToPort" : "443",
+                "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
+            }
+        },
+        "ELB" :
+        {
+            "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties" :
+            {
+                "CrossZone" : "false",
+                "HealthCheck" :
+                {
+                    "HealthyThreshold" : "5",
+                    "Interval" : "60",
+                    "Target" : "HTTPS:443/iisstart.htm",
+                    "Timeout" : "5",
+                    "UnhealthyThreshold" : "10"
+                },
+                "ConnectionSettings" :
+                {
+                    "IdleTimeout" : "900"
+                },
+                "ConnectionDrainingPolicy" :
+                {
+                    "Enabled" : "true",
+                    "Timeout" : "1800"
+                },
+                "Listeners" :
+                [
+                    {
+                        "InstancePort" : "443",
+                        "InstanceProtocol" : "SSL",
+                        "LoadBalancerPort" : "443",
+                        "Protocol" : "SSL",
+                        "SSLCertificateId" :
+                        { "Fn::If" : [
+                            "UseACM",
+                            { "Fn::Join" : [ ":", [
+                                "arn:aws:acm",
+                                { "Ref" : "AWS::Region" },
+                                { "Ref" : "AWS::AccountId" },
+                                { "Fn::Join" : [ "", [
+                                    "certificate/",
+                                    { "Ref" : "SslCertificateName" }
+                                ]]}
+                            ]]},
+                            { "Fn::Join" : [ "", [
+                                "arn:aws:iam::",
+                                { "Ref" : "AWS::AccountId" },
+                                " :server-certificate/",
+                                { "Ref" : "SslCertificateName" }
+                            ]]}
+                        ]}
+                    }
+                ],
+                "Policies" : [],
+                "Scheme" : "internet-facing",
+                "SecurityGroups" : [ { "Ref" : "ElbSecurityGroup" } ],
+                "Subnets" : { "Ref" : "PublicSubnetIDs" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+           }
+        },
         "RdgwAutoScalingGroup" :
         {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
@@ -437,7 +600,7 @@
             {
                 "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
                 "LaunchConfigurationName" : { "Ref" : "RdgwLaunchConfig" },
-                "LoadBalancerNames" : [ { "Ref" : "ElbName" } ],
+                "LoadBalancerNames" : [ { "Ref" : "ELB" } ],
                 "MinSize" : { "Ref" : "MinCapacity" },
                 "MaxSize" : { "Ref" : "MaxCapacity" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
@@ -447,10 +610,7 @@
                 [
                     {
                         "Key" : "Name",
-                        "Value" : { "Fn::Join" : ["", [
-                            "ra-rdgw-",
-                            { "Ref" : "AWS::StackName" }
-                        ]]},
+                        "Value" : { "Ref" : "AWS::StackName" },
                         "PropagateAtLaunch" : "true"
                     }
                 ]
@@ -565,7 +725,7 @@
                                 { "Fn::Join" : [ "", [
                                     "powershell.exe -ExecutionPolicy RemoteSigned",
                                     " C:\\cfn\\scripts\\configure-rdgw.ps1 ",
-                                    " -DomainNetBiosName ", { "Ref" : "DomainNetBIOSName" },
+                                    " -DomainNetBiosName ", { "Ref" : "DomainNetbiosName" },
                                     " -GroupName ",
                                     "'",
                                     { "Ref" : "RemoteAccessUserGroup" },
@@ -631,7 +791,7 @@
                         }
                     }
                 ],
-                "SecurityGroups" : { "Ref" : "SecurityGroupIDs" },
+                "SecurityGroups" : [ { "Ref" : "Ec2SecurityGroup" } ],
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",
@@ -645,6 +805,29 @@
                     "</script>\n"
                 ]]}}
             }
+        }
+    },
+    "Outputs" :
+    {
+        "LoadBalancerName" :
+        {
+            "Description" : "Name of the Elastic Load Balancer",
+            "Value" : { "Ref" : "ELB" }
+        },
+        "LoadBalancerDns" :
+        {
+            "Description" : "DNS name for the ELB",
+            "Value" : { "Fn::GetAtt" : [ "ELB", "DNSName" ] }
+        },
+        "Ec2SecurityGroupId" :
+        {
+            "Value" : { "Ref" : "Ec2SecurityGroup" },
+            "Description" : "Security Group ID for RDGW EC2 instances"
+        },
+        "ElbSecurityGroupId" :
+        {
+            "Value" : { "Ref" : "ElbSecurityGroup" },
+            "Description" : "Security Group ID for RDGW Elastic Load Balancer"
         }
     }
 }
