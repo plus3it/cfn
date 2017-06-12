@@ -1,0 +1,65 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description" : "Create an assumable role for cross account VPC peering.",
+    "Parameters" :
+    {
+        "PeerRequesterAccountId" :
+        {
+            "Description" : "Account ID of account that will be requesting the VPC peering connection. To specify multiple accounts use \",\" as separator (Example: 123456789012,012345678901).",
+            "Type" : "List<Number>"
+        }
+    },
+    "Resources" :
+    {
+    "PeerRole" :
+        {
+            "Type" : "AWS::IAM::Role",
+            "Properties" :
+            {
+                "AssumeRolePolicyDocument" :
+                {
+                    "Statement" :
+                    [
+                        {
+                            "Principal" :
+                            {
+                            "AWS" : { "Ref": "PeerRequesterAccountId" }
+                            },
+                            "Action" : [ "sts:AssumeRole" ],
+                            "Effect" : "Allow"
+                        }
+                    ]
+                },
+                "Path" : "/",
+                "Policies" :
+                [
+                    {
+                        "PolicyName" : "VPCPeer-Policy",
+                        "PolicyDocument" :
+                        {
+                            "Version" : "2012-10-17",
+                            "Statement" :
+                            [
+                                {
+                                "Effect" : "Allow",
+                                "Action" : "ec2:AcceptVpcPeeringConnection",
+                                "Resource" : "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Outputs" :
+    {
+        "RoleARN" :
+        {
+            "Value" :
+            {
+                "Fn::GetAtt" : [ "PeerRole","Arn" ]
+            }
+        }
+    }
+}

@@ -1,0 +1,70 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description" : "This element creates a Security Group to allow remote access from instances in the specified security group within the peered account.",
+    "Parameters"  :
+    {
+        "VPC" :
+        {
+            "Description" : "VPC ID that will contain the security group",
+            "Type" : "AWS::EC2::VPC::Id"
+        },
+        "SourcePeerIngress" :
+        {
+            "Description" : "Creates a Security Group and ingress rule to allow remote access from instances in the specified security group within the peered account (Example: sg-12345678).",
+            "Type" : "String",
+            "Default" : "",
+            "AllowedPattern" : "^$|^sg-[0-9a-z]{8}$"
+        }     
+    },
+    "Resources" :
+    {
+        "AllowPeerSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Enables remote access from instances in the specified security group within the peered account",
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        },
+        "SSHIngressTcp22" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref": "AllowPeerSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "22",
+                "ToPort" : "22",
+                "SourceSecurityGroupId" : { "Ref": "SourcePeerIngress" }
+            }
+        },
+        "RDPIngressTcp3389" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" :  { "Ref": "AllowPeerSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "3389",
+                "ToPort" : "3389",
+                "SourceSecurityGroupId" : { "Ref": "SourcePeerIngress" }
+            }
+        }
+    },    
+    "Outputs" :
+    {
+        "AllowPeerSecurityGroupId" :
+        {
+            "Value" : { "Ref" : "AllowPeerSecurityGroup" },
+            "Description" : "Security Group ID that allows remote access from instances in the specified security group within the peered account"
+        }
+    }
+}
