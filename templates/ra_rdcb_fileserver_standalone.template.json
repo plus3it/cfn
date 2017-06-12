@@ -1232,6 +1232,11 @@
             "Description" : "Instance ID of the RDCB File Server",
             "Value" : { "Ref" : "RdCbFileServerInstance" }
         },
+        "RdcbEc2InstanceIp" :
+        {
+            "Description" : "IP address of the RDCB File Server",
+            "Value" : { "Fn::GetAtt" : [ "RdCbFileServerInstance", "PrivateIp" ] }
+        },
         "RdcbRdsDbInstanceId" :
         {
             "Description" : "DB Instance Identifier for the RDCB RDS Instance",
