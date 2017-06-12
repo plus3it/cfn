@@ -16,7 +16,16 @@ Param(
   [String] $RdcbClusterFqdn,
 
   [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [String] $CollectionName = "RDS Collection"
+  [String] $CollectionName = "RDS Collection",
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $UserGroup = "Domain Users",
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $UpdShareName = "Profiles$",
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [Int] $MaxUpdSizeGB = 50
 )
 # Script must be run with a domain credential that has admin privileges on the local system
 
@@ -71,6 +80,12 @@ if (-not (Get-RDSessionCollection -CollectionName $CollectionName -ErrorAction S
 {
     New-RDSessionCollection -CollectionName $CollectionName -ConnectionBroker $SystemName -SessionHost $SystemName
     Write-Verbose "Created the RD Session Collection!"
+
+    Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $SystemName -UserGroup $UserGroup
+    Write-Verbose "Granted user group access to the RD Session Collection, ${UserGroup}"
+
+    Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $SystemName -EnableUserProfileDisk -DiskPath "\\${SystemName}\${UpdShareName}" -MaxUserProfileDiskSizeGB $MaxUpdSizeGB
+    Write-Verbose "Enabled user profile disks for the RD Session Collection, \\${SystemName}\${UpdShareName}"
 }
 else
 {

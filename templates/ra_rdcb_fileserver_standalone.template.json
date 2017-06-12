@@ -1016,7 +1016,9 @@
                                     { "Ref" : "RdsDbPassword"},
                                     " -RdcbClusterFqdn ",
                                     { "Ref" : "RdcbClusterFqdn" },
-                                    " -Verbose -ErrorAction Stop",
+                                    " -UserGroup '",
+                                    { "Ref" : "DomainAccessUserGroup" },
+                                    "' -Verbose -ErrorAction Stop",
                                     "\""
                                 ] ] },
                                 "waitAfterCompletion" : "0"
@@ -1163,7 +1165,7 @@
                         { "Ref" : "DomainDirectoryId" },
                         "_",
                         { "Ref" : "DomainDnsName" }
-                    ] ] },
+                    ] ] }
                 } ],
                 "Tags" :
                 [
