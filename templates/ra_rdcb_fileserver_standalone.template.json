@@ -1025,56 +1025,6 @@
                             }
                         }
                     },
-                    "configure-rdcb-old" :
-                    {
-                        "commands" :
-                        {
-                            "10-install-msodbc" :
-                            {
-                                "command": "msiexec /i c:\\cfn\\files\\msodbcsql.msi /qn IACCEPTMSODBCSQLLICENSETERMS=YES",
-                                "waitAfterCompletion" : "0"
-                            },
-                            "20-configure-rdcb" :
-                            {
-                                "command" :
-                                { "Fn::Join" : [ "", [
-                                    { "Fn::FindInMap" :
-                                        [
-                                            "ShellCommandMap",
-                                            "psexec",
-                                            "command"
-                                        ]
-                                    },
-                                    " -u \"",
-                                    { "Ref" : "DomainNetbiosName" }, "\\",
-                                    { "Ref" : "SsmRdcbCredential" },
-                                    "\" -p \"",
-                                    { "Ref" : "SsmRdcbCredential" },
-                                    "\" ",
-                                    { "Fn::FindInMap" :
-                                        [
-                                            "ShellCommandMap",
-                                            "powershell",
-                                            "command"
-                                        ]
-                                    },
-                                    "c:\\cfn\\scripts\\configure-rdcb.ps1",
-                                    " -DbHostFqdn ",
-                                    { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] },
-                                    " -DbName ",
-                                    { "Ref" : "RdsDbName" },
-                                    " -DbUser ",
-                                    { "Ref" : "RdsDbUsername"},
-                                    " -DbPassword ",
-                                    { "Ref" : "RdsDbPassword"},
-                                    " -RdcbClusterFqdn ",
-                                    { "Ref" : "RdcbClusterFqdn" },
-                                    " -Verbose -ErrorAction Stop"
-                                ] ] },
-                                "waitAfterCompletion" : "0"
-                            }
-                        }
-                    },
                     "finalize" :
                     {
                         "commands" :
