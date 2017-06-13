@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates deploys Remote Desktop Session Host (RDSH) instances in an autoscale group behind an ELB, and joins them to a domain.",
+    "Description" : "This template deploys Remote Desktop Session Host (RDSH) instances in an autoscale group behind an ELB, and joins them to a domain.",
     "Parameters" :
     {
         "KeyPairName" :
@@ -29,13 +29,13 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017*"
+            "Default" : "Windows_Server-2016-English-Full-Base-*"
         },
         "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
             "Type" : "String",
-            "Default" : "t2.micro",
+            "Default" : "t2.medium",
             "AllowedValues" :
             [
                 "t2.micro",
@@ -47,8 +47,8 @@
                 "c4.xlarge",
                 "m4.large",
                 "m4.xlarge",
-                "r3.large",
-                "r3.xlarge"
+                "r4.large",
+                "r4.xlarge"
             ]
         },
         "DesiredCapacity" :
@@ -119,14 +119,54 @@
             "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "DomainNetBIOSName" :
+        "DomainNetbiosName" :
         {
-            "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
+            "Description" : "Netbios name of the domain (e.g. EXAMPLE)",
             "Type" : "String",
             "Default" : "EXAMPLE",
             "MinLength" : "1",
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
+        },
+        "DomainSvcAccount" :
+        {
+            "Description" : "User name for the account that will join the instance to the Connection Broker Cluster",
+            "Type" : "String",
+            "Default" : "CbSvcAccount",
+            "MinLength" : "5",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9_-]*"
+        },
+        "DomainSvcPassword" :
+        {
+            "Description" : "Password for the Connection Broker service account. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type" : "String",
+            "MinLength" : "8",
+            "MaxLength" : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho" : "true",
+            "Default" : "Password123"
+        },
+        "ConnectionBrokerFqdn" :
+        {
+            "Description" : "Fully qualified domain name (FQDN) of the primary Connection Broker, e.g. \"cb.example.com\"",
+            "Type" : "String",
+            "Default" : "cb.example.com",
+            "MinLength" : "3",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+\\..+"
+        },
+        "UserProfileDiskPath" :
+        {
+            "Description" : "Path to a CIFS share where User Profile Disks are stored, e.g. \"\\\\home.example.com\\Profiles$\"",
+            "Type" : "String",
+            "Default" : "\\\\home.example.com\\Profiles$",
+            "MinLength" : "3",
+            "AllowedPattern" : "^[\\\\\\\\]{2}[a-zA-Z0-9_\\\\-]+\\..+"
+        },
+        "ExtraSecurityGroupIds" :
+        {
+            "Description" : "List of extra Security Group IDs to attach to the RDSH instances -- include _at least_ the SG allowing connectivity to the Connection Broker database",
+            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
         },
         "SubnetIDs" :
         {
@@ -218,14 +258,14 @@
                 "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.large" :
+            "r4.large" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.xlarge" :
+            "r4.xlarge" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             }
         }
@@ -542,7 +582,7 @@
                 "ResourceSignal" :
                 {
                     "Count" : { "Ref" : "DesiredCapacity" },
-                    "Timeout" : "PT40M"
+                    "Timeout" : "PT60M"
                 }
             },
             "UpdatePolicy" :
@@ -552,7 +592,7 @@
                     "MinInstancesInService" : "1",
                     "MaxBatchSize" : "2",
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT50M",
+                    "PauseTime" : "PT60M",
                     "SuspendProcesses" : [ "ScheduledActions" ]
                 },
                 "AutoScalingScheduledAction" :
@@ -632,7 +672,19 @@
                             },
                             "c:\\cfn\\scripts\\configure-rdsh.ps1" :
                             {
-                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdsh.ps1"
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/rdsh-cb/scripts/configure-rdsh.ps1"
+                            },
+                            "c:\\cfn\\scripts\\unzip-archive.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/unzip-archive.ps1"
+                            },
+                            "c:\\cfn\\files\\pstools.zip" :
+                            {
+                                "source" : "https://download.sysinternals.com/files/PSTools.zip"
+                            },
+                            "c:\\cfn\\files\\msodbcsql.msi" :
+                            {
+                                "source" : "https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi"
                             }
                         },
                         "services" :
@@ -649,6 +701,43 @@
                                         "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
                                     ]
                                 }
+                            }
+                        },
+                        "commands" :
+                        {
+                            "a-unzip-pstools" :
+                            {
+                                "command" : "powershell.exe c:\\cfn\\scripts\\unzip-archive.ps1 c:\\cfn\\files\\pstools.zip c:\\cfn\\files\\pstools",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "b-set-cfn-permissions" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command ",
+                                    "\"",
+                                    "Invoke-Command -ScriptBlock { ",
+                                    "$Folder = 'C:\\cfn'; ",
+                                    "$Acl = Get-Acl $Folder; ",
+                                    "$Acl.SetAccessRuleProtection($True, $False); ",
+                                    "$Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('SYSTEM', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow'); ",
+                                    "$Acl.AddAccessRule($Rule); ",
+                                    "$Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('Administrators', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow'); ",
+                                    "$Acl.AddAccessRule($Rule); ",
+                                    "$Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('CREATOR OWNER', 'FullControl', 'ContainerInherit, ObjectInherit', 'InheritOnly', 'Allow'); ",
+                                    "$Acl.AddAccessRule($Rule); ",
+                                    "Set-Acl $Folder $Acl -ErrorAction Stop; ",
+                                    "}",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
                             }
                         }
                     },
@@ -680,7 +769,7 @@
                         {
                             "10-install-rds" :
                             {
-                                "command" : "powershell.exe \"Install-WindowsFeature RDS-RD-Server,RDS-Licensing -Verbose\"",
+                                "command" : "powershell.exe \"Install-WindowsFeature RDS-Connection-Broker,RDS-RD-Server,RDS-Licensing -Verbose\"",
                                 "waitAfterCompletion" : "0"
                             },
                             "15-reboot-rds" :
@@ -688,19 +777,73 @@
                                 "command" : "powershell.exe \"Restart-Computer -Force -Verbose\"",
                                 "waitAfterCompletion" : "forever"
                             },
-                            "20-configure-rdsh" :
+                            "20-configure-admins" :
                             {
                                 "command" :
                                 { "Fn::Join" : [ "", [
-                                    "powershell.exe -ExecutionPolicy Bypass",
-                                    " C:\\cfn\\scripts\\configure-rdsh.ps1 ",
-                                    " -DomainNetBiosName ", { "Ref" : "DomainNetBIOSName" },
-                                    " -GroupName ",
-                                    "'",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command \"",
+                                    "Invoke-Command -ScriptBlock {",
+                                    "$ErrorActionPreference = 'Stop'; ",
+                                    "Import-Module RemoteDesktop,RemoteDesktopServices; ",
+                                    "if (-not ('", { "Ref" : "DomainSvcAccount" }, "' -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) { ",
+                                    "[Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', '", { "Ref" : "DomainSvcAccount" }, "'); ",
+                                    "} } -Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "25-install-msodbc" :
+                            {
+                                "command": "msiexec /i c:\\cfn\\files\\msodbcsql.msi /qn IACCEPTMSODBCSQLLICENSETERMS=YES",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-configure-rdsh" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "psexec",
+                                            "command"
+                                        ]
+                                    },
+                                    "-u \"",
+                                    { "Ref" : "DomainNetbiosName" }, "\\",
+                                    { "Ref" : "DomainSvcAccount" },
+                                    "\" -p \"",
+                                    { "Ref" : "DomainSvcPassword" },
+                                    "\" ",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\configure-rdsh.ps1 ",
+                                    "-DomainNetBiosName '",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "' -GroupName '",
                                     { "Ref" : "DomainAccessUserGroup" },
-                                    "'",
-                                    " -Verbose"
+                                    "' -ConnectionBroker '",
+                                    { "Ref" : "ConnectionBrokerFqdn" },
+                                    "' -UpdPath '",
+                                    { "Ref" : "UserProfileDiskPath" },
+                                    "' -Verbose -ErrorAction Stop"
                                 ]]},
+                                "waitAfterCompletion" : "0"
+                            },
+                            "40-reboot-rds" :
+                            {
+                                "command" : "powershell.exe \"Restart-Computer -Force -Verbose\"",
                                 "waitAfterCompletion" : "forever"
                             }
                         }
@@ -760,7 +903,15 @@
                         }
                     }
                 ],
-                "SecurityGroups" : [ { "Ref" : "Ec2SecurityGroup" } ],
+                "SecurityGroups" :
+                { "Fn::Split" : [ ",",
+                    { "Fn::Join" : [ ",", [
+                        { "Ref" : "Ec2SecurityGroup" },
+                        { "Fn::Join" : [ ",",
+                            { "Ref" : "ExtraSecurityGroupIds" }
+                        ]}
+                    ]]}
+                ]},
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",

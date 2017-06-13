@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind an ELB, and joins them to a domain.",
+    "Description" : "This template deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind an ELB, and joins them to a domain.",
     "Parameters" :
     {
         "KeyPairName" :
@@ -47,8 +47,8 @@
                 "c4.xlarge",
                 "m4.large",
                 "m4.xlarge",
-                "r3.large",
-                "r3.xlarge"
+                "r4.large",
+                "r4.xlarge"
             ]
         },
         "DesiredCapacity" :
@@ -236,14 +236,14 @@
                 "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.large" :
+            "r4.large" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.xlarge" :
+            "r4.xlarge" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             }
         }

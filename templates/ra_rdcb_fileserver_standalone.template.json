@@ -24,7 +24,7 @@
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
             "Type" : "String",
-            "Default" : "t2.micro",
+            "Default" : "t2.medium",
             "AllowedValues" :
             [
                 "t2.micro",
@@ -36,8 +36,8 @@
                 "c4.xlarge",
                 "m4.large",
                 "m4.xlarge",
-                "r3.large",
-                "r3.xlarge"
+                "r4.large",
+                "r4.xlarge"
             ]
         },
         "DomainDirectoryId" :
@@ -112,9 +112,9 @@
             "Description" : "List of extra Security Group IDs to attach to the RDCB EC2 instance",
             "Type" : "List<AWS::EC2::SecurityGroup::Id>"
         },
-        "RdcbClusterFqdn" :
+        "RdClientAccessName" :
         {
-            "Description" : "DNS alias/friendly-name of the RDCB cluster",
+            "Description" : "DNS alias/friendly-name of the Remote Desktop cluster",
             "Type": "String",
             "AllowedPattern": ".*[^.]$",
             "ConstraintDescription" : "FQDN must not end in a period (.)"
@@ -228,13 +228,6 @@
             "Type" : "String",
             "AllowedPattern" : "^[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}$"
         },
-        "VpcCidr" :
-        {
-            "Description" : "VPC CIDR",
-            "Type" : "String",
-            "Default" : "10.0.0.0/16",
-            "AllowedPattern" : "(\\d{1,3}[.]){3}\\d{1,3}/\\d{1,2}"
-        },
         "VpcId" :
         {
             "Description" : "VPC ID",
@@ -320,14 +313,14 @@
                 "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.large" :
+            "r4.large" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.xlarge" :
+            "r4.xlarge" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             }
         }
@@ -391,14 +384,14 @@
                 ]
             }
         },
-        "VpcCidrToEc2IngressAll" :
+        "Ec2SelfIngressAll" :
         {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" :
             {
                 "GroupId" : { "Ref" : "RdcbEc2SecurityGroup" },
                 "IpProtocol" : "-1",
-                "CidrIp" : { "Ref" : "VpcCidr" }
+                "SourceSecurityGroupId" : { "Ref" : "RdcbEc2SecurityGroup" }
             }
         },
         "Ec2ToRdsIngressTcp1433" :
@@ -745,7 +738,7 @@
                             },
                             "c:\\cfn\\scripts\\configure-rdcb.ps1" :
                             {
-                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1"
+                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/rdsh-cb/scripts/configure-rdcb.ps1"
                             },
                             "c:\\cfn\\scripts\\unzip-archive.ps1" :
                             {
@@ -1014,11 +1007,9 @@
                                     { "Ref" : "RdsDbUsername"},
                                     " -DbPassword ",
                                     { "Ref" : "RdsDbPassword"},
-                                    " -RdcbClusterFqdn ",
-                                    { "Ref" : "RdcbClusterFqdn" },
-                                    " -UserGroup '",
-                                    { "Ref" : "DomainAccessUserGroup" },
-                                    "' -Verbose -ErrorAction Stop",
+                                    " -RdClientAccessName ",
+                                    { "Ref" : "RdClientAccessName" },
+                                    " -Verbose -ErrorAction Stop",
                                     "\""
                                 ] ] },
                                 "waitAfterCompletion" : "0"

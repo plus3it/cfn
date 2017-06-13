@@ -13,19 +13,7 @@ Param(
   [String] $DbPassword,
 
   [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [String] $RdcbClusterFqdn,
-
-  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [String] $CollectionName = "RDS Collection",
-
-  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [String] $UserGroup = "Domain Users",
-
-  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [String] $UpdShareName = "Profiles$",
-
-  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [Int] $MaxUpdSizeGB = 50
+  [String] $RdClientAccessName
 )
 # Script must be run with a domain credential that has admin privileges on the local system
 
@@ -60,9 +48,9 @@ if (-not (Get-ChildItem $TestPath -ErrorAction SilentlyContinue))
 # Get the system name
 $SystemName = [System.Net.DNS]::GetHostByName('').HostName
 
-if (-not $RdcbClusterFqdn)
+if (-not $RdClientAccessName)
 {
-    $RdcbClusterFqdn = $SystemName
+    $RdClientAccessName = $SystemName
 }
 
 # Create RD Session Deployment
@@ -70,26 +58,10 @@ if (-not (Get-RDServer -ConnectionBroker $SystemName -ErrorAction SilentlyContin
 {
     New-RDSessionDeployment -ConnectionBroker $SystemName -SessionHost $SystemName
     Write-Verbose "Created the RD Session Deployment!"
-} else
-{
-    Write-Warning "RD Session Deployment already exists, skipping"
-}
-
-# Create RD Session Collection
-if (-not (Get-RDSessionCollection -CollectionName $CollectionName -ErrorAction SilentlyContinue))
-{
-    New-RDSessionCollection -CollectionName $CollectionName -ConnectionBroker $SystemName -SessionHost $SystemName
-    Write-Verbose "Created the RD Session Collection!"
-
-    Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $SystemName -UserGroup $UserGroup
-    Write-Verbose "Granted user group access to the RD Session Collection, ${UserGroup}"
-
-    Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $SystemName -EnableUserProfileDisk -DiskPath "\\${SystemName}\${UpdShareName}" -MaxUserProfileDiskSizeGB $MaxUpdSizeGB
-    Write-Verbose "Enabled user profile disks for the RD Session Collection, \\${SystemName}\${UpdShareName}"
 }
 else
 {
-    Write-Warning "RD Session Collection already exists, ${CollectionName}, skipping"
+    Write-Warning "RD Session Deployment already exists, skipping"
 }
 
 # Configure RDCB HA
@@ -105,7 +77,7 @@ $RdcbDatabaseConnectionString = $RdcbDatabaseConnectionStringParts -join ";"
 
 if (-not (Get-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -ErrorAction SilentlyContinue))
 {
-    Set-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -DatabaseConnectionString $RdcbDatabaseConnectionString -ClientAccessName $RdcbClusterFqdn
+    Set-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -DatabaseConnectionString $RdcbDatabaseConnectionString -ClientAccessName $RdClientAccessName
     if (-not (Get-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -ErrorAction SilentlyContinue))
     {
         throw "Failed to configure RD Connection Broker High Availability!"
