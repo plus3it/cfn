@@ -840,7 +840,7 @@
                                         ]
                                     },
                                     "-Command ",
-                                    "Write-Host \"Waiting for SSM to complete domain join, which reboots the instance automatically\""
+                                    "Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose"
                                 ] ] },
                                 "waitAfterCompletion" : "forever"
                             }
@@ -1016,58 +1016,10 @@
                                     { "Ref" : "RdsDbPassword"},
                                     " -RdcbClusterFqdn ",
                                     { "Ref" : "RdcbClusterFqdn" },
-                                    " -Verbose -ErrorAction Stop",
+                                    " -UserGroup '",
+                                    { "Ref" : "DomainAccessUserGroup" },
+                                    "' -Verbose -ErrorAction Stop",
                                     "\""
-                                ] ] },
-                                "waitAfterCompletion" : "0"
-                            }
-                        }
-                    },
-                    "configure-rdcb-old" :
-                    {
-                        "commands" :
-                        {
-                            "10-install-msodbc" :
-                            {
-                                "command": "msiexec /i c:\\cfn\\files\\msodbcsql.msi /qn IACCEPTMSODBCSQLLICENSETERMS=YES",
-                                "waitAfterCompletion" : "0"
-                            },
-                            "20-configure-rdcb" :
-                            {
-                                "command" :
-                                { "Fn::Join" : [ "", [
-                                    { "Fn::FindInMap" :
-                                        [
-                                            "ShellCommandMap",
-                                            "psexec",
-                                            "command"
-                                        ]
-                                    },
-                                    " -u \"",
-                                    { "Ref" : "DomainNetbiosName" }, "\\",
-                                    { "Ref" : "SsmRdcbCredential" },
-                                    "\" -p \"",
-                                    { "Ref" : "SsmRdcbCredential" },
-                                    "\" ",
-                                    { "Fn::FindInMap" :
-                                        [
-                                            "ShellCommandMap",
-                                            "powershell",
-                                            "command"
-                                        ]
-                                    },
-                                    "c:\\cfn\\scripts\\configure-rdcb.ps1",
-                                    " -DbHostFqdn ",
-                                    { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] },
-                                    " -DbName ",
-                                    { "Ref" : "RdsDbName" },
-                                    " -DbUser ",
-                                    { "Ref" : "RdsDbUsername"},
-                                    " -DbPassword ",
-                                    { "Ref" : "RdsDbPassword"},
-                                    " -RdcbClusterFqdn ",
-                                    { "Ref" : "RdcbClusterFqdn" },
-                                    " -Verbose -ErrorAction Stop"
                                 ] ] },
                                 "waitAfterCompletion" : "0"
                             }
@@ -1163,7 +1115,7 @@
                         { "Ref" : "DomainDirectoryId" },
                         "_",
                         { "Ref" : "DomainDnsName" }
-                    ] ] },
+                    ] ] }
                 } ],
                 "Tags" :
                 [
@@ -1231,6 +1183,11 @@
         {
             "Description" : "Instance ID of the RDCB File Server",
             "Value" : { "Ref" : "RdCbFileServerInstance" }
+        },
+        "RdcbEc2InstanceIp" :
+        {
+            "Description" : "IP address of the RDCB File Server",
+            "Value" : { "Fn::GetAtt" : [ "RdCbFileServerInstance", "PrivateIp" ] }
         },
         "RdcbRdsDbInstanceId" :
         {
