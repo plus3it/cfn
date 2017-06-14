@@ -119,7 +119,7 @@
             "Default" : "10.0.64.10",
             "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})"
         },
-        "AllowPeerSecurityGroup" :
+        "VpcPeerSecurityGroup" :
         {
             "Description" : "Creates a Security Group and ingress rule to allow remote access from instances in the specified security group within the peered account. Enter the SG from the peered account (Example: sg-12345678).",
             "Type" : "String",
@@ -177,7 +177,8 @@
                         "VpcPeerId",
                         "VpcPeerCidr",
                         "VpcPeerAccountId",
-                        "VpcPeerRoleArn"
+                        "VpcPeerRoleArn",
+                        "VpcPeerSecurityGroup"
                     ]
                 },
                 {
@@ -192,16 +193,6 @@
                         "VpcPeerDc1Ip",
                         "VpcPeerDc2Name",
                         "VpcPeerDc2Ip"
-                    ]
-                },
-                {
-                    "Label" :
-                    {
-                        "default" : "Allow Peered Security Group Configuration"
-                    },
-                    "Parameters" :
-                    [
-                        "AllowPeerSecurityGroup"
                     ]
                 }
             ]
@@ -222,7 +213,7 @@
         },
         "CreateSecurityGroup" :
         {
-            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "AllowPeerSecurityGroup" }, "" ] } ]
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "VpcPeerSecurityGroup" }, "" ] } ]
         }
     },
     "Resources" :
@@ -503,7 +494,7 @@
                 "TemplateURL" : "https://s3.amazonaws.com/app-chemistry/templates/nw_peered_sg.element",
                 "Parameters" :
                 {
-                    "SourcePeerIngress" : { "Ref" : "AllowPeerSecurityGroup"},
+                    "SourcePeerIngress" : { "Ref" : "VpcPeerSecurityGroup"},
                     "VPC" : { "Fn::GetAtt" : [ "VPCStack", "Outputs.VPC" ] }
                 }
             }
@@ -654,7 +645,7 @@
             },
             "Description" : "ID of the Private Hosted Zone used for resolution of a domain in the peered VPC"
         },
-        "AllowPeerSecurityGroup" :
+        "VpcPeerSecurityGroup" :
         {
             "Condition" : "CreateSecurityGroup",
             "Value" :
@@ -662,7 +653,7 @@
                 "Fn::GetAtt" :
                 [
                     "PeeredSecurityGroupStack",
-                    "Outputs.AllowPeerSecurityGroupId"
+                    "Outputs.VpcPeerSecurityGroupId"
                 ]
             },
             "Description" : "ID of the Security Group that allows remote access from instances in the specified security group within the peered account"

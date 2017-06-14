@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description" : "Create an assumable role for cross account VPC peering.",
+    "Description" : "This template creates an assumable role for cross account VPC peering.",
     "Parameters" :
     {
         "PeerRequesterAccountId" :

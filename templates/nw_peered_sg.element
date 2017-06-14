@@ -18,7 +18,7 @@
     },
     "Resources" :
     {
-        "AllowPeerSecurityGroup" :
+        "VpcPeerSecurityGroup" :
         {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" :
@@ -39,7 +39,7 @@
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" :
             {
-                "GroupId" :  { "Ref": "AllowPeerSecurityGroup" },
+                "GroupId" :  { "Ref": "VpcPeerSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort" : "22",
                 "ToPort" : "22",
@@ -51,7 +51,7 @@
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" :
             {
-                "GroupId" :  { "Ref": "AllowPeerSecurityGroup" },
+                "GroupId" :  { "Ref": "VpcPeerSecurityGroup" },
                 "IpProtocol" : "tcp",
                 "FromPort" : "3389",
                 "ToPort" : "3389",
@@ -61,9 +61,9 @@
     },    
     "Outputs" :
     {
-        "AllowPeerSecurityGroupId" :
+        "VpcPeerSecurityGroupId" :
         {
-            "Value" : { "Ref" : "AllowPeerSecurityGroup" },
+            "Value" : { "Ref" : "VpcPeerSecurityGroup" },
             "Description" : "Security Group ID that allows remote access from instances in the specified security group within the peered account"
         }
     }
