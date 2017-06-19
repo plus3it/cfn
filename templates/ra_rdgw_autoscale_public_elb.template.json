@@ -29,7 +29,7 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
+            "Default" : "Windows_Server-2016-English-Full-Base-*"
         },
         "InstanceType" :
         {
@@ -570,7 +570,7 @@
                 ]
            }
         },
-        "RdgwAutoScalingGroup" :
+        "AutoScalingGroup" :
         {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "CreationPolicy" :
@@ -616,7 +616,7 @@
                 ]
             }
         },
-        "RdgwLaunchConfig" :
+        "LaunchConfig" :
         {
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
             "Metadata" :
