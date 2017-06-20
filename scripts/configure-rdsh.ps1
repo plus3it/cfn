@@ -23,7 +23,6 @@ Param(
 # * https://s3.amazonaws.com/app-chemistry/scripts/configure-rdsh.ps1
 
 $RequiredFeatures = @(
-    "RDS-Connection-Broker"
     "RDS-RD-Server"
     "RDS-Licensing"
 )
@@ -66,14 +65,39 @@ if ($ExtraFeatures)
 
 $RequiredRoles = @(
     "RDS-RD-SERVER"
-    "RDS-CONNECTION-BROKER"
 )
 
-# Create RD Session Deployment
-if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue))
+$RDServers = Get-RDServer -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue
+if (-not $RDServers)
 {
+    # Create RD Session Deployment
     New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SystemName -ErrorAction Stop
     Write-Verbose "Created the RD Session Deployment!"
+}
+else
+{
+    # Cleanup non-responsive RD Servers
+    ForEach ($RDServer in $RDServers)
+    {
+        $TestRdp = (Test-NetConnection $RDServer.Server -CommonTCPPort RDP).TcpTestSucceeded
+        if (-not $TestRdp)
+        {
+            if ($RDServer.Server -in (Get-RDSessionHost -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue).SessionHost)
+            {
+                Write-Verbose "Removing RD Session Host, $($RDServer.Server), from the collection..."
+                Remove-RDSessionHost -SessionHost $RDServer.Server -ConnectionBroker $ConnectionBroker -Force
+                Write-Verbose "Done!"
+            }
+
+            $Role = "RDS-RD-SERVER"
+            if ($Role -in $RDServer.Roles)
+            {
+                Write-Verbose "Removing ${Role} role from $($RDServer.Server)..."
+                Remove-RDServer -Role $Role -Server $RDServer.Server -ConnectionBroker $ConnectionBroker -Force
+                Write-Verbose "Done!"
+            }
+        }
+    }
 }
 
 $CurrentRoles = @(Get-RDServer -ConnectionBroker $ConnectionBroker | Where { $_.Server -eq $SystemName })
