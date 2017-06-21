@@ -416,7 +416,7 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "RdgwAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleUpSchedule" }
             }
@@ -427,7 +427,7 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "RdgwAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleDownSchedule" }
             }
@@ -599,7 +599,7 @@
             "Properties" :
             {
                 "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
-                "LaunchConfigurationName" : { "Ref" : "RdgwLaunchConfig" },
+                "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
                 "LoadBalancerNames" : [ { "Ref" : "ELB" } ],
                 "MinSize" : { "Ref" : "MinCapacity" },
                 "MaxSize" : { "Ref" : "MaxCapacity" },
@@ -659,10 +659,10 @@
                                 { "Fn::Join" : [ "", [
                                     "[cfn-auto-reloader-hook]\n",
                                     "triggers=post.update\n",
-                                    "path=Resources.RdgwLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                    "path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n",
                                     "action=cfn-init.exe -v -c update",
                                     " --stack ", { "Ref" : "AWS::StackName" },
-                                    " --resource RdgwLaunchConfig ",
+                                    " --resource LaunchConfig ",
                                     " --region ", { "Ref" : "AWS::Region"}, "\n"
                                 ]]}
                             },
@@ -746,7 +746,7 @@
                                 { "Fn::Join" : [ "", [
                                     "cfn-signal.exe -e 0",
                                     " --stack ", { "Ref" : "AWS::StackName" },
-                                    " --resource RdgwAutoScalingGroup ",
+                                    " --resource AutoScalingGroup ",
                                     " --region ", { "Ref" : "AWS::Region"}
                                 ]]},
                                 "ignoreErrors" : "true",
@@ -800,7 +800,7 @@
                     "\n",
                     "cfn-init.exe -v -c config ",
                     "   --stack ", { "Ref" : "AWS::StackName" },
-                    "   --resource RdgwLaunchConfig ",
+                    "   --resource LaunchConfig ",
                     "   --region ", { "Ref" : "AWS::Region"}, "\n",
                     "</script>\n"
                 ]]}}
