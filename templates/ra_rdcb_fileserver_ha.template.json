@@ -234,6 +234,84 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName",
+                        "DataVolumeSnapshotId",
+                        "DataVolumeSize",
+                        "ExtraSecurityGroupIds",
+                        "Ec2SubnetAz",
+                        "Ec2SubnetId",
+                        "NoPublicIp"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDCB Application Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDirectoryId",
+                        "DomainDnsName",
+                        "DomainNetbiosName",
+                        "DomainAccessUserGroup",
+                        "RdClientAccessName",
+                        "SsmKeyId",
+                        "SsmRdcbCredential"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDS DB Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "RdsSqlEngine",
+                        "RdsDbClass",
+                        "RdsDbAllocatedStorage",
+                        "RdsSnapshotArn",
+                        "RdsDbName",
+                        "RdsDbPassword",
+                        "RdsDbUsername",
+                        "RdsMultiAzDatabase",
+                        "RdsSubnets"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VpcId"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "AMI Name Search Pattern"
+                }
+            }
+        }
+    },
     "Conditions" :
     {
         "AssignPublicIp" :

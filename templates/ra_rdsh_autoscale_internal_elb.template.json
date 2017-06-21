@@ -179,6 +179,84 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName",
+                        "ExtraSecurityGroupIds"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDSH Application Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDirectoryId",
+                        "DomainDnsName",
+                        "DomainNetbiosName",
+                        "DomainSvcAccount",
+                        "DomainSvcPassword",
+                        "DomainAccessUserGroup",
+                        "LdapContainerOU",
+                        "ConnectionBrokerFqdn",
+                        "UserProfileDiskPath"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity",
+                        "ScaleDownDesiredCapacity",
+                        "ScaleDownSchedule",
+                        "ScaleUpSchedule",
+                        "ForceUpdateToggle"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VPC",
+                        "SubnetIDs"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "AMI Name Search Pattern"
+                },
+                "ScaleDownDesiredCapacity" :
+                {
+                    "default" : "Scale Down Desired Capacity"
+                }
+            }
+        }
+    },
     "Conditions" :
     {
         "UseAmiLookup" :

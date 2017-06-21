@@ -132,6 +132,66 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName",
+                        "DataVolumeSnapshotId",
+                        "DataVolumeSize",
+                        "ExtraSecurityGroupIds"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDCB Application Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDirectoryId",
+                        "DomainDnsName",
+                        "DomainNetbiosName",
+                        "DomainAccessUserGroup",
+                        "RdClientAccessName",
+                        "SsmKeyId",
+                        "SsmRdcbCredential"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VpcId",
+                        "Ec2SubnetAz",
+                        "Ec2SubnetId",
+                        "NoPublicIp"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "AMI Name Search Pattern"
+                }
+            }
+        }
+    },
     "Conditions" :
     {
         "AssignPublicIp" :
