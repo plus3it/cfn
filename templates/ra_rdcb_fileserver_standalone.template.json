@@ -688,7 +688,25 @@
                     {
                         "commands" :
                         {
-                            "10-configure-fileshares" :
+                            "10-create-upd-folder" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command \"",
+                                    "New-Item -ItemType directory -Path 'D:\\Shares\\Profiles$' -Force ",
+                                    "-Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "20-configure-fileshares" :
                             {
                                 "command" :
                                 { "Fn::Join" : [ "", [
