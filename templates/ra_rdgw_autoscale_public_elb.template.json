@@ -690,6 +690,7 @@
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
+                "MetricsCollection" : [ { "Granularity" : "1Minute" } ],
                 "Tags" :
                 [
                     {
