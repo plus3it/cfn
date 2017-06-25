@@ -173,6 +173,27 @@
             "Description" : "List of Subnet IDs where the RDSH instances and ELB we be launched",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
+        "RdpPrivateKeyS3Endpoint" :
+        {
+            "Description" : "S3 endpoint URL hosting the bucket where the RDP certificate private key is stored",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com",
+            "AllowedPattern" : "^(https://s3)(.*)$"
+        },
+        "RdpPrivateKeyPfx" :
+        {
+            "Description" : "S3 bucket and path to a private key for the RDP certificate, e.g. \"<bucket>/path/to/key.pfx\"",
+            "Type" : "String",
+            "AllowedPattern" : "^(.*)([/].*)+\\.pfx$"
+        },
+        "RdpPrivateKeyPassword" :
+        {
+            "Description" : "Password to the RDP certificate private key",
+            "Type" : "String",
+            "MinLength" : "1",
+            "MaxLength" : "1024",
+            "NoEcho" : "true"
+        },
         "VPC" :
         {
             "Description" : "VPC ID",
@@ -214,7 +235,10 @@
                         "DomainAccessUserGroup",
                         "LdapContainerOU",
                         "ConnectionBrokerFqdn",
-                        "UserProfileDiskPath"
+                        "UserProfileDiskPath",
+                        "RdpPrivateKeyS3Endpoint",
+                        "RdpPrivateKeyPfx",
+                        "RdpPrivateKeyPassword"
                     ]
                 },
                 {
@@ -483,6 +507,18 @@
                             "Effect" : "Allow",
                             "Action" :
                             [
+                                "s3:GetObject"
+                            ],
+                            "Resource" :
+                            { "Fn::Join" : [ "", [
+                                "arn:aws:s3:::",
+                                { "Ref" : "RdpPrivateKeyPfx" }
+                            ] ] }
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
                                 "s3:ListBucket"
                             ],
                             "Resource" : "arn:aws:s3:::amazon-ssm-packages-*"
@@ -660,7 +696,7 @@
                 "ResourceSignal" :
                 {
                     "Count" : { "Ref" : "DesiredCapacity" },
-                    "Timeout" : "PT60M"
+                    "Timeout" : "PT75M"
                 }
             },
             "UpdatePolicy" :
@@ -670,7 +706,7 @@
                     "MinInstancesInService" : { "Ref" : "MinCapacity" },
                     "MaxBatchSize" : { "Ref" : "MaxCapacity" },
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT60M",
+                    "PauseTime" : "PT75M",
                     "SuspendProcesses" : [ "ScheduledActions" ]
                 },
                 "AutoScalingScheduledAction" :
@@ -704,6 +740,14 @@
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
             "Metadata" :
             {
+                "AWS::CloudFormation::Authentication" :
+                {
+                    "Ec2IamRole" :
+                    {
+                      "type" : "S3",
+                      "roleName" : { "Ref" : "Ec2IamRole" }
+                    }
+                },
                 "AWS::CloudFormation::Init" :
                 {
                     "configSets" :
@@ -760,6 +804,15 @@
                             "c:\\cfn\\files\\pstools.zip" :
                             {
                                 "source" : "https://download.sysinternals.com/files/PSTools.zip"
+                            },
+                            "c:\\cfn\\files\\rdp.pfx" :
+                            {
+                                "source" :
+                                { "Fn::Join" : [ "/", [
+                                    { "Ref" : "RdpPrivateKeyS3Endpoint" },
+                                    { "Ref" : "RdpPrivateKeyPfx" }
+                                ] ] },
+                                "authentication" : "Ec2IamRole"
                             }
                         },
                         "services" :
@@ -907,7 +960,11 @@
                                     { "Ref" : "ConnectionBrokerFqdn" },
                                     "' -UpdPath '",
                                     { "Ref" : "UserProfileDiskPath" },
-                                    "' -Verbose -ErrorAction Stop"
+                                    "' -PrivateKeyPfx '",
+                                    "c:\\cfn\\files\\rdp.pfx",
+                                    "' -PrivateKeyPassword '\"",
+                                    { "Ref" : "RdpPrivateKeyPassword" },
+                                    "\"' -Verbose -ErrorAction Stop"
                                 ]]},
                                 "waitAfterCompletion" : "0"
                             },

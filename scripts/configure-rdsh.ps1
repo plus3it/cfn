@@ -16,7 +16,13 @@ Param(
   [String] $GroupName = "Domain Users",
 
   [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [Int] $MaxUpdSizeGB = 50
+  [Int] $MaxUpdSizeGB = 50,
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $PrivateKeyPfx,
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $PrivateKeyPassword
 )
 
 #Based on:
@@ -126,6 +132,21 @@ else
 {
     Add-RDSessionHost -CollectionName "RDS Collection" -SessionHost $SystemName -ConnectionBroker $ConnectionBroker -ErrorAction Stop
     Write-Verbose "Added system to RD Session Collection; SessionHost=${SystemName}, CollectionName=${CollectionName}"
+}
+
+# Configure RDP certificate
+if ($PrivateKeyPfx)
+{
+    $Cert = (Get-PfxData -Password (ConvertTo-SecureString ${PrivateKeyPassword} -AsPlainText -Force) -FilePath $PrivateKeyPfx).EndEntityCertificates[0]
+    Get-ChildItem 'Cert:\LocalMachine\My\' | ? { $_.Subject -eq $Cert.Subject } | % { Remove-Item  $_.PSPath }
+    Write-Verbose "Ensured no certificate exists with the same subject name, $($Cert.Subject)"
+
+    Import-PfxCertificate -Password (ConvertTo-SecureString ${PrivateKeyPassword} -AsPlainText -Force) -CertStoreLocation 'Cert:\LocalMachine\My\' -FilePath $PrivateKeyPfx
+    Write-Verbose "Imported the certificate to the local computer personal store"
+
+    $tsgs = Get-WmiObject -class "Win32_TSGeneralSetting" -Namespace root\cimv2\terminalservices -Filter "TerminalName='RDP-tcp'"
+    Set-WmiInstance -path $tsgs.__path -argument @{SSLCertificateSHA1Hash=$Cert.Thumbprint}
+    Write-Verbose "Set the thumbprint for the RDP certificate, $($Cert.Thumbprint)"
 }
 
 # Configure RDS Licensing
