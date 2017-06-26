@@ -56,7 +56,7 @@ PROCESS
             $Acl.AddAccessRule($Rule)
             $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("CREATOR OWNER", "FullControl", "ContainerInherit, ObjectInherit", "InheritOnly", "Allow")
             $Acl.AddAccessRule($Rule)
-            $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${DomainNetBiosName}\${GroupName}", "ListDirectory, ReadData, CreateDirectories, AppendData", "None", "None", "Allow")
+            $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${DomainNetBiosName}\${GroupName}", "ListDirectory, Read, CreateDirectories, AppendData", "None", "None", "Allow")
             $Acl.AddAccessRule($Rule)
             Set-Acl $Folder $Acl -ErrorAction $ErrorActionPreference
             Write-Verbose "Set ACL on folder: $Folder"

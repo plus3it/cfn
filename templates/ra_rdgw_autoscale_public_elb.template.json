@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind an ELB, and joins them to a domain.",
+    "Description" : "This template deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind an ELB, and joins them to a domain.",
     "Parameters" :
     {
         "KeyPairName" :
@@ -29,7 +29,7 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2016*"
+            "Default" : "Windows_Server-2016-English-Full-Base-*"
         },
         "InstanceType" :
         {
@@ -47,8 +47,8 @@
                 "c4.xlarge",
                 "m4.large",
                 "m4.xlarge",
-                "r3.large",
-                "r3.xlarge"
+                "r4.large",
+                "r4.xlarge"
             ]
         },
         "DesiredCapacity" :
@@ -153,6 +153,90 @@
             "Type" : "AWS::EC2::VPC::Id"
         }
     },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName",
+                        "PrivateSubnetIDs"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDGW Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDirectoryId",
+                        "DomainDnsName",
+                        "DomainNetbiosName",
+                        "RemoteAccessUserGroup"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity",
+                        "ScaleDownDesiredCapacity",
+                        "ScaleDownSchedule",
+                        "ScaleUpSchedule",
+                        "ForceUpdateToggle"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "ELB Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "SslCertificateName",
+                        "SslCertificateService",
+                        "PublicSubnetIDs"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VPC"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "AMI Name Search Pattern"
+                },
+                "ScaleDownDesiredCapacity" :
+                {
+                    "default" : "Scale Down Desired Capacity"
+                }
+            }
+        }
+    },
     "Conditions" :
     {
         "UseACM" :
@@ -236,14 +320,14 @@
                 "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.large" :
+            "r4.large" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.xlarge" :
+            "r4.xlarge" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             }
         }
@@ -416,7 +500,7 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "RdgwAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleUpSchedule" }
             }
@@ -427,7 +511,7 @@
             "Condition" : "UseScheduledAction",
             "Properties" :
             {
-                "AutoScalingGroupName" : { "Ref" : "RdgwAutoScalingGroup" },
+                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "DesiredCapacity" : { "Ref" : "ScaleDownDesiredCapacity" },
                 "Recurrence" : { "Ref" : "ScaleDownSchedule" }
             }
@@ -570,7 +654,7 @@
                 ]
            }
         },
-        "RdgwAutoScalingGroup" :
+        "AutoScalingGroup" :
         {
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "CreationPolicy" :
@@ -599,13 +683,14 @@
             "Properties" :
             {
                 "VPCZoneIdentifier" : { "Ref" : "PrivateSubnetIDs" },
-                "LaunchConfigurationName" : { "Ref" : "RdgwLaunchConfig" },
+                "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
                 "LoadBalancerNames" : [ { "Ref" : "ELB" } ],
                 "MinSize" : { "Ref" : "MinCapacity" },
                 "MaxSize" : { "Ref" : "MaxCapacity" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
+                "MetricsCollection" : [ { "Granularity" : "1Minute" } ],
                 "Tags" :
                 [
                     {
@@ -616,7 +701,7 @@
                 ]
             }
         },
-        "RdgwLaunchConfig" :
+        "LaunchConfig" :
         {
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
             "Metadata" :
@@ -659,10 +744,10 @@
                                 { "Fn::Join" : [ "", [
                                     "[cfn-auto-reloader-hook]\n",
                                     "triggers=post.update\n",
-                                    "path=Resources.RdgwLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                    "path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n",
                                     "action=cfn-init.exe -v -c update",
                                     " --stack ", { "Ref" : "AWS::StackName" },
-                                    " --resource RdgwLaunchConfig ",
+                                    " --resource LaunchConfig ",
                                     " --region ", { "Ref" : "AWS::Region"}, "\n"
                                 ]]}
                             },
@@ -746,7 +831,7 @@
                                 { "Fn::Join" : [ "", [
                                     "cfn-signal.exe -e 0",
                                     " --stack ", { "Ref" : "AWS::StackName" },
-                                    " --resource RdgwAutoScalingGroup ",
+                                    " --resource AutoScalingGroup ",
                                     " --region ", { "Ref" : "AWS::Region"}
                                 ]]},
                                 "ignoreErrors" : "true",
@@ -800,7 +885,7 @@
                     "\n",
                     "cfn-init.exe -v -c config ",
                     "   --stack ", { "Ref" : "AWS::StackName" },
-                    "   --resource RdgwLaunchConfig ",
+                    "   --resource LaunchConfig ",
                     "   --region ", { "Ref" : "AWS::Region"}, "\n",
                     "</script>\n"
                 ]]}}

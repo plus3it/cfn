@@ -1,5 +1,20 @@
 [CmdLetBinding()]
-Param()
+Param(
+  [Parameter(Mandatory=$true,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $DbHostFqdn,
+
+  [Parameter(Mandatory=$true,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $DbName,
+
+  [Parameter(Mandatory=$true,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $DbUser,
+
+  [Parameter(Mandatory=$true,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $DbPassword,
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $RdClientAccessName
+)
 # Script must be run with a domain credential that has admin privileges on the local system
 
 $RequiredFeatures = @(
@@ -33,6 +48,11 @@ if (-not (Get-ChildItem $TestPath -ErrorAction SilentlyContinue))
 # Get the system name
 $SystemName = [System.Net.DNS]::GetHostByName('').HostName
 
+if (-not $RdClientAccessName)
+{
+    $RdClientAccessName = $SystemName
+}
+
 # Create RD Session Deployment
 if (-not (Get-RDServer -ConnectionBroker $SystemName -ErrorAction SilentlyContinue))
 {
@@ -42,6 +62,34 @@ if (-not (Get-RDServer -ConnectionBroker $SystemName -ErrorAction SilentlyContin
 else
 {
     Write-Warning "RD Session Deployment already exists, skipping"
+}
+
+# Configure RDCB HA
+$RdcbDatabaseConnectionStringParts = @(
+    "Driver={ODBC Driver 13 for SQL Server}",
+    "Server=tcp:${DbHostFqdn},1433",
+    "Database=${DbName}",
+    "Uid=${DbUser}",
+    "Pwd={${DbPassword}}",
+    "Connection Timeout=30"
+)
+$RdcbDatabaseConnectionString = $RdcbDatabaseConnectionStringParts -join ";"
+
+if (-not (Get-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -ErrorAction SilentlyContinue))
+{
+    Set-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -DatabaseConnectionString $RdcbDatabaseConnectionString -ClientAccessName $RdClientAccessName
+    if (-not (Get-RDConnectionBrokerHighAvailability -ConnectionBroker $SystemName -ErrorAction SilentlyContinue))
+    {
+        throw "Failed to configure RD Connection Broker High Availability!"
+    }
+    else
+    {
+        Write-Verbose "Configured RD Connection Broker High Availability!"
+    }
+}
+else
+{
+    Write-Warning "RD Connection Broker High Availability already configured, skipping"
 }
 
 # Configure RDS Licensing

@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This templates deploys Remote Desktop Session Host (RDSH) instances in an autoscale group behind an ELB, and joins them to a domain.",
+    "Description" : "This template deploys Remote Desktop Session Host (RDSH) instances in an autoscale group behind an ELB, and joins them to a domain.",
     "Parameters" :
     {
         "KeyPairName" :
@@ -29,13 +29,13 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017*"
+            "Default" : "Windows_Server-2016-English-Full-Base-*"
         },
         "InstanceType" :
         {
             "Description" : "Amazon EC2 instance type for the Remote Desktop Session Instance",
             "Type" : "String",
-            "Default" : "t2.micro",
+            "Default" : "t2.medium",
             "AllowedValues" :
             [
                 "t2.micro",
@@ -47,8 +47,8 @@
                 "c4.xlarge",
                 "m4.large",
                 "m4.xlarge",
-                "r3.large",
-                "r3.xlarge"
+                "r4.large",
+                "r4.xlarge"
             ]
         },
         "DesiredCapacity" :
@@ -119,24 +119,166 @@
             "MaxLength" : "25",
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
-        "DomainNetBIOSName" :
+        "DomainNetbiosName" :
         {
-            "Description" : "NetBIOS name of the domain (e.g. EXAMPLE)",
+            "Description" : "Netbios name of the domain (e.g. EXAMPLE)",
             "Type" : "String",
             "Default" : "EXAMPLE",
             "MinLength" : "1",
             "MaxLength" : "15",
             "AllowedPattern" : "[a-zA-Z0-9]+"
         },
+        "DomainSvcAccount" :
+        {
+            "Description" : "User name for the account that will join the instance to the Connection Broker Cluster",
+            "Type" : "String",
+            "Default" : "CbSvcAccount",
+            "MinLength" : "5",
+            "MaxLength" : "25",
+            "AllowedPattern" : "[a-zA-Z0-9_-]*"
+        },
+        "DomainSvcPassword" :
+        {
+            "Description" : "Password for the Connection Broker service account. Must be at least 8 characters containing letters, numbers and symbols",
+            "Type" : "String",
+            "MinLength" : "8",
+            "MaxLength" : "32",
+            "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "NoEcho" : "true",
+            "Default" : "Password123"
+        },
+        "ConnectionBrokerFqdn" :
+        {
+            "Description" : "Fully qualified domain name (FQDN) of the primary Connection Broker, e.g. \"cb.example.com\"",
+            "Type" : "String",
+            "Default" : "cb.example.com",
+            "MinLength" : "3",
+            "AllowedPattern" : "[a-zA-Z0-9_-]+\\..+"
+        },
+        "UserProfileDiskPath" :
+        {
+            "Description" : "Path to a CIFS share where User Profile Disks are stored, e.g. \"\\\\home.example.com\\Profiles$\"",
+            "Type" : "String",
+            "Default" : "\\\\home.example.com\\Profiles$",
+            "MinLength" : "3",
+            "AllowedPattern" : "^[\\\\\\\\]{2}[a-zA-Z0-9_\\\\-]+\\..+"
+        },
+        "ExtraSecurityGroupIds" :
+        {
+            "Description" : "List of extra Security Group IDs to attach to the RDSH instances -- include _at least_ the SG allowing connectivity to the Connection Broker database",
+            "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+        },
         "SubnetIDs" :
         {
             "Description" : "List of Subnet IDs where the RDSH instances and ELB we be launched",
             "Type" : "List<AWS::EC2::Subnet::Id>"
         },
+        "RdpPrivateKeyS3Endpoint" :
+        {
+            "Description" : "S3 endpoint URL hosting the bucket where the RDP certificate private key is stored",
+            "Type" : "String",
+            "Default" : "https://s3.amazonaws.com",
+            "AllowedPattern" : "^(https://s3)(.*)$"
+        },
+        "RdpPrivateKeyPfx" :
+        {
+            "Description" : "S3 bucket and path to a private key for the RDP certificate, e.g. \"<bucket>/path/to/key.pfx\"",
+            "Type" : "String",
+            "AllowedPattern" : "^(.*)([/].*)+\\.pfx$"
+        },
+        "RdpPrivateKeyPassword" :
+        {
+            "Description" : "Password to the RDP certificate private key",
+            "Type" : "String",
+            "MinLength" : "1",
+            "MaxLength" : "1024",
+            "NoEcho" : "true"
+        },
         "VPC" :
         {
             "Description" : "VPC ID",
             "Type" : "AWS::EC2::VPC::Id"
+        }
+    },
+    "Metadata" :
+    {
+        "AWS::CloudFormation::Interface" :
+        {
+            "ParameterGroups" :
+            [
+                {
+                    "Label" :
+                    {
+                        "default" : "EC2 Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "AmiNameSearchString",
+                        "AmiId",
+                        "InstanceType",
+                        "KeyPairName",
+                        "ExtraSecurityGroupIds"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDSH Application Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DomainDirectoryId",
+                        "DomainDnsName",
+                        "DomainNetbiosName",
+                        "DomainSvcAccount",
+                        "DomainSvcPassword",
+                        "DomainAccessUserGroup",
+                        "LdapContainerOU",
+                        "ConnectionBrokerFqdn",
+                        "UserProfileDiskPath",
+                        "RdpPrivateKeyS3Endpoint",
+                        "RdpPrivateKeyPfx",
+                        "RdpPrivateKeyPassword"
+                    ]
+                },
+                {
+                    "Label" :
+                    {
+                        "default" : "AutoScale Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "DesiredCapacity",
+                        "MinCapacity",
+                        "MaxCapacity",
+                        "ScaleDownDesiredCapacity",
+                        "ScaleDownSchedule",
+                        "ScaleUpSchedule",
+                        "ForceUpdateToggle"
+                    ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Network Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "VPC",
+                        "SubnetIDs"
+                    ]
+                }
+            ],
+            "ParameterLabels" :
+            {
+                "AmiNameSearchString" :
+                {
+                    "default" : "AMI Name Search Pattern"
+                },
+                "ScaleDownDesiredCapacity" :
+                {
+                    "default" : "Scale Down Desired Capacity"
+                }
+            }
         }
     },
     "Conditions" :
@@ -218,14 +360,14 @@
                 "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.large" :
+            "r4.large" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             },
-            "r3.xlarge" :
+            "r4.xlarge" :
             {
-                "HasInstanceVolume" : "true",
+                "HasInstanceVolume" : "false",
                 "SupportsEbsOptimized" : "true"
             }
         }
@@ -360,6 +502,18 @@
                                 "logs:PutLogEvents"
                             ],
                             "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "s3:GetObject"
+                            ],
+                            "Resource" :
+                            { "Fn::Join" : [ "", [
+                                "arn:aws:s3:::",
+                                { "Ref" : "RdpPrivateKeyPfx" }
+                            ] ] }
                         },
                         {
                             "Effect" : "Allow",
@@ -542,17 +696,17 @@
                 "ResourceSignal" :
                 {
                     "Count" : { "Ref" : "DesiredCapacity" },
-                    "Timeout" : "PT40M"
+                    "Timeout" : "PT75M"
                 }
             },
             "UpdatePolicy" :
             {
                 "AutoScalingRollingUpdate" :
                 {
-                    "MinInstancesInService" : "1",
-                    "MaxBatchSize" : "2",
+                    "MinInstancesInService" : { "Ref" : "MinCapacity" },
+                    "MaxBatchSize" : { "Ref" : "MaxCapacity" },
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT50M",
+                    "PauseTime" : "PT75M",
                     "SuspendProcesses" : [ "ScheduledActions" ]
                 },
                 "AutoScalingScheduledAction" :
@@ -570,6 +724,7 @@
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
+                "MetricsCollection" : [ { "Granularity" : "1Minute" } ],
                 "Tags" :
                 [
                     {
@@ -585,6 +740,14 @@
             "Type" : "AWS::AutoScaling::LaunchConfiguration",
             "Metadata" :
             {
+                "AWS::CloudFormation::Authentication" :
+                {
+                    "Ec2IamRole" :
+                    {
+                      "type" : "S3",
+                      "roleName" : { "Ref" : "Ec2IamRole" }
+                    }
+                },
                 "AWS::CloudFormation::Init" :
                 {
                     "configSets" :
@@ -633,6 +796,23 @@
                             "c:\\cfn\\scripts\\configure-rdsh.ps1" :
                             {
                                 "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdsh.ps1"
+                            },
+                            "c:\\cfn\\scripts\\unzip-archive.ps1" :
+                            {
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/unzip-archive.ps1"
+                            },
+                            "c:\\cfn\\files\\pstools.zip" :
+                            {
+                                "source" : "https://download.sysinternals.com/files/PSTools.zip"
+                            },
+                            "c:\\cfn\\files\\rdp.pfx" :
+                            {
+                                "source" :
+                                { "Fn::Join" : [ "/", [
+                                    { "Ref" : "RdpPrivateKeyS3Endpoint" },
+                                    { "Ref" : "RdpPrivateKeyPfx" }
+                                ] ] },
+                                "authentication" : "Ec2IamRole"
                             }
                         },
                         "services" :
@@ -649,6 +829,43 @@
                                         "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
                                     ]
                                 }
+                            }
+                        },
+                        "commands" :
+                        {
+                            "a-unzip-pstools" :
+                            {
+                                "command" : "powershell.exe c:\\cfn\\scripts\\unzip-archive.ps1 c:\\cfn\\files\\pstools.zip c:\\cfn\\files\\pstools",
+                                "waitAfterCompletion" : "0"
+                            },
+                            "b-set-cfn-permissions" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command ",
+                                    "\"",
+                                    "Invoke-Command -ScriptBlock { ",
+                                    "$Folder = 'C:\\cfn'; ",
+                                    "$Acl = Get-Acl $Folder; ",
+                                    "$Acl.SetAccessRuleProtection($True, $False); ",
+                                    "$Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('SYSTEM', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow'); ",
+                                    "$Acl.AddAccessRule($Rule); ",
+                                    "$Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('Administrators', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow'); ",
+                                    "$Acl.AddAccessRule($Rule); ",
+                                    "$Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('CREATOR OWNER', 'FullControl', 'ContainerInherit, ObjectInherit', 'InheritOnly', 'Allow'); ",
+                                    "$Acl.AddAccessRule($Rule); ",
+                                    "Set-Acl $Folder $Acl -ErrorAction Stop; ",
+                                    "}",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
                             }
                         }
                     },
@@ -680,7 +897,7 @@
                         {
                             "10-install-rds" :
                             {
-                                "command" : "powershell.exe \"Install-WindowsFeature RDS-RD-Server,RDS-Licensing -Verbose\"",
+                                "command" : "powershell.exe \"Install-WindowsFeature RDS-RD-Server,RDS-Licensing,Search-Service,RSAT-ADDS-Tools,GPMC -Verbose\"",
                                 "waitAfterCompletion" : "0"
                             },
                             "15-reboot-rds" :
@@ -688,19 +905,72 @@
                                 "command" : "powershell.exe \"Restart-Computer -Force -Verbose\"",
                                 "waitAfterCompletion" : "forever"
                             },
-                            "20-configure-rdsh" :
+                            "20-configure-admins" :
                             {
                                 "command" :
                                 { "Fn::Join" : [ "", [
-                                    "powershell.exe -ExecutionPolicy Bypass",
-                                    " C:\\cfn\\scripts\\configure-rdsh.ps1 ",
-                                    " -DomainNetBiosName ", { "Ref" : "DomainNetBIOSName" },
-                                    " -GroupName ",
-                                    "'",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    "-Command \"",
+                                    "Invoke-Command -ScriptBlock {",
+                                    "$ErrorActionPreference = 'Stop'; ",
+                                    "Import-Module RemoteDesktop,RemoteDesktopServices; ",
+                                    "if (-not ('", { "Ref" : "DomainSvcAccount" }, "' -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) { ",
+                                    "[Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', '", { "Ref" : "DomainSvcAccount" }, "'); ",
+                                    "} } -Verbose -ErrorAction Stop",
+                                    "\""
+                                ] ] },
+                                "waitAfterCompletion" : "0"
+                            },
+                            "30-configure-rdsh" :
+                            {
+                                "command" :
+                                { "Fn::Join" : [ "", [
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "psexec",
+                                            "command"
+                                        ]
+                                    },
+                                    "-u \"",
+                                    { "Ref" : "DomainNetbiosName" }, "\\",
+                                    { "Ref" : "DomainSvcAccount" },
+                                    "\" -p \"",
+                                    { "Ref" : "DomainSvcPassword" },
+                                    "\" ",
+                                    { "Fn::FindInMap" :
+                                        [
+                                            "ShellCommandMap",
+                                            "powershell",
+                                            "command"
+                                        ]
+                                    },
+                                    " c:\\cfn\\scripts\\configure-rdsh.ps1 ",
+                                    "-DomainNetBiosName '",
+                                    { "Ref" : "DomainNetbiosName" },
+                                    "' -GroupName '",
                                     { "Ref" : "DomainAccessUserGroup" },
-                                    "'",
-                                    " -Verbose"
+                                    "' -ConnectionBroker '",
+                                    { "Ref" : "ConnectionBrokerFqdn" },
+                                    "' -UpdPath '",
+                                    { "Ref" : "UserProfileDiskPath" },
+                                    "' -PrivateKeyPfx '",
+                                    "c:\\cfn\\files\\rdp.pfx",
+                                    "' -PrivateKeyPassword '\"",
+                                    { "Ref" : "RdpPrivateKeyPassword" },
+                                    "\"' -Verbose -ErrorAction Stop"
                                 ]]},
+                                "waitAfterCompletion" : "0"
+                            },
+                            "40-reboot-rds" :
+                            {
+                                "command" : "powershell.exe \"Restart-Computer -Force -Verbose\"",
                                 "waitAfterCompletion" : "forever"
                             }
                         }
@@ -760,7 +1030,15 @@
                         }
                     }
                 ],
-                "SecurityGroups" : [ { "Ref" : "Ec2SecurityGroup" } ],
+                "SecurityGroups" :
+                { "Fn::Split" : [ ",",
+                    { "Fn::Join" : [ ",", [
+                        { "Ref" : "Ec2SecurityGroup" },
+                        { "Fn::Join" : [ ",",
+                            { "Ref" : "ExtraSecurityGroupIds" }
+                        ]}
+                    ]]}
+                ]},
                 "UserData" :
                 { "Fn::Base64" : { "Fn::Join" : [ "", [
                     "<script>\n",

@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description" : "This template deploys a Connection Broker (master) and a file server for home directories and profiles.",
+    "Description" : "This template deploys an HA Connection Broker (master) / file server for home directories and profiles.",
     "Parameters" :
     {
         "KeyPairName" :
@@ -112,6 +112,108 @@
             "Description" : "List of extra Security Group IDs to attach to the RDCB EC2 instance",
             "Type" : "List<AWS::EC2::SecurityGroup::Id>"
         },
+        "RdClientAccessName" :
+        {
+            "Description" : "DNS alias/friendly-name of the Remote Desktop cluster",
+            "Type": "String",
+            "AllowedPattern": ".*[^.]$",
+            "ConstraintDescription" : "FQDN must not end in a period (.)"
+        },
+        "RdsDbAllocatedStorage" :
+        {
+            "Default": "20",
+            "Description" : "The size of the database (GB)",
+            "Type": "Number",
+            "MinValue": "20",
+            "MaxValue": "4096",
+            "ConstraintDescription" : "Maximum value is 4096. Minimum value is 20 for SQL EX/WEB. Minimum value is 200 for SQL SE/EE"
+        },
+        "RdsDbClass" :
+        {
+            "Default" : "db.t2.medium",
+            "Description" : "Database instance class",
+            "Type" : "String",
+            "AllowedValues" :
+            [
+                "db.t2.micro",
+                "db.t2.small",
+                "db.t2.medium",
+                "db.t2.large",
+                "db.m3.large",
+                "db.m3.xlarge",
+                "db.m3.2xlarge",
+                "db.m4.large",
+                "db.m4.xlarge",
+                "db.m4.2xlarge",
+                "db.m4.4xlarge",
+                "db.m4.10xlarge",
+                "db.r3.large",
+                "db.r3.xlarge",
+                "db.r3.2xlarge",
+                "db.r3.4xlarge",
+                "db.r3.8xlarge"
+            ]
+        },
+        "RdsSnapshotArn" :
+        {
+            "Description" : "ARN of an RDS Snapshot that contains an empty instantiation of the Connection Broker schema",
+            "Default": "arn:aws:rds:us-east-1:701759196663:snapshot:cb-ws2016-2017-05-04",
+            "Type": "String",
+            "AllowedPattern" : "^arn:aws:rds:.*:[0-9]{12}:snapshot:.*"
+        },
+        "RdsSubnets" :
+        {
+            "Type" : "List<AWS::EC2::Subnet::Id>",
+            "Description" : "Select at least two subnets, each in different Availability Zones"
+        },
+        "RdsSqlEngine" :
+        {
+            "Description" : "SQL Server engine",
+            "Type": "String",
+            "Default" : "sqlserver-ex",
+            "AllowedValues" :
+            [
+                "sqlserver-ex",
+                "sqlserver-web",
+                "sqlserver-se",
+                "sqlserver-ee"
+            ]
+        },
+        "RdsDbName" :
+        {
+            "Default": "cbdb",
+            "Description" : "The database name; must match database name associated with the RdsSnapshot",
+            "Type": "String",
+            "AllowedPattern" : "^[a-zA-Z0-9_@#][a-zA-Z0-9_@#$]*",
+            "MinLength": "1",
+            "MaxLength": "116"
+        },
+        "RdsDbUsername" :
+        {
+            "Default": "connectionbroker",
+            "Description" : "The database admin account username; must match account name associated with the RdsSnapshot",
+            "Type": "String",
+            "AllowedPattern" : "^([a-zA-Z])([-a-zA-Z0-9])*",
+            "MinLength": "1",
+            "MaxLength": "16"
+        },
+        "RdsDbPassword" :
+        {
+            "Default": "connectionbroker",
+            "NoEcho": "true",
+            "Description" : "The database admin account password; must match password associated with the RdsSnapshot; these characters are not valid: \", @, and /",
+            "Type": "String",
+            "AllowedPattern": ".*[^\"@/].*",
+            "ConstraintDescription" : "Must not contain \", @, or /"
+        },
+        "RdsMultiAzDatabase" :
+        {
+            "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
+            "Type": "String",
+            "Default" : "false",
+            "AllowedValues" : [ "true", "false" ],
+            "ConstraintDescription" : "Must be either true or false. Default is false"
+        },
         "SsmRdcbCredential" :
         {
             "Description" : "SSM Parameter Name for a SecureString containing the domain credential for the RDCB service account; SSM Parameter Value format is '@{Username = \"<user>\"; Password = \"<password>\"}'",
@@ -151,7 +253,10 @@
                         "KeyPairName",
                         "DataVolumeSnapshotId",
                         "DataVolumeSize",
-                        "ExtraSecurityGroupIds"
+                        "ExtraSecurityGroupIds",
+                        "Ec2SubnetAz",
+                        "Ec2SubnetId",
+                        "NoPublicIp"
                     ]
                 },
                 {
@@ -170,16 +275,31 @@
                         "SsmRdcbCredential"
                     ]
                 },
+                {
+                    "Label" :
+                    {
+                        "default" : "RDS DB Instance Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "RdsSqlEngine",
+                        "RdsDbClass",
+                        "RdsDbAllocatedStorage",
+                        "RdsSnapshotArn",
+                        "RdsDbName",
+                        "RdsDbPassword",
+                        "RdsDbUsername",
+                        "RdsMultiAzDatabase",
+                        "RdsSubnets"
+                    ]
+                },
                 {   "Label" :
                     {
                         "default" : "Network Configuration"
                     },
                     "Parameters" :
                     [
-                        "VpcId",
-                        "Ec2SubnetAz",
-                        "Ec2SubnetId",
-                        "NoPublicIp"
+                        "VpcId"
                     ]
                 }
             ],
@@ -322,6 +442,26 @@
                 ]
             }
         },
+        "RdcbRdsSecurityGroup" :
+        {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" :
+            {
+                "GroupDescription" : "Logical container for an RDCB RDS instance",
+                "VpcId" : { "Ref" : "VpcId" },
+                "Tags" :
+                [
+                    {
+                        "Key" : "Name",
+                        "Value" :
+                        { "Fn::Join" : [ "", [
+                            "rdcb-rds-",
+                            { "Ref" : "AWS::StackName" }
+                        ]]}
+                    }
+                ]
+            }
+        },
         "Ec2SelfIngressAll" :
         {
             "Type" : "AWS::EC2::SecurityGroupIngress",
@@ -329,6 +469,18 @@
             {
                 "GroupId" : { "Ref" : "RdcbEc2SecurityGroup" },
                 "IpProtocol" : "-1",
+                "SourceSecurityGroupId" : { "Ref" : "RdcbEc2SecurityGroup" }
+            }
+        },
+        "Ec2ToRdsIngressTcp1433" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "RdcbRdsSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "1433",
+                "ToPort" : "1433",
                 "SourceSecurityGroupId" : { "Ref" : "RdcbEc2SecurityGroup" }
             }
         },
@@ -481,6 +633,107 @@
                 "Roles" : [ { "Ref" : "Ec2IamRole" } ]
             }
         },
+        "RdsIamRole" :
+        {
+            "Type" : "AWS::IAM::Role",
+            "Properties" :
+            {
+                "AssumeRolePolicyDocument" :
+                {
+                   "Version" : "2012-10-17",
+                   "Statement" :
+                   [{
+                      "Effect" : "Allow",
+                      "Principal" :
+                      {
+                         "Service" : [ "monitoring.rds.amazonaws.com" ]
+                      },
+                      "Action" : [ "sts:AssumeRole" ]
+                   }]
+                },
+                "Path" : "/"
+            }
+        },
+        "RdsIamRolePolicy" :
+        {
+            "Type" : "AWS::IAM::Policy",
+            "Properties" :
+            {
+                "PolicyName" :
+                { "Fn::Join" : [ "", [
+                    "rdcb-rds-",
+                    { "Ref" : "AWS::StackName" }
+                ]]},
+                "PolicyDocument" :
+                {
+                    "Version" : "2012-10-17",
+                    "Statement" :
+                    [
+                        {
+                            "Sid": "EnableCreationAndManagementOfRDSCloudwatchLogGroups",
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:PutRetentionPolicy"
+                            ],
+                            "Resource": [
+                                "arn:aws:logs:*:*:log-group:RDS*"
+                            ]
+                        },
+                        {
+                            "Sid": "EnableCreationAndManagementOfRDSCloudwatchLogStreams",
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents",
+                                "logs:DescribeLogStreams",
+                                "logs:GetLogEvents"
+                            ],
+                            "Resource": [
+                                "arn:aws:logs:*:*:log-group:RDS*:log-stream:*"
+                            ]
+                        }
+                    ]
+                },
+                "Roles" : [ { "Ref" : "RdsIamRole" } ]
+            }
+        },
+        "RdsSubnetGroup" :
+        {
+            "Type" : "AWS::RDS::DBSubnetGroup",
+            "Properties" :
+            {
+                "DBSubnetGroupDescription" : "Subnets available for the RDS DB Instance",
+                "SubnetIds" : { "Ref" : "RdsSubnets" }
+            }
+        },
+        "RdsInstance" :
+        {
+            "Type" : "AWS::RDS::DBInstance",
+            "DeletionPolicy" : "Delete",
+            "Properties" :
+            {
+                "AllocatedStorage" : { "Ref" : "RdsDbAllocatedStorage" },
+                "BackupRetentionPeriod" : "0",
+                "DBInstanceClass" : { "Ref" : "RdsDbClass" },
+                "DBSnapshotIdentifier" : { "Ref" : "RdsSnapshotArn" },
+                "DBSubnetGroupName" : { "Ref" : "RdsSubnetGroup" },
+                "Engine" : { "Ref" : "RdsSqlEngine" },
+                "MasterUserPassword" : { "Ref" : "RdsDbPassword" },
+                "MonitoringInterval" : "1",
+                "MonitoringRoleArn" : { "Fn::GetAtt" : ["RdsIamRole", "Arn"] },
+                "MultiAZ" : { "Ref": "RdsMultiAzDatabase" },
+                "StorageType" : "gp2",
+                "VPCSecurityGroups" : [ { "Ref" : "RdcbRdsSecurityGroup" } ],
+                "Tags" :
+                [
+                    {
+                        "Key"  : "Name",
+                        "Value" : { "Ref" : "AWS::StackName" }
+                    }
+                ]
+            }
+        },
         "RdCbFileServerInstance" :
         {
             "Type" : "AWS::EC2::Instance",
@@ -561,9 +814,9 @@
                             {
                                 "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-ebsbackups.ps1"
                             },
-                            "c:\\cfn\\scripts\\configure-rdcb.ps1" :
+                            "c:\\cfn\\scripts\\configure-rdcb-ha.ps1" :
                             {
-                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1"
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb-ha.ps1"
                             },
                             "c:\\cfn\\scripts\\unzip-archive.ps1" :
                             {
@@ -572,6 +825,10 @@
                             "c:\\cfn\\files\\pstools.zip" :
                             {
                                 "source" : "https://download.sysinternals.com/files/PSTools.zip"
+                            },
+                            "c:\\cfn\\files\\msodbcsql.msi" :
+                            {
+                                "source" : "https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi"
                             }
                         },
                         "services" :
@@ -688,25 +945,7 @@
                     {
                         "commands" :
                         {
-                            "10-create-upd-folder" :
-                            {
-                                "command" :
-                                { "Fn::Join" : [ "", [
-                                    { "Fn::FindInMap" :
-                                        [
-                                            "ShellCommandMap",
-                                            "powershell",
-                                            "command"
-                                        ]
-                                    },
-                                    "-Command \"",
-                                    "New-Item -ItemType directory -Path 'D:\\Shares\\Profiles$' -Force ",
-                                    "-Verbose -ErrorAction Stop",
-                                    "\""
-                                ] ] },
-                                "waitAfterCompletion" : "0"
-                            },
-                            "20-configure-fileshares" :
+                            "10-configure-fileshares" :
                             {
                                 "command" :
                                 { "Fn::Join" : [ "", [
@@ -792,6 +1031,11 @@
                     {
                         "commands" :
                         {
+                            "10-install-msodbc" :
+                            {
+                                "command": "msiexec /i c:\\cfn\\files\\msodbcsql.msi /qn IACCEPTMSODBCSQLLICENSETERMS=YES",
+                                "waitAfterCompletion" : "0"
+                            },
                             "20-configure-rdcb" :
                             {
                                 "command" :
@@ -832,8 +1076,18 @@
                                             "command"
                                         ]
                                     },
-                                    "c:\\cfn\\scripts\\configure-rdcb.ps1 ",
-                                    "-Verbose -ErrorAction Stop",
+                                    "c:\\cfn\\scripts\\configure-rdcb-ha.ps1",
+                                    " -DbHostFqdn ",
+                                    { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] },
+                                    " -DbName ",
+                                    { "Ref" : "RdsDbName" },
+                                    " -DbUser ",
+                                    { "Ref" : "RdsDbUsername"},
+                                    " -DbPassword ",
+                                    { "Ref" : "RdsDbPassword"},
+                                    " -RdClientAccessName ",
+                                    { "Ref" : "RdClientAccessName" },
+                                    " -Verbose -ErrorAction Stop",
                                     "\""
                                 ] ] },
                                 "waitAfterCompletion" : "0"
@@ -1003,6 +1257,16 @@
         {
             "Description" : "IP address of the RDCB File Server",
             "Value" : { "Fn::GetAtt" : [ "RdCbFileServerInstance", "PrivateIp" ] }
+        },
+        "RdcbRdsDbInstanceId" :
+        {
+            "Description" : "DB Instance Identifier for the RDCB RDS Instance",
+            "Value" : { "Ref" : "RdsInstance" }
+        },
+        "RdcbRdsDbEndpointAddress" :
+        {
+            "Description" : "DB Endpoint Address for the RDCB RDS Instance",
+            "Value" : { "Fn::GetAtt" : [ "RdsInstance", "Endpoint.Address" ] }
         }
     }
 }
