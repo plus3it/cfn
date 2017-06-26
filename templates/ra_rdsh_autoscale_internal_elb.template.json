@@ -795,7 +795,7 @@
                             },
                             "c:\\cfn\\scripts\\configure-rdsh.ps1" :
                             {
-                                "source" : "https://raw.githubusercontent.com/lorengordon/cfn/rdsh-cb/scripts/configure-rdsh.ps1"
+                                "source" : "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdsh.ps1"
                             },
                             "c:\\cfn\\scripts\\unzip-archive.ps1" :
                             {
