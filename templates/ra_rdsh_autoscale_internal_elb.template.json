@@ -706,7 +706,7 @@
                     "MinInstancesInService" : { "Ref" : "MinCapacity" },
                     "MaxBatchSize" : { "Ref" : "MaxCapacity" },
                     "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT75M",
+                    "PauseTime" : "PT60M",
                     "SuspendProcesses" : [ "ScheduledActions" ]
                 },
                 "AutoScalingScheduledAction" :
