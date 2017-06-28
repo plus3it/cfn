@@ -40,6 +40,12 @@
                 "r4.xlarge"
             ]
         },
+        "NotificationEmail" :
+        {
+            "Description" : "(Optional) Email address to subscribe to notifications and alarms",
+            "Type" : "String",
+            "AllowedPattern" : "^$|.*[@].*"
+        },
         "DomainDirectoryId" :
         {
             "Description" : "ID of the AWS Directory Service domain, e.g. d-xxxxxxxxxx",
@@ -181,6 +187,15 @@
                         "Ec2SubnetId",
                         "NoPublicIp"
                     ]
+                },
+                {   "Label" :
+                    {
+                        "default" : "Management Configuration"
+                    },
+                    "Parameters" :
+                    [
+                        "NotificationEmail"
+                    ]
                 }
             ],
             "ParameterLabels" :
@@ -197,6 +212,10 @@
         "AssignPublicIp" :
         {
             "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "NoPublicIp" }, "true" ] } ]
+        },
+        "CreateSnsSubscription" :
+        {
+            "Fn::Not" : [ { "Fn::Equals" : [ { "Ref" : "NotificationEmail" }, "" ] } ]
         },
         "UseAmiLookup" :
         {
@@ -1095,13 +1114,27 @@
                 ] ] } }
             }
         },
+        "SnsTopic" :
+        {
+            "Type" : "AWS::SNS::Topic"
+        },
+        "SnsSubscriptionEmail" :
+        {
+            "Type" : "AWS::SNS::Subscription",
+            "Condition" : "CreateSnsSubscription",
+            "Properties" :
+            {
+                "Endpoint" : { "Ref" : "NotificationEmail" },
+                "Protocol" : "email",
+                "TopicArn" : { "Ref" : "SnsTopic" }
+            }
+        },
         "Ec2RecoveryAlarm" :
         {
             "Type" : "AWS::CloudWatch::Alarm",
             "Properties" :
             {
-                "AlarmName" : { "Ref" : "AWS::StackName" },
-                "AlarmDescription" : "Trigger a recovery when instance status check fails for 15 consecutive minutes.",
+                "AlarmDescription" : "Trigger a recovery when instance status check fails for 15 consecutive minutes",
                 "Namespace" : "AWS/EC2" ,
                 "MetricName" : "StatusCheckFailed_System",
                 "Statistic" : "Minimum",
@@ -1121,6 +1154,90 @@
                     "Value": { "Ref" : "RdCbFileServerInstance" }
                 } ]
             }
+        },
+        "Ec2LowDiskSpaceAlarm40C" :
+        {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" :
+            {
+                "AlarmActions" : [ { "Ref" : "SnsTopic" } ],
+                "AlarmDescription" : "Trigger alarm when C: volume has less than 40% free disk space",
+                "ComparisonOperator" : "LessThanThreshold",
+                "Dimensions" :
+                [ {
+                    "Name" : "InstanceId",
+                    "Value" : { "Ref" : "RdCbFileServerInstance" }
+                } ],
+                "EvaluationPeriods" : "5",
+                "MetricName" : "LogicalDiskPercentFreeSpace_C",
+                "Namespace" : "Windows-Default",
+                "Period" : "60",
+                "Statistic" : "Average",
+                "Threshold" : "40"
+            }
+        },
+        "Ec2LowDiskSpaceAlarm20C" :
+        {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" :
+            {
+                "AlarmActions" : [ { "Ref" : "SnsTopic" } ],
+                "AlarmDescription" : "Trigger alarm when C: volume has less than 20% free disk space",
+                "ComparisonOperator" : "LessThanThreshold",
+                "Dimensions" :
+                [ {
+                    "Name" : "InstanceId",
+                    "Value" : { "Ref" : "RdCbFileServerInstance" }
+                } ],
+                "EvaluationPeriods" : "5",
+                "MetricName" : "LogicalDiskPercentFreeSpace_C",
+                "Namespace" : "Windows-Default",
+                "Period" : "60",
+                "Statistic" : "Average",
+                "Threshold" : "20"
+            }
+        },
+        "Ec2LowDiskSpaceAlarm40D" :
+        {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" :
+            {
+                "AlarmActions" : [ { "Ref" : "SnsTopic" } ],
+                "AlarmDescription" : "Trigger alarm when D: volume has less than 40% free disk space",
+                "ComparisonOperator" : "LessThanThreshold",
+                "Dimensions" :
+                [ {
+                    "Name" : "InstanceId",
+                    "Value" : { "Ref" : "RdCbFileServerInstance" }
+                } ],
+                "EvaluationPeriods" : "5",
+                "MetricName" : "LogicalDiskPercentFreeSpace_D",
+                "Namespace" : "Windows-Default",
+                "Period" : "60",
+                "Statistic" : "Average",
+                "Threshold" : "40"
+            }
+        },
+        "Ec2LowDiskSpaceAlarm20D" :
+        {
+            "Type" : "AWS::CloudWatch::Alarm",
+            "Properties" :
+            {
+                "AlarmActions" : [ { "Ref" : "SnsTopic" } ],
+                "AlarmDescription" : "Trigger alarm when D: volume has less than 20% free disk space",
+                "ComparisonOperator" : "LessThanThreshold",
+                "Dimensions" :
+                [ {
+                    "Name" : "InstanceId",
+                    "Value" : { "Ref" : "RdCbFileServerInstance" }
+                } ],
+                "EvaluationPeriods" : "5",
+                "MetricName" : "LogicalDiskPercentFreeSpace_D",
+                "Namespace" : "Windows-Default",
+                "Period" : "60",
+                "Statistic" : "Average",
+                "Threshold" : "20"
+            }
         }
     },
     "Outputs" :
@@ -1134,6 +1251,11 @@
         {
             "Description" : "IP address of the RDCB File Server",
             "Value" : { "Fn::GetAtt" : [ "RdCbFileServerInstance", "PrivateIp" ] }
+        },
+        "SnsArn" :
+        {
+            "Description" : "ARN for SNS topic",
+            "Value" : { "Ref" : "SnsTopic" }
         }
     }
 }
