@@ -566,7 +566,7 @@
                                             "\"CategoryName\" : \"Memory\",",
                                             "\"CounterName\" : \"% Committed Bytes In Use\",",
                                             "\"InstanceName\" : \"\",",
-                                            "\"MetricName\" : \"MemoryPercentCommitedBytesInUse\",",
+                                            "\"MetricName\" : \"MemoryPercentCommittedBytesInUse\",",
                                             "\"Unit\" : \"Percent\",",
                                             "\"DimensionName\" : \"InstanceId\",",
                                             "\"DimensionValue\" : \"{instance_id}\"",
