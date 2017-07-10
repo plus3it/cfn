@@ -301,6 +301,170 @@
                 "ForceUpdateToggle" : { "Ref" : "ForceUpdateToggle" }
             }
         },
+        "Ec2IamInstanceProfile" :
+        {
+            "Type" : "AWS::IAM::InstanceProfile",
+            "Properties" :
+            {
+                "Path" : "/",
+                "Roles" : [ { "Ref" : "Ec2IamRole" } ]
+            }
+        },
+        "Ec2IamRole" :
+        {
+            "Type" : "AWS::IAM::Role",
+            "Properties" :
+            {
+                "AssumeRolePolicyDocument" :
+                {
+                   "Version" : "2012-10-17",
+                   "Statement" :
+                   [ {
+                      "Effect" : "Allow",
+                      "Principal" :
+                      {
+                         "Service" : [ "ec2.amazonaws.com" ]
+                      },
+                      "Action" : [ "sts:AssumeRole" ]
+                   } ]
+                },
+                "Path" : "/"
+            }
+        },
+        "Ec2IamRolePolicy" :
+        {
+            "Type" : "AWS::IAM::Policy",
+            "Properties" :
+            {
+                "PolicyName" :
+                { "Fn::Join" : [ "", [
+                    "ra-guac-",
+                    { "Ref" : "AWS::StackName" }
+                ]]},
+                "PolicyDocument" :
+                {
+                    "Version" : "2012-10-17",
+                    "Statement" :
+                    [
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ssm:DescribeAssociation",
+                                "ssm:GetDeployablePatchSnapshotForInstance",
+                                "ssm:GetDocument",
+                                "ssm:ListAssociations",
+                                "ssm:ListInstanceAssociations",
+                                "ssm:PutInventory",
+                                "ssm:UpdateAssociationStatus",
+                                "ssm:UpdateInstanceAssociationStatus",
+                                "ssm:UpdateInstanceInformation"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ec2messages:AcknowledgeMessage",
+                                "ec2messages:DeleteMessage",
+                                "ec2messages:FailMessage",
+                                "ec2messages:GetEndpoint",
+                                "ec2messages:GetMessages",
+                                "ec2messages:SendReply"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "cloudwatch:PutMetricData"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ec2:DescribeInstanceStatus"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "ds:CreateComputer",
+                                "ds:DescribeDirectories"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:DescribeLogGroups",
+                                "logs:DescribeLogStreams",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "s3:GetObject"
+                            ],
+                            "Resource" : "arn:aws:s3:::amazon-ssm-*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "s3:ListBucket"
+                            ],
+                            "Resource" : "arn:aws:s3:::amazon-ssm-packages-*"
+                        }
+                    ]
+                },
+                "Roles" : [ { "Ref" : "Ec2IamRole" } ]
+            }
+        },
+        "SsmAssociationUpdateAgent" :
+        {
+            "Type" : "AWS::SSM::Association",
+            "Properties" :
+            {
+                "Name" : "AWS-UpdateSSMAgent",
+                "ScheduleExpression" : "rate(30 minutes)",
+                "Targets" :
+                [ {
+                    "Key" : "tag:aws:cloudformation:stack-id",
+                    "Values" : [ { "Ref" : "AWS::StackId" } ]
+                } ]
+            }
+        },
+        "SsmAssociationInstallPatches" :
+        {
+            "Type" : "AWS::SSM::Association",
+            "Properties" :
+            {
+                "Name" : "AWS-RunPatchBaseline",
+                "Parameters" :
+                {
+                    "Operation" : [ "Install" ]
+                },
+                "ScheduleExpression" : "cron(0 6 ? * WED *)",
+                "Targets" :
+                [ {
+                    "Key" : "tag:aws:cloudformation:stack-id",
+                    "Values" : [ { "Ref" : "AWS::StackId" } ]
+                } ]
+            }
+        },
         "Ec2SecurityGroup" :
         {
             "Type" : "AWS::EC2::SecurityGroup",
@@ -782,6 +946,7 @@
                 },
                 "InstanceType" : { "Ref" : "InstanceType" },
                 "KeyName" : { "Ref" : "KeyPairName" },
+                "IamInstanceProfile" : { "Ref" : "Ec2IamInstanceProfile" },
                 "EbsOptimized" :
                 {
                     "Fn::FindInMap" :
@@ -854,6 +1019,9 @@
                     "hash cfn-signal 2> /dev/null || ",
                     "PATH=\"${PATH}:/usr/local/bin:/opt/aws/bin\"",
                     "\n\n",
+
+                    "# Install ssm agent\n",
+                    "yum -y install https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm\n\n",
 
                     "# Execute cfn-init\n",
                     "/opt/aws/bin/cfn-init -v -c config",
