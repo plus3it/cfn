@@ -134,6 +134,36 @@ else
     Write-Verbose "Added system to RD Session Collection; SessionHost=${SystemName}, CollectionName=${CollectionName}"
 }
 
+# Remove stale access rules on UPD share
+$UpdAcl = Get-Acl $UpdPath -ErrorAction Stop
+foreach ($Access in $UpdAcl.Access)
+{
+    # Test if the rule is a computer object
+    if ($Access.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
+    {
+        # Remove the rule if the host is not responding
+        $Server = [System.Net.DNS]::GetHostEntry("$($Matches[1])").HostName
+        $TestRdp = (Test-NetConnection $Server -CommonTCPPort RDP).TcpTestSucceeded
+        if (-not $TestRdp)
+        {
+            $UpdAcl.RemoveAccessRule($Access)
+            Write-Verbose "Removed stale access rule, $($Access.IdentityReference.Value), from UPD share, ${UpdPath}"
+        }
+    }
+}
+
+# Ensure this host is in the UPD share ACL
+$Identities = ($UpdAcl.Access | Select IdentityReference).IdentityReference.Value
+$Identity = "${DomainNetBiosName}\$((Get-WmiObject Win32_ComputerSystem).Name)$"
+if (-not ($Identity -in $Identities))
+{
+    Write-Verbose "Adding missing access rule for ${Identity} to UPD share, ${UpdPath}"
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${Identity}", "FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
+}
+
+# Write the new ACL
+Set-Acl $UpdPath $UpdAcl -ErrorAction Stop
+
 # Configure RDP certificate
 if ($PrivateKeyPfx)
 {
