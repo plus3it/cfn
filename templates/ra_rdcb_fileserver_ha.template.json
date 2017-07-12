@@ -226,7 +226,7 @@
             "Type" : "String",
             "MinLength" : "1",
             "MaxLength" : "1024",
-            "AllowedPattern" : "^(?!^([aA][wW][sS]|[sS][sS][mM]))(?=^[a-zA-Z0-9_.-]*$).*$"
+            "AllowedPattern" : "^(?!^([aA][wW][sS]|[sS][sS][mM]))(?=^[a-zA-Z0-9_./-]*$).*$"
         },
         "SsmKeyId" :
         {
@@ -769,7 +769,7 @@
                                             "\"CategoryName\" : \"Memory\",",
                                             "\"CounterName\" : \"% Committed Bytes In Use\",",
                                             "\"InstanceName\" : \"\",",
-                                            "\"MetricName\" : \"MemoryPercentCommitedBytesInUse\",",
+                                            "\"MetricName\" : \"MemoryPercentCommittedBytesInUse\",",
                                             "\"Unit\" : \"Percent\",",
                                             "\"DimensionName\" : \"InstanceId\",",
                                             "\"DimensionValue\" : \"{instance_id}\"",
@@ -841,6 +841,38 @@
                     ] ] } ]
                 },
                 "ScheduleExpression" : "rate(30 minutes)",
+                "Targets" :
+                [ {
+                    "Key" : "tag:aws:cloudformation:stack-id",
+                    "Values" : [ { "Ref" : "AWS::StackId" } ]
+                } ]
+            }
+        },
+        "SsmAssociationUpdateAgent" :
+        {
+            "Type" : "AWS::SSM::Association",
+            "Properties" :
+            {
+                "Name" : "AWS-UpdateSSMAgent",
+                "ScheduleExpression" : "rate(30 minutes)",
+                "Targets" :
+                [ {
+                    "Key" : "tag:aws:cloudformation:stack-id",
+                    "Values" : [ { "Ref" : "AWS::StackId" } ]
+                } ]
+            }
+        },
+        "SsmAssociationInstallPatches" :
+        {
+            "Type" : "AWS::SSM::Association",
+            "Properties" :
+            {
+                "Name" : "AWS-RunPatchBaseline",
+                "Parameters" :
+                {
+                    "Operation" : [ "Install" ]
+                },
+                "ScheduleExpression" : "cron(0 6 ? * WED *)",
                 "Targets" :
                 [ {
                     "Key" : "tag:aws:cloudformation:stack-id",
