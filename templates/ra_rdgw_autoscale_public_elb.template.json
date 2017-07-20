@@ -619,38 +619,6 @@
                 } ]
             }
         },
-        "SsmAssociationUpdateAgent" :
-        {
-            "Type" : "AWS::SSM::Association",
-            "Properties" :
-            {
-                "Name" : "AWS-UpdateSSMAgent",
-                "ScheduleExpression" : "rate(30 minutes)",
-                "Targets" :
-                [ {
-                    "Key" : "tag:aws:cloudformation:stack-id",
-                    "Values" : [ { "Ref" : "AWS::StackId" } ]
-                } ]
-            }
-        },
-        "SsmAssociationInstallPatches" :
-        {
-            "Type" : "AWS::SSM::Association",
-            "Properties" :
-            {
-                "Name" : "AWS-RunPatchBaseline",
-                "Parameters" :
-                {
-                    "Operation" : [ "Install" ]
-                },
-                "ScheduleExpression" : "cron(0 6 ? * WED *)",
-                "Targets" :
-                [ {
-                    "Key" : "tag:aws:cloudformation:stack-id",
-                    "Values" : [ { "Ref" : "AWS::StackId" } ]
-                } ]
-            }
-        },
         "ScaleUpScheduledAction" :
         {
             "Type" : "AWS::AutoScaling::ScheduledAction",

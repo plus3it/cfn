@@ -28,6 +28,48 @@ Param(
 #Based on:
 # * https://s3.amazonaws.com/app-chemistry/scripts/configure-rdsh.ps1
 
+function Retry-TestCommand
+{
+    param (
+    [Parameter(Mandatory=$true)][string]$Test,
+    [Parameter(Mandatory=$false)][hashtable]$Args = @{},
+    [Parameter(Mandatory=$false)][string]$TestProperty,
+    [Parameter(Mandatory=$false)][int]$Tries = 5,
+    [Parameter(Mandatory=$false)][int]$SecondsDelay = 2
+    )
+    $Args.ErrorAction = "SilentlyContinue"
+
+    $TryCount = 0
+    $Completed = $false
+
+    while (-not $Completed)
+    {
+        $Result = & $Test @Args
+        $TestResult = if ($TestProperty) { $Result.$TestProperty } else { $Result }
+        $TryCount++
+        if ($TestResult)
+        {
+            Write-Verbose ("Test [{0}] succeeded." -f $Test)
+            $Completed = $true
+            Write-Output $TestResult
+        }
+        else
+        {
+            if ($TryCount -ge $Tries)
+            {
+                $Completed = $true
+                Write-Output $TestResult
+                throw ("Test [{0}] failed the maximum number of {1} time(s)." -f $Test, $Tries)
+            }
+            else
+            {
+                Write-Verbose ("Test [{0}] failed. Retrying in {1} second(s)." -f $Test, $SecondsDelay)
+                Start-Sleep $SecondsDelay
+            }
+        }
+    }
+}
+
 $RequiredFeatures = @(
     "RDS-RD-Server"
     "RDS-Licensing"
@@ -85,8 +127,12 @@ else
     # Cleanup non-responsive RD Servers
     ForEach ($RDServer in $RDServers)
     {
-        $TestRdp = (Test-NetConnection $RDServer.Server -CommonTCPPort RDP).TcpTestSucceeded
-        if (-not $TestRdp)
+        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 2 -SecondsDelay 300 -ErrorAction SilentlyContinue
+        if ($TestRdp)
+        {
+            Write-Verbose "Successfully connected to host, $($RDServer.Server), keeping this RD Server"
+        }
+        else
         {
             if ($RDServer.Server -in (Get-RDSessionHost -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue).SessionHost)
             {
@@ -123,10 +169,10 @@ if (-not (Get-RDSessionCollection -CollectionName $CollectionName -ConnectionBro
     Write-Verbose "Created the RD Session Collection!"
 
     Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -UserGroup $GroupName -ErrorAction Stop
-    Write-Verbose "Granted user group access to the RD Session Collection, ${UserGroup}"
+    Write-Verbose "Granted user group access to the RD Session Collection, ${GroupName}"
 
     Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -EnableUserProfileDisk -DiskPath "${UpdPath}" -MaxUserProfileDiskSizeGB $MaxUpdSizeGB -ErrorAction Stop
-    Write-Verbose "Enabled user profile disks for the RD Session Collection, \\${SystemName}\${UpdShareName}"
+    Write-Verbose "Enabled user profile disks for the RD Session Collection, ${UpdPath}"
 }
 else
 {
@@ -134,22 +180,36 @@ else
     Write-Verbose "Added system to RD Session Collection; SessionHost=${SystemName}, CollectionName=${CollectionName}"
 }
 
-# Remove stale access rules on UPD share
-$UpdAcl = Get-Acl $UpdPath -ErrorAction Stop
-foreach ($Access in $UpdAcl.Access)
+# Mark stale access rules on UPD share
+$StaleRules = @()
+$StaleUpdAcl = Get-Acl $UpdPath -ErrorAction Stop
+foreach ($Rule in $StaleUpdAcl.Access)
 {
     # Test if the rule is a computer object
-    if ($Access.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
+    if ($Rule.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
     {
         # Remove the rule if the host is not responding
         $Server = [System.Net.DNS]::GetHostEntry("$($Matches[1])").HostName
-        $TestRdp = (Test-NetConnection $Server -CommonTCPPort RDP).TcpTestSucceeded
-        if (-not $TestRdp)
+        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 2 -SecondsDelay 300 -ErrorAction SilentlyContinue
+        if ($TestRdp)
         {
-            $UpdAcl.RemoveAccessRule($Access)
-            Write-Verbose "Removed stale access rule, $($Access.IdentityReference.Value), from UPD share, ${UpdPath}"
+            Write-Verbose "Successfully connected to host, ${Server}, keeping this access rule"
+        }
+        else
+        {
+            $StaleRules += $Rule
+            Write-Verbose "Marked stale rule for removal, $($Rule.IdentityReference.Value), from UPD share, ${UpdPath}"
         }
     }
+}
+
+# Remove stale access rules; we get the ACL again, in case it changed while
+# retrying the test for stale hosts
+$UpdAcl = Get-Acl $UpdPath -ErrorAction Stop
+foreach ($Rule in $StaleRules)
+{
+    $UpdAcl.RemoveAccessRule($Rule)
+    Write-Verbose "Removed stale rule for host, $($Rule.IdentityReference.Value), from UPD share, ${UpdPath}"
 }
 
 # Ensure this host is in the UPD share ACL
