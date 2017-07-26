@@ -1,0 +1,15 @@
+Type: AWS::SSM::Association
+Properties:
+  Name: AWS-JoinDirectoryServiceDomain
+  Parameters:
+    directoryId:
+      - Ref: DomainDirectoryId
+    directoryName:
+      - Ref: DomainDnsName
+    directoryOU:
+      - Ref: LdapContainerOU
+  Targets:
+    -
+      Key: tag:aws:cloudformation:stack-id
+      Values:
+        - Ref: AWS::StackId

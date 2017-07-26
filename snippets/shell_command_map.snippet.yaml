@@ -1,0 +1,6 @@
+powershell:
+  command: 'powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass '
+cmd:
+  command: 'cmd.exe /c '
+psexec:
+  command: 'c:\\cfn\\files\\pstools\\psexec.exe -accepteula -nobanner -h '

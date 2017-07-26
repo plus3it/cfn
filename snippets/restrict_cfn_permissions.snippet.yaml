@@ -1,0 +1,22 @@
+command:
+  'Fn::Sub':
+    - >
+      ${command} -Command Invoke-Command -ScriptBlock {
+      $Folder = 'C:\\cfn';
+      $Acl = Get-Acl $Folder;
+      $Acl.SetAccessRuleProtection($True, $False);
+      $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('SYSTEM', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow');
+      $Acl.AddAccessRule($Rule);
+      $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('Administrators', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow');
+      $Acl.AddAccessRule($Rule);
+      $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('CREATOR OWNER', 'FullControl', 'ContainerInherit, ObjectInherit', 'InheritOnly', 'Allow');
+      $Acl.AddAccessRule($Rule);
+      Set-Acl $Folder $Acl -ErrorAction Stop;
+      }
+    -
+      command:
+        'Fn::FindInMap':
+          - ShellCommandMap
+          - powershell
+          - command
+waitAfterCompletion: '0'
