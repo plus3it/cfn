@@ -230,75 +230,24 @@
     {
         "ShellCommandMap" :
         {
-            "powershell" :
+            "Fn::Transform" :
             {
-                "command" : "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass "
-            },
-            "cmd" :
-            {
-                "command" : "cmd.exe /c "
-            },
-            "psexec" :
-            {
-                "command" : "c:\\cfn\\files\\pstools\\psexec.exe -accepteula -nobanner -h "
+                "Name" : "AWS::Include",
+                "Parameters" :
+                {
+                    "Location" : "s3://app-chemistry/snippets/shell_command_map.snippet.yaml"
+                }
             }
         },
         "InstanceTypeMap" :
         {
-            "t2.micro" :
+            "Fn::Transform" :
             {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.small" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.medium" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "c4.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "c4.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "m4.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "m4.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "r4.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "r4.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
+                "Name" : "AWS::Include",
+                "Parameters" :
+                {
+                    "Location" : "s3://app-chemistry/snippets/instance_type_map.snippet.yaml"
+                }
             }
         }
     },
@@ -502,133 +451,13 @@
         },
         "SsmAssociationCloudWatchMetrics" :
         {
-            "Type" : "AWS::SSM::Association",
-            "Properties" : {
-                "Name" : "AWS-ConfigureCloudWatch",
+            "Fn::Transform" :
+            {
+                "Name" : "AWS::Include",
                 "Parameters" :
                 {
-                    "status" : [ "Enabled" ],
-                    "properties" :
-                    [ { "Fn::Join" : [ "", [
-                        "{",
-                            "\"EngineConfiguration\" :",
-                            "{",
-                                "\"PollInterval\": \"00:00:15\",",
-                                "\"Components\":",
-                                "[",
-                                    "{",
-                                        "\"Id\" : \"LogicalDiskPercentFreeSpaceC\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"CategoryName\" : \"LogicalDisk\",",
-                                            "\"CounterName\" : \"% Free Space\",",
-                                            "\"InstanceName\" : \"C:\",",
-                                            "\"MetricName\" : \"LogicalDiskPercentFreeSpace_C\",",
-                                            "\"Unit\" : \"Percent\",",
-                                            "\"DimensionName\" : \"InstanceId\",",
-                                            "\"DimensionValue\" : \"{instance_id}\"",
-                                        "}",
-                                    "},",
-                                    "{",
-                                        "\"Id\" : \"LogicalDiskPercentFreeSpaceD\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"CategoryName\" : \"LogicalDisk\",",
-                                            "\"CounterName\" : \"% Free Space\",",
-                                            "\"InstanceName\" : \"D:\",",
-                                            "\"MetricName\" : \"LogicalDiskPercentFreeSpace_D\",",
-                                            "\"Unit\" : \"Percent\",",
-                                            "\"DimensionName\" : \"InstanceId\",",
-                                            "\"DimensionValue\" : \"{instance_id}\"",
-                                        "}",
-                                    "},",
-                                    "{",
-                                        "\"Id\" : \"MemoryPercentCommittedBytesInUse\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"CategoryName\" : \"Memory\",",
-                                            "\"CounterName\" : \"% Committed Bytes In Use\",",
-                                            "\"InstanceName\" : \"\",",
-                                            "\"MetricName\" : \"MemoryPercentCommittedBytesInUse\",",
-                                            "\"Unit\" : \"Percent\",",
-                                            "\"DimensionName\" : \"InstanceId\",",
-                                            "\"DimensionValue\" : \"{instance_id}\"",
-                                        "}",
-                                    "},",
-                                    "{",
-                                        "\"Id\" : \"MemoryPagesPerSec\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"CategoryName\" : \"Memory\",",
-                                            "\"CounterName\" : \"Pages/sec\",",
-                                            "\"InstanceName\" : \"\",",
-                                            "\"MetricName\" : \"MemoryPagesPerSec\",",
-                                            "\"Unit\" : \"Count/Second\",",
-                                            "\"DimensionName\" : \"InstanceId\",",
-                                            "\"DimensionValue\" : \"{instance_id}\"",
-                                        "}",
-                                    "},",
-                                    "{",
-                                        "\"Id\" : \"MemoryAvailableMBytes\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"CategoryName\" : \"Memory\",",
-                                            "\"CounterName\" : \"Available MBytes\",",
-                                            "\"InstanceName\" : \"\",",
-                                            "\"MetricName\" : \"MemoryAvailableMBytes\",",
-                                            "\"Unit\" : \"Megabytes\",",
-                                            "\"DimensionName\" : \"InstanceId\",",
-                                            "\"DimensionValue\" : \"{instance_id}\"",
-                                        "}",
-                                    "},",
-                                    "{",
-                                        "\"Id\" : \"PagingFilePercentUsage\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"CategoryName\" : \"Paging File\",",
-                                            "\"CounterName\" : \"% Usage\",",
-                                            "\"InstanceName\" : \"_Total\",",
-                                            "\"MetricName\" : \"PagingFilePercentUsage\",",
-                                            "\"Unit\" : \"Percent\",",
-                                            "\"DimensionName\" : \"InstanceId\",",
-                                            "\"DimensionValue\" : \"{instance_id}\"",
-                                        "}",
-                                    "},",
-                                    "{",
-                                        "\"Id\" : \"CloudWatch\",",
-                                        "\"FullName\" : \"AWS.EC2.Windows.CloudWatch.CloudWatch.CloudWatchOutputComponent,AWS.EC2.Windows.CloudWatch\",",
-                                        "\"Parameters\" :",
-                                        "{",
-                                            "\"AccessKey\" : \"\",",
-                                            "\"SecretKey\" : \"\",",
-                                            "\"Region\" : \"", { "Ref" : "AWS::Region" }, "\",",
-                                            "\"NameSpace\" : \"Windows-Default\"",
-                                        "}",
-                                    "}",
-                                "],",
-                                "\"Flows\" :",
-                                "{",
-                                    "\"Flows\" :",
-                                    "[",
-                                        "\"(LogicalDiskPercentFreeSpaceC,LogicalDiskPercentFreeSpaceD,MemoryPercentCommittedBytesInUse,MemoryPagesPerSec,MemoryAvailableMBytes,PagingFilePercentUsage),CloudWatch\"",
-                                    "]",
-                                "}",
-                            "}",
-                      "}"
-                    ] ] } ]
-                },
-                "ScheduleExpression" : "rate(30 minutes)",
-                "Targets" :
-                [ {
-                    "Key" : "tag:aws:cloudformation:stack-id",
-                    "Values" : [ { "Ref" : "AWS::StackId" } ]
-                } ]
+                    "Location" : "s3://app-chemistry/snippets/ssm_cloudwatch_memory_disk_c_d.snippet.yaml"
+                }
             }
         },
         "RdCbFileServerInstance" :

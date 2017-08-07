@@ -224,60 +224,13 @@
     {
         "InstanceTypeMap" :
         {
-            "t2.micro" :
+            "Fn::Transform" :
             {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.small" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.medium" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "t2.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "false"
-            },
-            "c4.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "c4.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "m4.large" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "m4.xlarge" :
-            {
-                "HasInstanceVolume" : "false",
-                "SupportsEbsOptimized" : "true"
-            },
-            "r3.large" :
-            {
-                "HasInstanceVolume" : "true",
-                "SupportsEbsOptimized" : "true"
-            },
-            "r3.xlarge" :
-            {
-                "HasInstanceVolume" : "true",
-                "SupportsEbsOptimized" : "true"
+                "Name" : "AWS::Include",
+                "Parameters" :
+                {
+                    "Location" : "s3://app-chemistry/snippets/instance_type_map.snippet.yaml"
+                }
             }
         }
     },
