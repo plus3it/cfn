@@ -63,7 +63,7 @@
             "Description" : "The minimum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
-            "Default" : "1"
+            "Default" : "0"
         },
         "MaxCapacity" :
         {
@@ -427,6 +427,31 @@
                                 "s3:ListBucket"
                             ],
                             "Resource" : "arn:aws:s3:::amazon-ssm-packages-*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "autoscaling:DescribeAutoScalingInstances"
+                            ],
+                            "Resource" : "*"
+                        },
+                        {
+                            "Effect" : "Allow",
+                            "Action" :
+                            [
+                                "autoscaling:EnterStandby",
+                                "autoscaling:ExitStandby"
+                            ],
+                            "Resource" : "*",
+                            "Condition" :
+                            {
+                                "StringEquals" :
+                                {
+                                    "autoscaling:ResourceTag/aws:cloudformation:stack-id" :
+                                    { "Ref" : "AWS::StackId" }
+                                }
+                            }
                         }
                     ]
                 },
@@ -675,12 +700,16 @@
                         [
                             "join-domain",
                             "setup",
+                            "set-standby",
                             "installRDS",
+                            "set-active",
                             "finalize"
                         ],
                         "update" :
                         [
+                            "set-standby",
                             "setup",
+                            "set-active",
                             "finalize"
                         ]
                     },
@@ -731,6 +760,28 @@
                                         "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
                                     ]
                                 }
+                            }
+                        }
+                    },
+                    "set-standby" :
+                    {
+                        "Fn::Transform" :
+                        {
+                            "Name" : "AWS::Include",
+                            "Parameters" :
+                            {
+                                "Location" : "s3://app-chemistry/snippets/set_autoscaling_standby_win.snippet.yaml"
+                            }
+                        }
+                    },
+                    "set-active" :
+                    {
+                        "Fn::Transform" :
+                        {
+                            "Name" : "AWS::Include",
+                            "Parameters" :
+                            {
+                                "Location" : "s3://app-chemistry/snippets/set_autoscaling_active_win.snippet.yaml"
                             }
                         }
                     },
