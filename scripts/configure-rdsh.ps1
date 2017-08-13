@@ -311,7 +311,7 @@ Write-Verbose "Installed python 3.5"
 
 # Install Haskell Platform (with cabal)
 $HaskellVersion = "8.0.2"
-$HaskellUrl = "https://www.haskell.org/platform/download/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
+$HaskellUrl = "https://downloads.haskell.org/~platform/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
 $HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
 (new-object net.webclient).DownloadFile("${HaskellUrl}","${HaskellInstaller}")
 $HaskellParams = "/S"
