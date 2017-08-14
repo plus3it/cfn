@@ -1,0 +1,7 @@
+commands:
+  10-set-standby:
+    command:
+      - |
+        $instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+        $asg_name=$(aws autoscaling describe-auto-scaling-instances --instance-ids $instance_id --query AutoScalingInstances[].AutoScalingGroupName --out text)
+        aws autoscaling exit-standby --instance-ids $instance_id --auto-scaling-group-name $asg_name

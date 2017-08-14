@@ -1,0 +1,17 @@
+commands:
+  10-set-active:
+    command:
+      'Fn::Sub':
+        - >
+          ${command} -Command Invoke-Command -ScriptBlock {
+          $InstanceId = (New-Object Net.WebClient).Downloadstring('http://169.254.169.254/latest/meta-data/instance-id');
+          $AsgName = $(Get-ASAutoScalingInstance -InstanceId $InstanceId -Region ${AWS::Region}).AutoScalingGroupName;
+          Exit-ASStandby -InstanceId $InstanceId -AutoScalingGroupName $AsgName;
+          } -Verbose -ErrorAction Stop
+        -
+          command:
+            'Fn::FindInMap':
+              - ShellCommandMap
+              - powershell
+              - command
+waitAfterCompletion: '0'
