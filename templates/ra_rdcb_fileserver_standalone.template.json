@@ -456,7 +456,7 @@
                 "Name" : "AWS::Include",
                 "Parameters" :
                 {
-                    "Location" : "s3://app-chemistry/snippets/ssm_cloudwatch_memory_disk_c_d.snippet.yaml"
+                    "Location" : "s3://app-chemistry/snippets/ssm_cloudwatch_instance_memory_disk_c_d.snippet.yaml"
                 }
             }
         },

@@ -1,0 +1,168 @@
+Type: AWS::SSM::Association
+Properties:
+  Name: AWS-ConfigureCloudWatch
+  Parameters:
+    status:
+      - Enabled
+    properties:
+      -
+        'Fn::Sub': |
+          {
+              "EngineConfiguration" :
+              {
+                  "PollInterval" : "00:00:30",
+                  "Components" :
+                  [
+                      {
+                          "Id" : "LogicalDiskPercentFreeSpaceC",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "LogicalDisk",
+                              "CounterName" : "% Free Space",
+                              "InstanceName" : "C:",
+                              "MetricName" : "LogicalDiskPercentFreeSpace_C",
+                              "Unit" : "Percent",
+                              "DimensionName" : "InstanceId",
+                              "DimensionValue" : "{instance_id}"
+                          }
+                      },
+                      {
+                          "Id" : "MemoryPercentCommittedBytesInUse",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Memory",
+                              "CounterName" : "% Committed Bytes In Use",
+                              "InstanceName" : "",
+                              "MetricName" : "MemoryPercentCommittedBytesInUse",
+                              "Unit" : "Percent",
+                              "DimensionName" : "InstanceId",
+                              "DimensionValue" : "{instance_id}"
+                          }
+                      },
+                      {
+                          "Id" : "MemoryPagesPerSec",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Memory",
+                              "CounterName" : "Pages/sec",
+                              "InstanceName" : "",
+                              "MetricName" : "MemoryPagesPerSec",
+                              "Unit" : "Count/Second",
+                              "DimensionName" : "InstanceId",
+                              "DimensionValue" : "{instance_id}"
+                          }
+                      },
+                      {
+                          "Id" : "MemoryAvailableMBytes",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Memory",
+                              "CounterName" : "Available MBytes",
+                              "InstanceName" : "",
+                              "MetricName" : "MemoryAvailableMBytes",
+                              "Unit" : "Megabytes",
+                              "DimensionName" : "InstanceId",
+                              "DimensionValue" : "{instance_id}"
+                          }
+                      },
+                      {
+                          "Id" : "PagingFilePercentUsage",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Paging File",
+                              "CounterName" : "% Usage",
+                              "InstanceName" : "_Total",
+                              "MetricName" : "PagingFilePercentUsage",
+                              "Unit" : "Percent",
+                              "DimensionName" : "InstanceId",
+                              "DimensionValue" : "{instance_id}"
+                          }
+                      },
+                      {
+                          "Id" : "AsgMemoryPercentCommittedBytesInUse",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Memory",
+                              "CounterName" : "% Committed Bytes In Use",
+                              "InstanceName" : "",
+                              "MetricName" : "MemoryPercentCommittedBytesInUse",
+                              "Unit" : "Percent",
+                              "DimensionName" : "AutoScalingGroupName",
+                              "DimensionValue" : "${AutoScalingGroup}"
+                          }
+                      },
+                      {
+                          "Id" : "AsgMemoryPagesPerSec",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Memory",
+                              "CounterName" : "Pages/sec",
+                              "InstanceName" : "",
+                              "MetricName" : "MemoryPagesPerSec",
+                              "Unit" : "Count/Second",
+                              "DimensionName" : "AutoScalingGroupName",
+                              "DimensionValue" : "${AutoScalingGroup}"
+                          }
+                      },
+                      {
+                          "Id" : "AsgMemoryAvailableMBytes",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Memory",
+                              "CounterName" : "Available MBytes",
+                              "InstanceName" : "",
+                              "MetricName" : "MemoryAvailableMBytes",
+                              "Unit" : "Megabytes",
+                              "DimensionName" : "AutoScalingGroupName",
+                              "DimensionValue" : "${AutoScalingGroup}"
+                          }
+                      },
+                      {
+                          "Id" : "AsgPagingFilePercentUsage",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.PerformanceCounterComponent.PerformanceCounterInputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "CategoryName" : "Paging File",
+                              "CounterName" : "% Usage",
+                              "InstanceName" : "_Total",
+                              "MetricName" : "PagingFilePercentUsage",
+                              "Unit" : "Percent",
+                              "DimensionName" : "AutoScalingGroupName",
+                              "DimensionValue" : "${AutoScalingGroup}"
+                          }
+                      },
+                      {
+                          "Id" : "CloudWatch",
+                          "FullName" : "AWS.EC2.Windows.CloudWatch.CloudWatch.CloudWatchOutputComponent,AWS.EC2.Windows.CloudWatch",
+                          "Parameters" :
+                          {
+                              "AccessKey" : "",
+                              "SecretKey" : "",
+                              "Region" : "${AWS::Region}",
+                              "NameSpace" : "AWS/EC2"
+                          }
+                      }
+                  ],
+                  "Flows" :
+                  {
+                      "Flows" :
+                      [
+                          "(LogicalDiskPercentFreeSpaceC,MemoryPercentCommittedBytesInUse,MemoryPagesPerSec,MemoryAvailableMBytes,PagingFilePercentUsage,AsgMemoryPercentCommittedBytesInUse,AsgMemoryPagesPerSec,AsgMemoryAvailableMBytes,AsgPagingFilePercentUsage),CloudWatch"
+                      ]
+                  }
+              }
+          }
+  ScheduleExpression: rate(30 minutes)
+  Targets:
+    -
+      Key: tag:aws:cloudformation:stack-id
+      Values:
+        - Ref: AWS::StackId
