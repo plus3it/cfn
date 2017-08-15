@@ -14,4 +14,4 @@ commands:
               - ShellCommandMap
               - powershell
               - command
-waitAfterCompletion: '0'
+    waitAfterCompletion: '0'
