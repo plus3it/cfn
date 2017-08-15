@@ -653,17 +653,7 @@
             "Type" : "AWS::AutoScaling::AutoScalingGroup",
             "UpdatePolicy" :
             {
-                "AutoScalingRollingUpdate" :
-                {
-                    "MinInstancesInService" : "1",
-                    "MaxBatchSize" : "2",
-                    "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT20M"
-                },
-                "AutoScalingScheduledAction" :
-                {
-                    "IgnoreUnmodifiedGroupSizeProperties" : "true"
-                }
+                "AutoScalingReplacingUpdate" : { "WillReplace" : "true" }
             },
             "CreationPolicy" :
             {
