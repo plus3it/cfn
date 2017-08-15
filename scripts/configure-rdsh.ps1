@@ -127,7 +127,7 @@ else
     # Cleanup non-responsive RD Servers
     ForEach ($RDServer in $RDServers)
     {
-        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 2 -SecondsDelay 300 -ErrorAction SilentlyContinue
+        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45 -ErrorAction SilentlyContinue
         if ($TestRdp)
         {
             Write-Verbose "Successfully connected to host, $($RDServer.Server), keeping this RD Server"
@@ -190,7 +190,7 @@ foreach ($Rule in $StaleUpdAcl.Access)
     {
         # Remove the rule if the host is not responding
         $Server = [System.Net.DNS]::GetHostEntry("$($Matches[1])").HostName
-        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 2 -SecondsDelay 300 -ErrorAction SilentlyContinue
+        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45 -ErrorAction SilentlyContinue
         if ($TestRdp)
         {
             Write-Verbose "Successfully connected to host, ${Server}, keeping this access rule"
