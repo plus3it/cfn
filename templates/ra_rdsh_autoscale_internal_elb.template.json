@@ -686,18 +686,7 @@
             },
             "UpdatePolicy" :
             {
-                "AutoScalingRollingUpdate" :
-                {
-                    "MinInstancesInService" : { "Ref" : "MinCapacity" },
-                    "MaxBatchSize" : { "Ref" : "MaxCapacity" },
-                    "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT60M",
-                    "SuspendProcesses" : [ "ScheduledActions" ]
-                },
-                "AutoScalingScheduledAction" :
-                {
-                    "IgnoreUnmodifiedGroupSizeProperties" : "true"
-                }
+                "AutoScalingReplacingUpdate" : { "WillReplace" : "true" }
             },
             "Properties" :
             {

@@ -653,18 +653,7 @@
             },
             "UpdatePolicy" :
             {
-                "AutoScalingRollingUpdate" :
-                {
-                    "MinInstancesInService" : "1",
-                    "MaxBatchSize" : "2",
-                    "WaitOnResourceSignals" : "true",
-                    "PauseTime" : "PT40M",
-                    "SuspendProcesses" : [ "ScheduledActions" ]
-                },
-                "AutoScalingScheduledAction" :
-                {
-                    "IgnoreUnmodifiedGroupSizeProperties" : "true"
-                }
+                "AutoScalingReplacingUpdate" : { "WillReplace" : "true" }
             },
             "Properties" :
             {
