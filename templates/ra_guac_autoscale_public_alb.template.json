@@ -63,7 +63,7 @@
             "Description" : "The minimum number of instances for the autoscale group",
             "Type" : "String",
             "MinLength" : "1",
-            "Default" : "1"
+            "Default" : "0"
         },
         "MaxCapacity" :
         {
@@ -519,18 +519,6 @@
                 "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "Cooldown" : "60",
                 "ScalingAdjustment" : "1"
-            }
-        },
-        "ScaleDownPolicy" :
-        {
-            "Type" : "AWS::AutoScaling::ScalingPolicy",
-            "Condition" : "UseScalingPolicy",
-            "Properties" :
-            {
-                "AdjustmentType" : "ChangeInCapacity",
-                "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
-                "Cooldown" : "60",
-                "ScalingAdjustment" : "-1"
             }
         },
         "CPUAlarmLow" :
@@ -993,7 +981,7 @@
                     " ( echo 'ERROR: cfn-init failed! Aborting!';",
                     " /opt/aws/bin/cfn-signal -e 1",
                     "  --stack ", { "Ref" : "AWS::StackName" },
-                    "  --resource SystemPrepAutoScalingGroup",
+                    "  --resource AutoScalingGroup",
                     "  --region ", { "Ref" : "AWS::Region"}, ";",
                     " exit 1",
                     " )\n\n"

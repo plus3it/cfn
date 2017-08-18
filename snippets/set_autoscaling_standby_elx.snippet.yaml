@@ -1,7 +1,11 @@
 commands:
   10-set-standby:
     command:
-      - |
-        $instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-        $asg_name=$(aws autoscaling describe-auto-scaling-instances --instance-ids $instance_id --query AutoScalingInstances[].AutoScalingGroupName --out text)
-        aws autoscaling enter-standby --instance-ids $instance_id --auto-scaling-group-name $asg_name --should-decrement-desired-capacity
+      'Fn::Sub': |
+        instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+        asg_name=$(aws autoscaling describe-auto-scaling-instances --instance-ids $instance_id --query AutoScalingInstances[].AutoScalingGroupName --out text --region ${AWS::Region})
+        aws autoscaling enter-standby --instance-ids $instance_id --auto-scaling-group-name $asg_name --should-decrement-desired-capacity --region ${AWS::Region}
+        until [ "$(aws autoscaling describe-auto-scaling-instances --instance-ids $instance_id --query AutoScalingInstances[].LifecycleState --out text --region ${AWS::Region})" = "Standby" ]
+        do
+          sleep 5
+        done
