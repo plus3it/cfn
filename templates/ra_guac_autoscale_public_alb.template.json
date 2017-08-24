@@ -108,7 +108,7 @@
         {
             "Description" : "Version of Guacamole to install",
             "Type" : "String",
-            "Default" : "0.9.12-incubating",
+            "Default" : "0.9.13-incubating",
             "MinLength" : "1"
         },
         "URL1" :
@@ -519,28 +519,6 @@
                 "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
                 "Cooldown" : "60",
                 "ScalingAdjustment" : "1"
-            }
-        },
-        "CPUAlarmLow" :
-        {
-            "Type" : "AWS::CloudWatch::Alarm",
-            "Condition" : "UseScalingPolicy",
-            "Properties" :
-            {
-                "EvaluationPeriods" : "10",
-                "Statistic" : "Average",
-                "Threshold" : "10",
-                "AlarmDescription" : "Scale-down if CPU < 10% for 10 minutes",
-                "Period" : "60",
-                "AlarmActions" : [ { "Ref" : "ScaleDownPolicy" } ],
-                "Namespace" : "AWS/EC2",
-                "Dimensions" :
-                [{
-                   "Name" : "AutoScalingGroupName",
-                   "Value" : { "Ref" : "AutoScalingGroup" }
-                }],
-                "ComparisonOperator" : "LessThanThreshold",
-                "MetricName" : "CPUUtilization"
             }
         },
         "CPUAlarmHigh" :
