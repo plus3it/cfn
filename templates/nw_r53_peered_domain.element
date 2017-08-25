@@ -90,11 +90,7 @@
             "DependsOn" : "PrivateHostedZone",
             "Properties" :
             {
-                "HostedZoneName" :
-                { "Fn::Join" : [ "", [
-                    { "Ref" : "PeeredDomainDnsName" },
-                    "."
-                ]]},
+                "HostedZoneId": { "Ref": "PrivateHostedZone" },
                 "Name" :
                 { "Fn::Join" : [ "", [
                     { "Ref" : "PeeredDc1Name" }, ".",
@@ -112,11 +108,7 @@
             "DependsOn" : "PrivateHostedZone",
             "Properties" :
             {
-                "HostedZoneName" :
-                { "Fn::Join" : [ "", [
-                    { "Ref" : "PeeredDomainDnsName" },
-                    "."
-                ]]},
+                "HostedZoneId": { "Ref": "PrivateHostedZone" },
                 "Name" :
                 { "Fn::Join" : [ "", [
                     "_ldap._tcp.dc._msdcs.",
@@ -149,11 +141,7 @@
             "DependsOn" : "PrivateHostedZone",
             "Properties" :
             {
-                "HostedZoneName" :
-                { "Fn::Join" : [ "", [
-                    { "Ref" : "PeeredDomainDnsName" },
-                    "."
-                ]]},
+                "HostedZoneId": { "Ref": "PrivateHostedZone" },
                 "Name" :
                 { "Fn::Join" : [ "", [
                     { "Ref" : "PeeredDomainDnsName" },
@@ -177,11 +165,7 @@
             "DependsOn" : "PrivateHostedZone",
             "Properties" :
             {
-                "HostedZoneName" :
-                { "Fn::Join" : [ "", [
-                    { "Ref" : "PeeredDomainDnsName" },
-                    "."
-                ]]},
+                "HostedZoneId": { "Ref": "PrivateHostedZone" },
                 "Name" :
                 { "Fn::Join" : [ "", [
                     { "Ref" : "PeeredDc2Name" }, ".",
@@ -199,11 +183,7 @@
             "DependsOn" : "PrivateHostedZone",
             "Properties" :
             {
-                "HostedZoneName" :
-                { "Fn::Join" : [ "", [
-                    { "Ref" : "PeeredDomainDnsName" },
-                    "."
-                ]]},
+                "HostedZoneId": { "Ref": "PrivateHostedZone" },
                 "Name" :
                 { "Fn::Join" : [ "", [
                     "_ldap._tcp.dc._msdcs.",
@@ -236,11 +216,7 @@
             "DependsOn" : "PrivateHostedZone",
             "Properties" :
             {
-                "HostedZoneName" :
-                { "Fn::Join" : [ "", [
-                    { "Ref" : "PeeredDomainDnsName" },
-                    "."
-                ]]},
+                "HostedZoneId": { "Ref": "PrivateHostedZone" },
                 "Name" :
                 { "Fn::Join" : [ "", [
                     { "Ref" : "PeeredDomainDnsName" },
