@@ -6,6 +6,8 @@ Properties:
       - Ref: DomainDirectoryId
     directoryName:
       - Ref: DomainDnsName
+    directoryOU:
+      - Ref: LdapContainerOU
   Targets:
     -
       Key: tag:aws:cloudformation:stack-id
