@@ -219,6 +219,7 @@ if (-not ($Identity -in $Identities))
 {
     Write-Verbose "Adding missing access rule for ${Identity} to UPD share, ${UpdPath}"
     $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${Identity}", "FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
+    $updAcl.AddAccessRule($Rule)
 }
 
 # Write the new ACL
