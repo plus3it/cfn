@@ -116,6 +116,8 @@ $RequiredRoles = @(
 )
 
 $RDServers = Get-RDServer -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue
+$ValidRDServers = @()
+$StaleRDServers = @()
 if (-not $RDServers)
 {
     # Create RD Session Deployment
@@ -130,10 +132,12 @@ else
         $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45 -ErrorAction SilentlyContinue
         if ($TestRdp)
         {
+            $ValidRDServers += $RDServer.Server
             Write-Verbose "Successfully connected to host, $($RDServer.Server), keeping this RD Server"
         }
         else
         {
+            $StaleRDServers += $RDServer.Server
             if ($RDServer.Server -in (Get-RDSessionHost -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue).SessionHost)
             {
                 Write-Verbose "Removing RD Session Host, $($RDServer.Server), from the collection..."
@@ -188,17 +192,30 @@ foreach ($Rule in $StaleUpdAcl.Access)
     # Test if the rule is a computer object
     if ($Rule.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
     {
-        # Remove the rule if the host is not responding
+        # Check previously marked servers
         $Server = [System.Net.DNS]::GetHostEntry("$($Matches[1])").HostName
-        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45 -ErrorAction SilentlyContinue
-        if ($TestRdp)
+        if ($Server -in $ValidRDServers)
         {
-            Write-Verbose "Successfully connected to host, ${Server}, keeping this access rule"
+            Write-Verbose "Host previously marked VALID, ${Server}, keeping rule"
+        }
+        elseif ($Server -in $StaleRDServers)
+        {
+            $StaleRules += $Rule
+            Write-Verbose "Host previously marked STALE, $($Rule.IdentityReference.Value), marked rule for removal from UPD share, ${UpdPath}"
         }
         else
         {
-            $StaleRules += $Rule
-            Write-Verbose "Marked stale rule for removal, $($Rule.IdentityReference.Value), from UPD share, ${UpdPath}"
+            # Host is in ACL, but was not an RD Server; test connectivity and remove the rule if the host is not responding
+            $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45 -ErrorAction SilentlyContinue
+            if ($TestRdp)
+            {
+                Write-Verbose "Successfully connected to host, ${Server}, keeping this access rule"
+            }
+            else
+            {
+                $StaleRules += $Rule
+                Write-Verbose "Marked stale rule for removal, $($Rule.IdentityReference.Value), from UPD share, ${UpdPath}"
+            }
         }
     }
 }
