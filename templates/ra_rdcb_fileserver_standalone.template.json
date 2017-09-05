@@ -841,7 +841,15 @@
             },
             "Properties" :
             {
-                "ImageId" : { "Ref" : "AmiId" },
+                "ImageId" :
+                {
+                    "Fn::If" :
+                    [
+                        "UseAmiLookup",
+                        {"Fn::GetAtt" : [ "AmiIdLookup", "Id" ]},
+                        {"Ref" : "AmiId"}
+                    ]
+                },
                 "InstanceType" : { "Ref" : "InstanceType" },
                 "DisableApiTermination" : "true",
                 "Monitoring" : "true",

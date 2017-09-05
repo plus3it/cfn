@@ -7,6 +7,7 @@ commands:
           $InstanceId = (New-Object Net.WebClient).Downloadstring('http://169.254.169.254/latest/meta-data/instance-id');
           $AsgName = $(Get-ASAutoScalingInstance -InstanceId $InstanceId -Region ${AWS::Region}).AutoScalingGroupName;
           Enter-ASStandby -InstanceId $InstanceId -AutoScalingGroupName $AsgName -shouldDecrementDesiredCapacity $True;
+          While ((Get-ASAutoScalingInstance -InstanceId $InstanceId -Region ${AWS::Region}).LifeCycleState -ne \"Standby\") { sleep 5 }
           } -Verbose -ErrorAction Stop
         -
           command:
