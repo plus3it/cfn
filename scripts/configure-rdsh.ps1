@@ -184,6 +184,10 @@ else
     Write-Verbose "Added system to RD Session Collection; SessionHost=${SystemName}, CollectionName=${CollectionName}"
 }
 
+# Disable new sessions until reboot
+Set-RDSessionHost -SessionHost $SystemName -NewConnectionAllowed "NotUntilReboot" -ConnectionBroker $ConnectionBroker
+Write-Verbose "Disabled new sessions until the host reboots"
+
 # Mark stale access rules on UPD share
 $StaleRules = @()
 $StaleUpdAcl = Get-Acl $UpdPath -ErrorAction Stop
