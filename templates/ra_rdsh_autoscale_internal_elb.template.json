@@ -493,7 +493,8 @@
                             "Action" :
                             [
                                 "autoscaling:EnterStandby",
-                                "autoscaling:ExitStandby"
+                                "autoscaling:ExitStandby",
+                                "autoscaling:SuspendProcesses"
                             ],
                             "Resource" : "*",
                             "Condition" :
@@ -730,6 +731,7 @@
                         [
                             "join-domain",
                             "setup",
+                            "suspend-azrebalance",
                             "set-standby",
                             "installRDS",
                             "set-active",
@@ -737,6 +739,7 @@
                         ],
                         "update" :
                         [
+                            "suspend-azrebalance",
                             "set-standby",
                             "setup",
                             "set-active",
@@ -848,6 +851,17 @@
                             "Parameters" :
                             {
                                 "Location" : "s3://app-chemistry/snippets/set_autoscaling_active_win.snippet.yaml"
+                            }
+                        }
+                    },
+                    "suspend-azrebalance" :
+                    {
+                        "Fn::Transform" :
+                        {
+                            "Name" : "AWS::Include",
+                            "Parameters" :
+                            {
+                                "Location" : "s3://app-chemistry/snippets/autoscaling_suspend_azrebalance_win.snippet.yaml"
                             }
                         }
                     },
