@@ -696,7 +696,8 @@
                 "MinSize" : { "Ref" : "MinCapacity" },
                 "MaxSize" : { "Ref" : "MaxCapacity" },
                 "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
-                "HealthCheckGracePeriod" : "3600",
+                "Cooldown" : "4500",
+                "HealthCheckGracePeriod" : "4500",
                 "HealthCheckType" : "ELB",
                 "MetricsCollection" : [ { "Granularity" : "1Minute" } ],
                 "Tags" :
