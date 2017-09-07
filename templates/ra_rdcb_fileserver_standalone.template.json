@@ -1007,7 +1007,7 @@
                 } ],
                 "EvaluationPeriods" : "5",
                 "MetricName" : "LogicalDiskPercentFreeSpace_C",
-                "Namespace" : "Windows-Default",
+                "Namespace" : "AWS/EC2",
                 "Period" : "60",
                 "Statistic" : "Average",
                 "Threshold" : "40"
@@ -1028,7 +1028,7 @@
                 } ],
                 "EvaluationPeriods" : "5",
                 "MetricName" : "LogicalDiskPercentFreeSpace_C",
-                "Namespace" : "Windows-Default",
+                "Namespace" : "AWS/EC2",
                 "Period" : "60",
                 "Statistic" : "Average",
                 "Threshold" : "20"
@@ -1049,7 +1049,7 @@
                 } ],
                 "EvaluationPeriods" : "5",
                 "MetricName" : "LogicalDiskPercentFreeSpace_D",
-                "Namespace" : "Windows-Default",
+                "Namespace" : "AWS/EC2",
                 "Period" : "60",
                 "Statistic" : "Average",
                 "Threshold" : "40"
@@ -1070,7 +1070,7 @@
                 } ],
                 "EvaluationPeriods" : "5",
                 "MetricName" : "LogicalDiskPercentFreeSpace_D",
-                "Namespace" : "Windows-Default",
+                "Namespace" : "AWS/EC2",
                 "Period" : "60",
                 "Statistic" : "Average",
                 "Threshold" : "20"
