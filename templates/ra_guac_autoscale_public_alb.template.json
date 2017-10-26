@@ -18,7 +18,7 @@
         {
             "Description" : "Search pattern to match against an AMI Name",
             "Type" : "String",
-            "Default" : "amzn-ami-hvm-2017.03*.2017*-x86_64-gp2"
+            "Default" : "amzn-ami-hvm-2017.09*.2017*-x86_64-gp2"
         },
         "InstanceType" :
         {
@@ -102,13 +102,6 @@
             "Description" : "Distinguished Name (DN) of the LDAP directory",
             "Type" : "String",
             "Default" : "DC=ad,DC=example,DC=com",
-            "MinLength" : "1"
-        },
-        "GuacVersion" :
-        {
-            "Description" : "Version of Guacamole to install",
-            "Type" : "String",
-            "Default" : "0.9.13-incubating",
             "MinLength" : "1"
         },
         "URL1" :
@@ -776,8 +769,6 @@
                                     { "Ref" : "LdapServer" },
                                     " -D ",
                                     { "Ref" : "LdapDN" },
-                                    " -v ",
-                                    { "Ref" : "GuacVersion" },
                                     {
                                         "Fn::If" :
                                         [
