@@ -5,7 +5,7 @@
 #    setting up a baseline configuration of the Guacamole
 #    management-protocol HTTP-tunneling service. When the script
 #    exits successfully, Guacamole will be listening at
-#    "localhost:8080/guacamole"
+#    "localhost:8080"
 #
 #################################################################
 __SCRIPTNAME="make-guac.sh"
@@ -92,10 +92,7 @@ usage()
   After successful execution, Guacamole v(latest) will be installed and running
   in two Docker containers. One container for the backend "guacd" service,
   and a second container for the frontend "guacamole" tomcat java servlet.
-  The web app will be running at "localhost:8080/guacamole".
-
-  If no options are specified, users will not be able to authenticate. Specify
-  "-H" (and associated options) to configure LDAP authentication.
+  The webapp will be running at "localhost:8080".
 
   Options:
   -h  Display this message.
@@ -208,6 +205,27 @@ write_brand()
 }  # ----------  end of function write_brand  ----------
 
 
+write_guacamole_dockerfile()
+{
+    local guac_docker
+    local guac_dockerfile
+    guac_docker="$1"
+    guac_dockerfile="${guac_docker}/Dockerfile"
+
+    log "Writing Guacamole Dockerfile, ${guac_dockerfile}"
+    (
+        printf "FROM guacamole/guacamole\n"
+        printf "\n"
+        printf "RUN rm -rf /usr/local/tomcat/webapps/* && \\"
+        printf "\n"
+        printf "    sed -i 's#ln -sf /opt/guacamole/guacamole\.war /usr/local/tomcat/webapps/#ln -sf /opt/guacamole/guacamole\.war /usr/local/tomcat/webapps/ROOT.war#' /opt/guacamole/bin/start.sh\n"
+        printf "\n"
+        printf "CMD [\"/opt/guacamole/bin/start.sh\" ]\n"
+    ) > "${guac_dockerfile}"
+    log "Successfully added Guacamole Dockerfile"
+}  # ----------  end of function write_brand  ----------
+
+
 # Define default values
 LDAP_HOSTNAME=
 LDAP_DOMAIN_DN=
@@ -315,13 +333,21 @@ fi
 
 
 # Set internal variables
+DOCKER_GUACD=guacd
 DOCKER_GUACD_IMAGE=guacamole/guacd
 DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole
-DOCKER_GUACD=guacd
+DOCKER_GUACAMOLE_IMAGE_LOCAL=local/guacamole
 DOCKER_GUACAMOLE=guacamole
+DOCKER_GUACAMOLE_LOCAL=/root/guacamole
 GUAC_EXT=/tmp/extensions
 GUAC_HOME=/root/guac-home
 GUAC_DRIVE=/var/tmp/guacamole
+
+
+# Setup build directories
+log "Initializing ${__SCRIPTNAME} build directories"
+rm -rf "${GUAC_EXT}" "${GUAC_HOME}" "${GUAC_DRIVE}" "${DOCKER_GUACAMOLE_LOCAL}" | log
+mkdir -p "${GUAC_EXT}" "${GUAC_HOME}/extensions" "${GUAC_DRIVE}" "${DOCKER_GUACAMOLE_LOCAL}" | log
 
 
 # Get docker
@@ -341,10 +367,10 @@ log "Fetching the guacamole image, ${DOCKER_GUACAMOLE_IMAGE}"
 docker pull "${DOCKER_GUACAMOLE_IMAGE}" | log
 
 
-# Setup build directories
-log "Initializing ${__SCRIPTNAME} build directories"
-rm -rf "${GUAC_EXT}" "${GUAC_HOME}" "${GUAC_DRIVE}" | log
-mkdir -p "${GUAC_EXT}" "${GUAC_HOME}/extensions" "${GUAC_DRIVE}" | log
+# Build local guacamole image
+log "Building local guacamole image from dockerfile"
+write_guacamole_dockerfile "${DOCKER_GUACAMOLE_LOCAL}"
+docker build -t "${DOCKER_GUACAMOLE_IMAGE_LOCAL}" "${DOCKER_GUACAMOLE_LOCAL}" | log
 
 
 # Create custom guacamole branding extension
@@ -402,7 +428,7 @@ docker run --name guacd \
 
 
 # Starting guacamole container
-log "Starting guacamole container, ${DOCKER_GUACAMOLE_IMAGE}"
+log "Starting guacamole container, ${DOCKER_GUACAMOLE_IMAGE_LOCAL}"
 docker run --name guacamole \
     --restart unless-stopped \
     --link guacd:guacd \
@@ -414,4 +440,4 @@ docker run --name guacamole \
     -e LDAP_USERNAME_ATTRIBUTE="${LDAP_USER_ATTRIBUTE}" \
     -e LDAP_CONFIG_BASE_DN="${LDAP_CONFIG_BASE},${LDAP_DOMAIN_DN}" \
     -e LDAP_GROUP_BASE_DN="${LDAP_GROUP_BASE},${LDAP_DOMAIN_DN}" \
-    -d -p 8080:8080 "${DOCKER_GUACAMOLE_IMAGE}" | log
+    -d -p 8080:8080 "${DOCKER_GUACAMOLE_IMAGE_LOCAL}" | log
