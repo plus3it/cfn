@@ -25,6 +25,18 @@ m4.large:
 m4.xlarge:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
+c5.large:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
+c5.xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
+m5.large:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
+m5.xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
 r4.large:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
