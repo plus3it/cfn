@@ -940,7 +940,7 @@
                     "\n\n",
 
                     "# Install ssm agent\n",
-                    "yum -y install https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm\n\n",
+                    "yum -y install https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm || true\n\n",
 
                     "# Execute cfn-init\n",
                     "/opt/aws/bin/cfn-init -v -c config",
