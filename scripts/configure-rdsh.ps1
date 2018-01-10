@@ -70,6 +70,46 @@ function Retry-TestCommand
     }
 }
 
+function Download-File
+{
+    param (
+    [Parameter(Mandatory=$true)]
+    [string]$Source,
+
+    [Parameter(Mandatory=$true)]
+    [string]$Destination,
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("Ssl3","SystemDefault","Tls","Tls11","Tls12")]
+    [string]$SecurityProtocol = "Tls12"
+    )
+    Write-Verbose "Downloading file --"
+    Write-Verbose "    Source = ${Source}"
+    Write-Verbose "    Destination = ${Destination}"
+    try
+    {
+        Write-Verbose "Attempting to retrieve file using .NET method..."
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::$SecurityProtocol
+        (New-Object Net.WebClient).DownloadFile("${Source}","${Destination}")
+        Write-Output (Get-ChildItem "$Destination")
+    }
+    catch
+    {
+        try
+        {
+            Write-Verbose $PSItem.ToString()
+            Write-Verbose ".NET method failed, attempting BITS transfer method..."
+            Start-BitsTransfer -Source "${Source}" -Destination "${Destination}"
+            Write-Output (Get-ChildItem "$Destination")
+        }
+        catch
+        {
+            Write-Verbose $PSItem.ToString()
+            $PSCmdlet.ThrowTerminatingError($PSitem)
+        }
+    }
+}
+
 $RequiredFeatures = @(
     "RDS-RD-Server"
     "RDS-Licensing"
@@ -307,13 +347,10 @@ $SignOffShortcut.IconLocation = "${env:SYSTEMROOT}\System32\imageres.dll,81"
 $SignOffShortcut.Save()
 Write-Verbose "Created the logoff shortcut"
 
-# Enforce TLS 1.2 for download, because PowerShell is stupid
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
 # Install Git for Windows
 $GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.12.2.windows.2/Git-2.12.2.2-64-bit.exe"
 $GitInstaller = "${Env:Temp}\Git-2.12.2.2-64-bit.exe"
-(new-object net.webclient).DownloadFile("${GitUrl}","${GitInstaller}")
+Retry-TestCommand -Test Download-File -Args @{Source=$GitUrl; Destination=$GitInstaller}
 $GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
 Write-Verbose "Installed git for windows"
@@ -329,7 +366,7 @@ Write-Verbose "Configured git for windows"
 # Install Python 3.5
 $Py35Url = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
 $Py35Installer = "${Env:Temp}\python-3.5.2-amd64.exe"
-(new-object net.webclient).DownloadFile("${Py35Url}","${Py35Installer}")
+Retry-TestCommand -Test Download-File -Args @{Source=$Py35Url; Destination=$Py35Installer}
 $Py35Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
 $null = Start-Process -FilePath ${Py35Installer} -ArgumentList ${Py35Params} -PassThru -Wait
 Write-Verbose "Installed python 3.5"
@@ -338,7 +375,7 @@ Write-Verbose "Installed python 3.5"
 $HaskellVersion = "8.0.2"
 $HaskellUrl = "https://downloads.haskell.org/~platform/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
 $HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
-(new-object net.webclient).DownloadFile("${HaskellUrl}","${HaskellInstaller}")
+Retry-TestCommand -Test Download-File -Args @{Source=$HaskellUrl; Destination=$HaskellInstaller}
 $HaskellParams = "/S"
 $null = Start-Process -FilePath ${HaskellInstaller} -ArgumentList ${HaskellParams} -PassThru -Wait
 Write-Verbose "Installed haskell platform"
