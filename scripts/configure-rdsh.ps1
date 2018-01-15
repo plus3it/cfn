@@ -268,11 +268,13 @@ try
     Set-RDSessionHost -SessionHost $SystemName -NewConnectionAllowed "NotUntilReboot" -ConnectionBroker $ConnectionBroker
     Write-Verbose "Disabled new sessions until the host reboots"
 
-    # Mark stale access rules on UPD share
-    $StaleRules = @()
-    $StaleUpdAcl = Get-Acl $UpdPath -ErrorAction Stop
+    # Remove stale access rules
+    $UpdAcl = Get-Acl $UpdPath -ErrorAction Stop
+    Write-Verbose "Current ACL on ${UpdPath}:"
+    Write-Verbose ($UpdAcl.Access | Out-String)
+
     Write-Verbose "Evaluating ACLs on User Profile Share: $UpdPath"
-    foreach ($Rule in $StaleUpdAcl.Access)
+    foreach ($Rule in $UpdAcl.Access)
     {
         # Test if the rule is a computer object
         if ($Rule.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
@@ -287,8 +289,8 @@ try
             }
             elseif ($Server -in $StaleRDServers)
             {
-                $StaleRules += $Rule
-                Write-Verbose "Host previously marked STALE, marked rule for removal"
+                $UpdAcl.RemoveAccessRule($Rule)
+                Write-Verbose "Host previously marked STALE, removed rule:"
                 Write-Verbose "    Host: $Server"
                 Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
             }
@@ -304,8 +306,8 @@ try
                 }
                 catch
                 {
-                    $StaleRules += $Rule
-                    Write-Verbose "Marked stale rule for removal"
+                    $UpdAcl.RemoveAccessRule($Rule)
+                    Write-Verbose "Host is non-responsive, removed rule:"
                     Write-Verbose "    Host: $Server"
                     Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
                 }
@@ -313,25 +315,12 @@ try
         }
     }
 
-    # Remove stale access rules; we get the ACL again, in case it changed while
-    # retrying the test for stale hosts
-    $UpdAcl = Get-Acl $UpdPath -ErrorAction Stop
-    Write-Verbose "Current ACL on ${UpdPath}:"
-    Write-Verbose ($UpdAcl.Access | Out-String)
-
-    foreach ($Rule in $StaleRules)
-    {
-        $UpdAcl.RemoveAccessRule($Rule)
-        Write-Verbose "Removed stale rule:"
-        Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
-    }
-
     # Ensure this host is in the UPD share ACL
     $Identities = ($UpdAcl.Access | Select IdentityReference).IdentityReference.Value
     $Identity = "${DomainNetBiosName}\$((Get-WmiObject Win32_ComputerSystem).Name)$"
     if (-not ($Identity -in $Identities))
     {
-        Write-Verbose "Adding missing access rule for to UPD share"
+        Write-Verbose "Adding missing access rule for this host to UPD share."
         Write-Verbose "    Rule Identity: $Identity"
         $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${Identity}", "FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
         $updAcl.AddAccessRule($Rule)
