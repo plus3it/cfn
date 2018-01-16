@@ -35,35 +35,47 @@ function Retry-TestCommand
     [Parameter(Mandatory=$false)][hashtable]$Args = @{},
     [Parameter(Mandatory=$false)][string]$TestProperty,
     [Parameter(Mandatory=$false)][int]$Tries = 5,
-    [Parameter(Mandatory=$false)][int]$SecondsDelay = 2
+    [Parameter(Mandatory=$false)][int]$SecondsDelay = 2,
+    [Parameter(Mandatory=$false)][switch]$ExpectNull
     )
-    $Args.ErrorAction = "SilentlyContinue"
-
     $TryCount = 0
     $Completed = $false
+    $MsgFailed = "Command [{0}] failed" -f $Test
+    $MsgSucceeded = "Command [{0}] succeeded." -f $Test
 
     while (-not $Completed)
     {
-        $Result = & $Test @Args
-        $TestResult = if ($TestProperty) { $Result.$TestProperty } else { $Result }
-        $TryCount++
-        if ($TestResult)
+        try
         {
-            Write-Verbose ("Test [{0}] succeeded." -f $Test)
-            $Completed = $true
-            Write-Output $TestResult
-        }
-        else
-        {
-            if ($TryCount -ge $Tries)
+            $Result = & $Test @Args
+            $TestResult = if ($TestProperty) { $Result.$TestProperty } else { $Result }
+            if (-not $TestResult -and -not $ExpectNull)
             {
-                $Completed = $true
-                Write-Output $TestResult
-                throw ("Test [{0}] failed the maximum number of {1} time(s)." -f $Test, $Tries)
+                throw $MsgFailed
             }
             else
             {
-                Write-Verbose ("Test [{0}] failed. Retrying in {1} second(s)." -f $Test, $SecondsDelay)
+                Write-Verbose $MsgSucceeded
+                Write-Output $TestResult
+                $Completed = $true
+            }
+        }
+        catch
+        {
+            $TryCount++
+            if ($TryCount -ge $Tries)
+            {
+                $Completed = $true
+                Write-Output $null
+                Write-Warning ($PSItem | Select -Property * | Out-String)
+                Write-Warning ("Command [{0}] failed the maximum number of {1} time(s)." -f $Test, $Tries)
+                $PSCmdlet.ThrowTerminatingError($PSItem)
+            }
+            else
+            {
+                $Msg = $PSItem.ToString()
+                if ($Msg -ne $MsgFailed) { Write-Warning $Msg }
+                Write-Warning ("Command [{0}] failed. Retrying in {1} second(s)." -f $Test, $SecondsDelay)
                 Start-Sleep $SecondsDelay
             }
         }
@@ -239,13 +251,13 @@ try
     {
         if (-not ($Role -in $CurrentRoles.Roles))
         {
-            Add-RDServer -Server $SystemName -Role $Role -ConnectionBroker $ConnectionBroker -ErrorAction Stop
+            Retry-TestCommand -Test Add-RDServer -Args @{Server=$SystemName; Role=$Role; ConnectionBroker=$ConnectionBroker}
             Write-Verbose "Configured system with role, ${Role}"
         }
     }
 
-    # Create RD Session Collection or add system to existing collection
-    if (-not (Get-RDSessionCollection -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -ErrorAction SilentlyContinue))
+    # Create new session collection, or on error add system to existing collection
+    try
     {
         New-RDSessionCollection -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -SessionHost $SystemName  -ErrorAction Stop
         Write-Verbose "Created the RD Session Collection!"
@@ -256,9 +268,9 @@ try
         Set-RDSessionCollectionConfiguration -CollectionName $CollectionName -ConnectionBroker $ConnectionBroker -EnableUserProfileDisk -DiskPath "${UpdPath}" -MaxUserProfileDiskSizeGB $MaxUpdSizeGB -ErrorAction Stop
         Write-Verbose "Enabled user profile disks for the RD Session Collection, ${UpdPath}"
     }
-    else
+    catch [Microsoft.PowerShell.Commands.WriteErrorException]
     {
-        Add-RDSessionHost -CollectionName "RDS Collection" -SessionHost $SystemName -ConnectionBroker $ConnectionBroker -ErrorAction Stop
+        Retry-TestCommand -Test Add-RDSessionHost -Args @{CollectionName=$CollectionName; SessionHost=$SystemName; ConnectionBroker=$ConnectionBroker} -ExpectNull
         Write-Verbose "Added system to RD Session Collection"
         Write-Verbose "    SessionHost=${SystemName}"
         Write-Verbose "    CollectionName=${CollectionName}"
