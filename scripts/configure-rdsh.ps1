@@ -341,7 +341,7 @@ try
     # Write the new ACL
     Write-Verbose "Setting updated ACL on ${UpdPath}:"
     Write-Verbose ($UpdAcl.Access | Out-String)
-    Set-Acl $UpdPath $UpdAcl -ErrorAction Stop
+    Retry-TestCommand -Test Set-Acl -Args @{Path=$UpdPath; AclObject=$UpdAcl} -ExpectNull
 }
 catch
 {
