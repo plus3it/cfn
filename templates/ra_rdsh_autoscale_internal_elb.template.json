@@ -586,6 +586,18 @@
                 "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
             }
         },
+        "ElbToRdshIngressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "Ec2SecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
+                "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
+            }
+        },
         "ElbSecurityGroup" :
         {
             "Type" : "AWS::EC2::SecurityGroup",
@@ -617,6 +629,18 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
+        "PublicToElbIngressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
+                "CidrIp" : "0.0.0.0/0"
+            }
+        },
         "ElbToRdshEgressTcp3389" :
         {
             "Type" : "AWS::EC2::SecurityGroupEgress",
@@ -626,6 +650,18 @@
                 "IpProtocol" : "tcp",
                 "FromPort" : "3389",
                 "ToPort" : "3389",
+                "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
+            }
+        },
+        "ElbToRdshEgressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
                 "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
             }
         },
@@ -659,6 +695,12 @@
                         "InstanceProtocol" : "TCP",
                         "LoadBalancerPort" : "3389",
                         "Protocol" : "TCP"
+                    },
+                    {
+                        "InstancePort" : "8091",
+                        "InstanceProtocol" : "HTTP",
+                        "LoadBalancerPort" : "8091",
+                        "Protocol" : "HTTP"
                     }
                 ],
                 "Policies" : [],
@@ -960,7 +1002,9 @@
                                     "c:\\cfn\\files\\rdp.pfx",
                                     "' -PrivateKeyPassword '\"",
                                     { "Ref" : "RdpPrivateKeyPassword" },
-                                    "\"' -Verbose -ErrorAction Stop"
+                                    "\"'",
+                                    " -HealthCheckEndPoint",
+                                    " -Verbose -ErrorAction Stop"
                                 ]]},
                                 "waitAfterCompletion" : "0"
                             },

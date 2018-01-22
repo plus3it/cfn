@@ -22,7 +22,13 @@ Param(
   [String] $PrivateKeyPfx,
 
   [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
-  [String] $PrivateKeyPassword
+  [String] $PrivateKeyPassword,
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [Switch] $HealthCheckEndPoint,
+
+  [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+  [String] $HealthCheckPort = "8091"
 )
 
 #Based on:
@@ -466,7 +472,7 @@ Write-Verbose "Updated cabal"
 
 # Install cabal packages
 $CabalPackages = @(
-  "shellcheck"
+    "shellcheck"
 )
 $CabalInstallParams = "install --global ${CabalPackages}"
 $null = Start-Process -FilePath ${CabalExe} -ArgumentList ${CabalInstallParams} -PassThru -Wait -NoNewWindow
@@ -475,5 +481,51 @@ Write-Verbose "Installed shellcheck"
 # Install PsGet, a PowerShell Module
 (new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
 Write-Verbose "Installed psget"
+
+if ($HealthCheckEndPoint)
+{
+    Write-Verbose "Setting up the RDSH Health Check End Point..."
+
+    # Install IIS
+    Install-WindowsFeature -Name Web-Server -IncludeManagementTools
+    Import-Module WebAdministration
+    Write-Verbose "Installed IIS to service health check requests"
+
+    # Create the health check ping file
+    $HealthCheckPing = "${Env:SystemDrive}\inetpub\wwwroot\ping.html"
+    $null = New-Item -Path $HealthCheckPing -ItemType File -Value "OK" -Force
+    Write-Verbose "Created the health check ping file: ${HealthCheckPing}"
+
+    # Set the listening port
+    Set-WebBinding -Name "Default Web Site" -BindingInformation "*:80:" -PropertyName Port -Value $HealthCheckPort
+    Write-Verbose "Configured the health check endpoint to listen on ${HealthCheckPort}"
+
+    # Open the firewall for the health check endpoint
+    $Rule = @{
+        Name = "RDSH Health Check End Point"
+        DisplayName = "RDSH Health Check End Point"
+        Description = "Allow inbound access to RDSH Health Check End Point"
+        Protocol = "TCP"
+        Enabled = "True"
+        Profile = "Any"
+        Action = "Allow"
+        LocalPort = $HealthCheckPort
+    }
+    Try
+    {
+        New-NetFirewallRule @Rule -ErrorAction Stop
+    }
+    Catch [Microsoft.Management.Infrastructure.CimException]
+    {
+        # 11 is rule already exists; not a fatal error
+        if ($PSItem.Exception.StatusCode -ne "11")
+        {
+            # Any statuscode other than 11 is fatal
+            Write-Verbose $PSItem.ToString()
+            $PSCmdlet.ThrowTerminatingError($PSItem)
+        }
+    }
+    Write-Verbose "Opened firewall port ${HealthCheckPort} for RDSH Health Check End Point"
+}
 
 Write-Verbose "Completed configure-rdsh.ps1!"
