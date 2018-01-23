@@ -216,7 +216,7 @@ try
             Write-Verbose ("Testing connectivity to host: {0}" -f $RDServer.Server)
             try
             {
-                $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45
+                $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 7 -SecondsDelay 17
                 $ValidRDServers += $RDServer.Server
                 Write-Verbose "Successfully connected to host, $($RDServer.Server), keeping this RD Server"
             }
@@ -317,7 +317,7 @@ try
                 # Host is in ACL, but was not an RD Server; test connectivity and remove the rule if the host is not responding
                 try
                 {
-                    $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 4 -SecondsDelay 45
+                    $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 7 -SecondsDelay 17
                     Write-Verbose "Successfully connected to host, keeping this access rule"
                     Write-Verbose "    Host: $Server"
                     Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
