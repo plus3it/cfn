@@ -492,8 +492,6 @@
                             "Effect" : "Allow",
                             "Action" :
                             [
-                                "autoscaling:EnterStandby",
-                                "autoscaling:ExitStandby",
                                 "autoscaling:SuspendProcesses"
                             ],
                             "Resource" : "*",
@@ -586,6 +584,18 @@
                 "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
             }
         },
+        "ElbToRdshIngressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "Ec2SecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
+                "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
+            }
+        },
         "ElbSecurityGroup" :
         {
             "Type" : "AWS::EC2::SecurityGroup",
@@ -617,6 +627,18 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
+        "RdshToElbIngressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
+                "SourceSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
+            }
+        },
         "ElbToRdshEgressTcp3389" :
         {
             "Type" : "AWS::EC2::SecurityGroupEgress",
@@ -626,6 +648,18 @@
                 "IpProtocol" : "tcp",
                 "FromPort" : "3389",
                 "ToPort" : "3389",
+                "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
+            }
+        },
+        "ElbToRdshEgressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
                 "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
             }
         },
@@ -639,7 +673,7 @@
                 {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
-                    "Target" : "TCP:3389",
+                    "Target" : "HTTP:8091/ping.html",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
@@ -659,6 +693,12 @@
                         "InstanceProtocol" : "TCP",
                         "LoadBalancerPort" : "3389",
                         "Protocol" : "TCP"
+                    },
+                    {
+                        "InstancePort" : "8091",
+                        "InstanceProtocol" : "HTTP",
+                        "LoadBalancerPort" : "8091",
+                        "Protocol" : "HTTP"
                     }
                 ],
                 "Policies" : [],
@@ -732,17 +772,13 @@
                             "join-domain",
                             "setup",
                             "suspend-azrebalance",
-                            "set-standby",
                             "installRDS",
-                            "set-active",
                             "finalize"
                         ],
                         "update" :
                         [
                             "suspend-azrebalance",
-                            "set-standby",
                             "setup",
-                            "set-active",
                             "finalize"
                         ]
                     },
@@ -829,28 +865,6 @@
                                         "Location" : "s3://app-chemistry/snippets/restrict_cfn_permissions.snippet.yaml"
                                     }
                                 }
-                            }
-                        }
-                    },
-                    "set-standby" :
-                    {
-                        "Fn::Transform" :
-                        {
-                            "Name" : "AWS::Include",
-                            "Parameters" :
-                            {
-                                "Location" : "s3://app-chemistry/snippets/set_autoscaling_standby_win.snippet.yaml"
-                            }
-                        }
-                    },
-                    "set-active" :
-                    {
-                        "Fn::Transform" :
-                        {
-                            "Name" : "AWS::Include",
-                            "Parameters" :
-                            {
-                                "Location" : "s3://app-chemistry/snippets/set_autoscaling_active_win.snippet.yaml"
                             }
                         }
                     },
@@ -960,7 +974,9 @@
                                     "c:\\cfn\\files\\rdp.pfx",
                                     "' -PrivateKeyPassword '\"",
                                     { "Ref" : "RdpPrivateKeyPassword" },
-                                    "\"' -Verbose -ErrorAction Stop"
+                                    "\"'",
+                                    " -HealthCheckEndPoint",
+                                    " -Verbose -ErrorAction Stop"
                                 ]]},
                                 "waitAfterCompletion" : "0"
                             },
