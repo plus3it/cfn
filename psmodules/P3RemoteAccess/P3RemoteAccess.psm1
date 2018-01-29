@@ -1,4 +1,5 @@
 function global:Update-RDMS {
+    # Credit https://rcmtech.wordpress.com/2015/08/20/powershell-script-to-update-rdms-server-list/
     Begin{}
     Process{
         Write-Debug "Starting Update-RDMS"
