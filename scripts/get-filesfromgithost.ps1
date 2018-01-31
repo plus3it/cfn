@@ -9,97 +9,230 @@ function Get-FilesFromGitHost
     .DESCRIPTION
        This function will download files over HTTP from a remote git repository
        without using Git. At a minimum, you will need to provide the Source
-       (owner/repo//path/to/dir), and FilePath. The FilePath will include any
-       file paths (relative to $Source) that you want to download. Optionally,
-       you may specify a Ref (default: master), Destination (default: current directory),
-       or the GitHost (default: https://raw.githubusercontent.com)
+       (https://github.com/owner/repo/path/to/dir). Optionally, you may specify
+       Ref (default: $null, determined by remote git host), or Destination
+       (default: current directory).
     .EXAMPLE
-       # Get files from the root of a remote git repository:
+       # Get files from the root of a GitHub repository:
 
-       Get-FilesFromGitHost -Source 'owner/repo' -FilePath 'foo.psm1', 'foo.psd1'
+       Get-FilesFromGitHost -Source 'https://github.com/owner/repo'
      .EXAMPLE
-        # Get files from a subdirectory within a remote git repository (note the '//' separator):
+        # Get files from a subdirectory within a GitHub repository:
 
-        Get-FilesFromGitHost -Source 'owner/repo//path/to/directory' -FilePath 'foo.psm1', 'foo.psd1'
+        Get-FilesFromGitHost -Source 'https://github.com/owner/repo/path/to/directory'
     #>
     [CmdletBinding()]
-    [Alias()]
-    [OutputType([int])]
     Param
     (
-        # Please provide the module source
+        # Please provide the remote git source (https://github.com/owner/repo/path/to/dir)
         [Parameter(Mandatory=$true,
                    ValueFromPipelineByPropertyName=$true,
                    Position=0)]
         [string]$Source,
 
-        # Please provide a list of filepaths to download, relative to $Source
-        [Parameter(Mandatory=$true,
+        # Please provide the git ref
+        [Parameter(Mandatory=$false,
                    ValueFromPipelineByPropertyName=$true,
                    Position=1)]
-        [string[]]$FilePath,
+        [string]$Ref,
 
         # Please provide the destination directory (will be created)
         [Parameter(Mandatory=$false,
                    ValueFromPipelineByPropertyName=$true,
                    Position=2)]
-        [string]$Destination = ".",
-
-        # Please provide a git ref
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=3)]
-        [string]$Ref = 'master',
-
-        # Please provide the remote git host url for downloading raw files
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=4)]
-        [string]$GitHost = "https://raw.githubusercontent.com"
+        [string]$Destination = "."
     )
-
     Begin
     {
-        $Slug, $RepoPath = $Source -Split '//'
-        $Owner, $Repo = $Slug -Split '/'
-        $BaseUrl = "${GitHost}/${Slug}/${Ref}/${RepoPath}".TrimEnd('/')
+        $Uri = [System.Uri]$Source
+        $RepoPath = ($Uri.Segments[3..($Uri.Segments.Length)] -Join "").TrimEnd('/')
+        $Destination = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Destination)
 
-        if (-not ($Owner) -or -not ($Repo))
-        {
-            throw "Malformed `$Source! Must at least include the owner and repo, formatted as: <owner>/<repo>"
-        }
-
-        Write-Verbose "Creating directory: ${Destination}"
+        Write-Verbose "Creating destination directory: ${Destination}"
 
         New-Item -Type Container -Force -Path $Destination | Out-Null
 
         Write-Verbose "Downloading files..."
-        Write-Verbose ("{0,4}Source: {1}" -f "", $BaseUrl)
+        Write-Verbose ("{0,4}Source: {1}" -f "", $Source)
         Write-Verbose ("{0,4}Destination: {1}" -f "", $Destination)
 
         $wc = New-Object System.Net.WebClient
-
         $wc.Encoding = [System.Text.Encoding]::UTF8
-
     }
     Process
     {
-        foreach ($File in $FilePath)
-        {
-            Write-Verbose ("{0,4}Processing file: {1}" -f "", $File)
+        List-GitFiles -Source $Source -Ref $Ref | % {
+            $FilePath, $DownloadUrl = $_.Path, $_.DownloadUrl
+            if ($FilePath -eq $RepoPath)
+            {
+                # Source is a single file, we just need the leaf
+                $FilePath = "${Destination}\$(Split-Path -Leaf $FilePath)"
+            }
+            else
+            {
+                # Strip the leading repo path from the file path
+                $FilePath = "${Destination}\$($FilePath -replace "^$RepoPath/")"
+            }
 
-            Write-Debug ("{0,4}Attempting to create: {1}\{2}" -f "", $Destination, $File)
+            Write-Verbose ("{0,4}Processing file: {1}" -f "", $DownloadUrl)
 
-            New-Item -ItemType File -Force -Path "${Destination}\${File}" | Out-Null
+            Write-Debug ("{0,4}Attempting to create: {1}" -f "", $FilePath)
 
-            $Url = "${BaseUrl}/${File}"
+            $File = New-Item -ItemType File -Force -Path ${FilePath}
 
-            Write-Debug ("{0,4}Attempting to download from: {1}" -f "", $Url)
+            Write-Debug ("{0,4}Attempting to download from: {1}" -f "", $DownloadUrl)
 
-            ($wc.DownloadString("$Url")) | Out-File "${Destination}\${File}"
+            ($wc.DownloadString("$DownloadUrl")) | Out-File $File
+
+            $File
         }
     }
-    End
+}
+
+function Get-GitHostApiMethod
+{
+    [CmdletBinding()]
+    Param
+    (
+        # Please provide the api method call
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=0)]
+        [string]$MethodType,
+
+        # Please provide the remote git host
+        [Parameter(Mandatory=$false,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=1)]
+        [string]$SourceHost
+    )
+    Begin
     {
+        $ApiMethodMap = @{
+            "github.com" = @{
+                "ListFiles" = "List-GitHubFiles"
+            }
+        }
+
+        $ApiMethodMap[$SourceHost][$MethodType]
+    }
+}
+
+function List-GitFiles
+{
+    [CmdletBinding()]
+    Param
+    (
+        # Please provide the remote git source
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=0)]
+        [string]$Source,
+
+        # Please provide the git ref
+        [Parameter(Mandatory=$false,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=1)]
+        [string]$Ref
+    )
+    Begin
+    {
+        $Uri = [System.Uri]$Source
+        $SourceHost = $Uri.Host
+        $MethodArgs = @{
+            Owner = $Uri.Segments[1].TrimEnd('/')
+            Repo = $Uri.Segments[2].TrimEnd('/')
+            RepoPath = ($Uri.Segments[3..($Uri.Segments.Length)] -Join "").TrimEnd('/')
+            Ref = $Ref
+        }
+
+        $Method = Get-GitHostApiMethod -MethodType "ListFiles" -SourceHost $SourceHost
+    }
+    Process
+    {
+        & $Method @MethodArgs
+    }
+}
+
+function List-GitHubFiles
+{
+    [CmdletBinding()]
+    Param
+    (
+        # Please provide the remote git api uri to a repo/path
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   ParameterSetName="ApiUri",
+                   Position=0)]
+        [string]$ApiUri,
+
+        # Please provide the repo owner
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   ParameterSetName="NoApiUri",
+                   Position=0)]
+        [string]$Owner,
+
+        # Please provide the repo name
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   ParameterSetName="NoApiUri",
+                   Position=1)]
+        [string]$Repo,
+
+        # Please provide the repo path
+        [Parameter(Mandatory=$false,
+                   ValueFromPipelineByPropertyName=$true,
+                   ParameterSetName="NoApiUri",
+                   Position=2)]
+        [string]$RepoPath,
+
+        # Please provide the api host
+        [Parameter(Mandatory=$false,
+                   ValueFromPipelineByPropertyName=$true,
+                   ParameterSetName="NoApiUri",
+                   Position=3)]
+        [string]$ApiHost = "api.github.com",
+
+        # Please provide the git ref
+        [Parameter(Mandatory=$false,
+                   ParameterSetName="NoApiUri",
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=4)]
+        [string]$Ref
+    )
+    Begin
+    {
+        if ($PsCmdlet.ParameterSetName -eq "NoApiUri")
+        {
+            $ApiUri = "https://${ApiHost}/repos/${Owner}/${Repo}/contents/${RepoPath}"
+            $ApiUri = if ($Ref) { "${ApiUri}?ref=${Ref}" } else { $ApiUri }
+        }
+        $Items = (Invoke-WebRequest -Uri $ApiUri).Content | ConvertFrom-JSON
+    }
+    Process
+    {
+        foreach ($Item in $Items)
+        {
+            switch ($Item.type)
+            {
+                "file"
+                {
+                    @{
+                        Path = $Item.path
+                        DownloadUrl = $Item.download_url
+                    }
+                }
+                "dir"
+                {
+                    List-GitHubFiles -ApiUri $Item.url
+                }
+                default
+                {
+                    Write-Warning "Unknown item type: ${Item.type}"
+                    Write-Warning "    Url: ${Item.html_url}"
+                }
+            }
+        }
     }
 }
