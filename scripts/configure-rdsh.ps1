@@ -488,6 +488,10 @@ Write-Verbose "Installed shellcheck"
 (new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
 Write-Verbose "Installed psget"
 
+# Install nuget, a PowerShell Module provider
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+Write-Verbose "Installed nuget"
+
 if ($HealthCheckEndPoint)
 {
     Write-Verbose "Setting up the RDSH Health Check End Point..."
