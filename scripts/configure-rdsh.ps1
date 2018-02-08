@@ -323,7 +323,7 @@ try
                 # Host is in ACL, but was not an RD Server; test connectivity and remove the rule if the host is not responding
                 try
                 {
-                    $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 7 -SecondsDelay 17
+                    $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 1
                     Write-Verbose "Successfully connected to host, keeping this access rule"
                     Write-Verbose "    Host: $Server"
                     Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
