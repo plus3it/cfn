@@ -264,6 +264,7 @@ try
         if (-not ($Role -in $CurrentRoles.Roles))
         {
             Retry-TestCommand -Test Add-RDServer -Args @{Server=$SystemName; Role=$Role; ConnectionBroker=$ConnectionBroker}
+            $ValidRDServers += $SystemName.ToUpper()
             Write-Verbose "Configured system with role, ${Role}"
         }
     }
@@ -292,68 +293,89 @@ try
     Set-RDSessionHost -SessionHost $SystemName -NewConnectionAllowed "NotUntilReboot" -ConnectionBroker $ConnectionBroker
     Write-Verbose "Disabled new sessions until the host reboots"
 
-    # Remove stale access rules
+    # Get access rules
     $UpdAcl = Get-Acl $UpdPath -ErrorAction Stop
     Write-Verbose "Current ACL on ${UpdPath}:"
     Write-Verbose ($UpdAcl.Access | Out-String)
 
-    Write-Verbose "Evaluating ACLs on User Profile Share: $UpdPath"
-    foreach ($Rule in $UpdAcl.Access)
-    {
-        # Test if the rule is a computer object
-        if ($Rule.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
+    # Get a list of server names from the computer objects in the ACL
+    $UpdAclServers = @($UpdAcl.Access.IdentityReference.Value | % {
+        if ($_ -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
         {
-            # Check previously marked servers
-            $Server = [System.Net.DNS]::GetHostEntry("$($Matches[1])").HostName
-            if ($Server -in $ValidRDServers)
+            [System.Net.DNS]::GetHostEntry($Matches[1]).HostName.ToUpper()
+        }
+    })
+
+    Write-Verbose "Current servers in ACL:"
+    $UpdAclServers | % { Write-Verbose "    $_" }
+
+    # Update the ACL only if the current ACL contains invalid/stale RD Servers
+    # Note: The Connection Broker *is* a valid RD Server, but should not be in
+    # the ACL, so we remove it from the list to compare
+    $ExpectedAclServers = @($ValidRDServers | ? { $_ -ne $ConnectionBroker.ToUpper() })
+    Write-Verbose "Expected servers in ACL:"
+    $ExpectedAclServers | % { Write-Verbose "    $_" }
+
+    if (Compare-Object $UpdAclServers $ExpectedAclServers)
+    {
+        Write-Verbose "Evaluating ACLs on User Profile Share: $UpdPath"
+        foreach ($Rule in $UpdAcl.Access)
+        {
+            # Test if the rule is a computer object
+            if ($Rule.IdentityReference.Value -match "(?i)^${DomainNetBiosName}\\(.*)[$]$")
             {
-                Write-Verbose "Host previously marked VALID, keeping rule"
-                Write-Verbose "    Host: $Server"
-                Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
-            }
-            elseif ($Server -in $StaleRDServers)
-            {
-                $UpdAcl.RemoveAccessRule($Rule)
-                Write-Verbose "Host previously marked STALE, removed rule:"
-                Write-Verbose "    Host: $Server"
-                Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
-            }
-            else
-            {
-                # Host is in ACL, but was not an RD Server; test connectivity and remove the rule if the host is not responding
-                try
+                # Check previously marked servers
+                $Server = [System.Net.DNS]::GetHostEntry("$($Matches[1])").HostName
+                if ($Server -in $ValidRDServers)
                 {
-                    $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 1
-                    Write-Verbose "Successfully connected to host, keeping this access rule"
+                    Write-Verbose "Host previously marked VALID, keeping rule"
                     Write-Verbose "    Host: $Server"
                     Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
                 }
-                catch
+                elseif ($Server -in $StaleRDServers)
                 {
                     $UpdAcl.RemoveAccessRule($Rule)
-                    Write-Verbose "Host is non-responsive, removed rule:"
+                    Write-Verbose "Host previously marked STALE, removed rule:"
                     Write-Verbose "    Host: $Server"
                     Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
+                }
+                else
+                {
+                    # Host is in ACL, but was not an RD Server; test connectivity and remove the rule if the host is not responding
+                    try
+                    {
+                        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 1
+                        Write-Verbose "Successfully connected to host, keeping this access rule"
+                        Write-Verbose "    Host: $Server"
+                        Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
+                    }
+                    catch
+                    {
+                        $UpdAcl.RemoveAccessRule($Rule)
+                        Write-Verbose "Host is non-responsive, removed rule:"
+                        Write-Verbose "    Host: $Server"
+                        Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
+                    }
                 }
             }
         }
-    }
 
-    # Ensure this host is in the UPD share ACL
-    $Identities = ($UpdAcl.Access | Select IdentityReference).IdentityReference.Value
-    $Identity = "${DomainNetBiosName}\$((Get-WmiObject Win32_ComputerSystem).Name)$"
-    if (-not ($Identity -in $Identities))
-    {
-        Write-Verbose "Adding missing access rule for this host to UPD share."
-        Write-Verbose "    Rule Identity: $Identity"
-        $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${Identity}", "FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-        $updAcl.AddAccessRule($Rule)
-    }
+        # Ensure this host is in the UPD share ACL
+        $Identities = ($UpdAcl.Access | Select IdentityReference).IdentityReference.Value
+        $Identity = "${DomainNetBiosName}\$((Get-WmiObject Win32_ComputerSystem).Name)$"
+        if (-not ($Identity -in $Identities))
+        {
+            Write-Verbose "Adding missing access rule for this host to UPD share."
+            Write-Verbose "    Rule Identity: $Identity"
+            $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule("${Identity}", "FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
+            $updAcl.AddAccessRule($Rule)
+        }
 
-    # Write the new ACL
-    Write-Verbose "Setting updated ACL on ${UpdPath}:"
-    Write-Verbose ($UpdAcl.Access | Out-String)
-    Retry-TestCommand -Test Set-Acl -Args @{Path=$UpdPath; AclObject=$UpdAcl} -ExpectNull
+        # Write the new ACL
+        Write-Verbose "Setting updated ACL on ${UpdPath}:"
+        Write-Verbose ($UpdAcl.Access | Out-String)
+        Retry-TestCommand -Test Set-Acl -Args @{Path=$UpdPath; AclObject=$UpdAcl} -ExpectNull
+    }
 }
 catch
 {
