@@ -13,6 +13,9 @@ t2.large:
 t2.xlarge:
   HasInstanceVolume: false
   SupportsEbsOptimized: false
+t2.2xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: false
 c4.large:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
