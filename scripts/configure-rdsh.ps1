@@ -507,7 +507,7 @@ $null = Start-Process -FilePath ${CabalExe} -ArgumentList ${CabalInstallParams} 
 Write-Verbose "Installed shellcheck"
 
 # Install PsGet, a PowerShell Module
-(new-object Net.WebClient).DownloadString("http://psget.net/GetPsGet.ps1") | iex
+(new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/psget/psget/master/GetPsGet.ps1") | iex
 Write-Verbose "Installed psget"
 
 # Install nuget, a PowerShell Module provider
