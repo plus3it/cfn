@@ -451,8 +451,8 @@ $SignOffShortcut.Save()
 Write-Verbose "Created the logoff shortcut"
 
 # Install Git for Windows
-$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.12.2.windows.2/Git-2.12.2.2-64-bit.exe"
-$GitInstaller = "${Env:Temp}\Git-2.12.2.2-64-bit.exe"
+$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.16.2.windows.1/Git-2.16.2-64-bit.exe"
+$GitInstaller = "${Env:Temp}\Git-2.16.2-64-bit.exe"
 Retry-TestCommand -Test Download-File -Args @{Source=$GitUrl; Destination=$GitInstaller}
 $GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
@@ -467,8 +467,8 @@ $GitCmd = "C:\Program Files\Git\cmd\git.exe"
 Write-Verbose "Configured git for windows"
 
 # Install Python 3.5
-$Py35Url = "https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe"
-$Py35Installer = "${Env:Temp}\python-3.5.2-amd64.exe"
+$Py35Url = "https://www.python.org/ftp/python/3.5.4/python-3.5.4-amd64.exe"
+$Py35Installer = "${Env:Temp}\python-3.5.4-amd64.exe"
 Retry-TestCommand -Test Download-File -Args @{Source=$Py35Url; Destination=$Py35Installer}
 $Py35Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
 $null = Start-Process -FilePath ${Py35Installer} -ArgumentList ${Py35Params} -PassThru -Wait
