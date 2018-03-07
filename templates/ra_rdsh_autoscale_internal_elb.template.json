@@ -909,7 +909,7 @@
                         {
                             "10-install-rds" :
                             {
-                                "command" : "powershell.exe \"Install-WindowsFeature RDS-RD-Server,RDS-Licensing,Search-Service,RSAT-ADDS-Tools,GPMC -Verbose\"",
+                                "command" : "powershell.exe \"Install-WindowsFeature RDS-RD-Server,RDS-Licensing,Search-Service,RSAT-ADDS-Tools,RSAT-DNS-Server,GPMC -Verbose\"",
                                 "waitAfterCompletion" : "0"
                             },
                             "15-reboot-rds" :
