@@ -539,7 +539,7 @@
             "Properties" :
             {
                 "AutoScalingGroupName" : { "Ref" : "AutoScalingGroup" },
-                "DesiredCapacity" : { "Ref" : "DesiredCapacity" },
+                "DesiredCapacity" : { "Ref" : "MaxCapacity" },
                 "Recurrence" : { "Ref" : "ScaleUpSchedule" }
             }
         },
