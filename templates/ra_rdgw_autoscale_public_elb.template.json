@@ -667,6 +667,7 @@
                 "HealthCheckGracePeriod" : "3600",
                 "HealthCheckType" : "ELB",
                 "MetricsCollection" : [ { "Granularity" : "1Minute" } ],
+                "TerminationPolicies" : [ "OldestInstance", "Default" ],
                 "Tags" :
                 [
                     {
