@@ -436,23 +436,6 @@
                                 "autoscaling:DescribeAutoScalingInstances"
                             ],
                             "Resource" : "*"
-                        },
-                        {
-                            "Effect" : "Allow",
-                            "Action" :
-                            [
-                                "autoscaling:EnterStandby",
-                                "autoscaling:ExitStandby"
-                            ],
-                            "Resource" : "*",
-                            "Condition" :
-                            {
-                                "StringEquals" :
-                                {
-                                    "autoscaling:ResourceTag/aws:cloudformation:stack-id" :
-                                    { "Ref" : "AWS::StackId" }
-                                }
-                            }
                         }
                     ]
                 },
@@ -522,7 +505,7 @@
                 ]
             }
         },
-        "ElbToRdgwIngressTcp443" :
+        "ElbToEc2IngressTcp443" :
         {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" :
@@ -532,6 +515,30 @@
                 "FromPort" : "443",
                 "ToPort" : "443",
                 "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
+            }
+        },
+        "ElbToEc2IngressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "Ec2SecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
+                "SourceSecurityGroupId" : { "Ref" : "ElbSecurityGroup" }
+            }
+        },
+        "Ec2ToElbIngressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupIngress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
+                "SourceSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
             }
         },
         "ElbSecurityGroup" :
@@ -565,7 +572,7 @@
                 "CidrIp" : "0.0.0.0/0"
             }
         },
-        "ElbToRdgwEgressTcp443" :
+        "ElbToEc2EgressTcp443" :
         {
             "Type" : "AWS::EC2::SecurityGroupEgress",
             "Properties" :
@@ -574,6 +581,18 @@
                 "IpProtocol" : "tcp",
                 "FromPort" : "443",
                 "ToPort" : "443",
+                "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
+            }
+        },
+        "ElbToEc2EgressTcp8091" :
+        {
+            "Type" : "AWS::EC2::SecurityGroupEgress",
+            "Properties" :
+            {
+                "GroupId" : { "Ref" : "ElbSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort" : "8091",
+                "ToPort" : "8091",
                 "DestinationSecurityGroupId" : { "Ref" : "Ec2SecurityGroup" }
             }
         },
@@ -587,7 +606,7 @@
                 {
                     "HealthyThreshold" : "5",
                     "Interval" : "60",
-                    "Target" : "HTTPS:443/iisstart.htm",
+                    "Target" : "HTTP:8091/ping.html",
                     "Timeout" : "5",
                     "UnhealthyThreshold" : "10"
                 },
@@ -626,6 +645,12 @@
                                 { "Ref" : "SslCertificateName" }
                             ]]}
                         ]}
+                    },
+                    {
+                        "InstancePort" : "8091",
+                        "InstanceProtocol" : "HTTP",
+                        "LoadBalancerPort" : "8091",
+                        "Protocol" : "HTTP"
                     }
                 ],
                 "Policies" : [],
@@ -691,16 +716,12 @@
                         [
                             "join-domain",
                             "setup",
-                            "set-standby",
                             "installRDS",
-                            "set-active",
                             "finalize"
                         ],
                         "update" :
                         [
-                            "set-standby",
                             "setup",
-                            "set-active",
                             "finalize"
                         ]
                     },
@@ -754,28 +775,6 @@
                             }
                         }
                     },
-                    "set-standby" :
-                    {
-                        "Fn::Transform" :
-                        {
-                            "Name" : "AWS::Include",
-                            "Parameters" :
-                            {
-                                "Location" : "s3://app-chemistry/snippets/set_autoscaling_standby_win.snippet.yaml"
-                            }
-                        }
-                    },
-                    "set-active" :
-                    {
-                        "Fn::Transform" :
-                        {
-                            "Name" : "AWS::Include",
-                            "Parameters" :
-                            {
-                                "Location" : "s3://app-chemistry/snippets/set_autoscaling_active_win.snippet.yaml"
-                            }
-                        }
-                    },
                     "join-domain" :
                     {
                         "commands" :
@@ -818,7 +817,10 @@
                                     "'",
                                     { "Ref" : "RemoteAccessUserGroup" },
                                     "'",
-                                    " -Verbose"
+                                    " -HealthCheckEndPoint",
+                                    " -HealthCheckDir 'C:\\inetpub\\healthcheck'",
+                                    " -HealthCheckSiteName 'RDGW Healthcheck Web Site'",
+                                    " -Verbose -ErrorAction Stop"
                                 ]]},
                                 "waitAfterCompletion" : "0"
                             }

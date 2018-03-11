@@ -1,8 +1,25 @@
 ﻿[CmdLetBinding()]
 Param(
-    $ServerFQDN,
-    $DomainNetBiosName = "BUILTIN",
-    $GroupName = "Administrators"
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [String] $ServerFQDN = "",
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [String] $DomainNetBiosName = "BUILTIN",
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [String] $GroupName = "Administrators",
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [Switch] $HealthCheckEndPoint,
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [String] $HealthCheckDir = "${Env:SystemDrive}\inetpub\wwwroot",
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [String] $HealthCheckSiteName = "Default Web Site",
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [String] $HealthCheckPort = "8091"
     )
 
 #Based on:
@@ -91,3 +108,80 @@ $null = set-item -Path RDS:\GatewayServer\SSLBridging 1
 $null = Set-Item -Path RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("c:\$ServerFQDN.cer")).Thumbprint)
 
 Restart-Service tsgateway
+
+if ($HealthCheckEndPoint)
+{
+    Write-Verbose "Setting up the RDSH Health Check End Point..."
+
+    # Install IIS
+    Install-WindowsFeature -Name Web-Server -IncludeManagementTools
+    Import-Module WebAdministration
+    Write-Verbose "Installed IIS to service health check requests"
+
+    # Create the health check ping file
+    $HealthCheckPing = "${HealthCheckDir}\ping.html"
+    $null = New-Item -Path $HealthCheckPing -ItemType File -Value "OK" -Force
+    Write-Verbose "Created the health check ping file: ${HealthCheckPing}"
+
+    # Restrict the acl on the health check directory
+    $Acl = Get-Acl $HealthCheckDir
+    $Acl.SetAccessRuleProtection($True, $False)
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('IIS_IUSRS', 'ReadAndExecute', 'ContainerInherit, ObjectInherit', 'None', 'Allow')
+    $Acl.AddAccessRule($Rule)
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('IUSR', 'ReadAndExecute', 'ContainerInherit, ObjectInherit', 'None', 'Allow')
+    $Acl.AddAccessRule($Rule)
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('SYSTEM', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow')
+    $Acl.AddAccessRule($Rule)
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('NT SERVICE\TrustedInstaller', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow')
+    $Acl.AddAccessRule($Rule)
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('Administrators', 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow')
+    $Acl.AddAccessRule($Rule)
+    $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule('CREATOR OWNER', 'FullControl', 'ContainerInherit, ObjectInherit', 'InheritOnly', 'Allow')
+    $Acl.AddAccessRule($Rule)
+    Set-Acl $HealthCheckDir $Acl -ErrorAction Stop
+    Write-Verbose "Restricted the acl on the health check directory: ${HealthCheckDir}"
+
+    if (-not (Get-Website -Name $HealthCheckSiteName))
+    {
+        New-WebSite -Name $HealthCheckSiteName -PhysicalPath $HealthCheckDir -Port $HealthCheckPort
+        Write-Verbose "Created new health check site:"
+        Write-Verbose "    Name: ${HealthCheckSiteName}"
+        Write-Verbose "    Path: ${HealthCheckDir}"
+        Write-Verbose "    Port: ${HealthCheckPort}"
+    }
+    else
+    {
+        Get-WebBinding -Name $HealthCheckSiteName | % {Remove-WebBinding}
+        New-WebBinding -Name $HealthCheckSiteName -Port $HealthCheckPort
+        Write-Verbose "Configured the health check site to listen on ${HealthCheckPort}"
+    }
+
+    # Open the firewall for the health check endpoint
+    $Rule = @{
+        Name = "${HealthCheckSiteName}"
+        DisplayName = "${HealthCheckSiteName}"
+        Description = "Allow inbound access to ${HealthCheckSiteName}"
+        Protocol = "TCP"
+        Enabled = "True"
+        Profile = "Any"
+        Action = "Allow"
+        LocalPort = $HealthCheckPort
+    }
+    Try
+    {
+        New-NetFirewallRule @Rule -ErrorAction Stop
+    }
+    Catch [Microsoft.Management.Infrastructure.CimException]
+    {
+        # 11 is rule already exists; not a fatal error
+        if ($PSItem.Exception.StatusCode -ne "11")
+        {
+            # Any statuscode other than 11 is fatal
+            Write-Verbose $PSItem.ToString()
+            $PSCmdlet.ThrowTerminatingError($PSItem)
+        }
+    }
+    Write-Verbose "Opened firewall port ${HealthCheckPort} for ${HealthCheckSiteName}"
+}
+
+Write-Verbose "Completed configure-rdgw.ps1!"
