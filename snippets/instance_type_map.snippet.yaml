@@ -16,6 +16,9 @@ t2.xlarge:
 t2.2xlarge:
   HasInstanceVolume: false
   SupportsEbsOptimized: false
+t2.4xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: false
 c4.large:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
@@ -34,10 +37,22 @@ c5.large:
 c5.xlarge:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
+c5.2xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
+c5.4xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
 m5.large:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
 m5.xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
+m5.2xlarge:
+  HasInstanceVolume: false
+  SupportsEbsOptimized: true
+m5.4xlarge:
   HasInstanceVolume: false
   SupportsEbsOptimized: true
 r4.large:
