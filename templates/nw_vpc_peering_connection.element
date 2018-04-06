@@ -8,28 +8,28 @@
             "Description" : "ID of the first Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{17}$"
         },
         "RouteTableId2" :
         {
             "Description" : "ID of the second Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{17}$"
         },
         "RouteTableId3" :
         {
             "Description" : "ID of the third Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{17}$"
         },
         "RouteTableId4" :
         {
             "Description" : "ID of the fourth Route Table that needs a route to the peered VPC. Leave blank to skip this step.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^rtb-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^rtb-[0-9a-z]{17}$"
         },
         "VPC" :
         {
@@ -41,7 +41,7 @@
             "Description" : "VPC ID of the peer.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^vpc-[0-9a-z]{17}$"
         },
         "VpcPeerCidr" :
         {
