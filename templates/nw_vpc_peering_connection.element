@@ -41,7 +41,7 @@
             "Description" : "VPC ID of the peer.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^vpc-[0-9a-z]{17}$"
+            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
         },
         "VpcPeerCidr" :
         {
