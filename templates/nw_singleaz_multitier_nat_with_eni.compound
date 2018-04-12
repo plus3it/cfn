@@ -52,7 +52,7 @@
             "Description" : "If creating a VPC peering connection, specify the VPC ID of the peer. Leave blank if not creating a VPC peering connection.",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^vpc-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^vpc-(?=(?:.{8}|.{17})$)[a-z0-9]*$"
         },
         "VpcPeerCidr" :
         {
@@ -119,7 +119,7 @@
             "Description" : "Creates a Security Group and ingress rule to allow remote access from instances in the specified security group within the peered account. Enter the SG from the peered account (Example: sg-12345678).",
             "Type" : "String",
             "Default" : "",
-            "AllowedPattern" : "^$|^sg-[0-9a-z]{8}$"
+            "AllowedPattern" : "^$|^sg-(?=(?:.{8}|.{17})$)[a-z0-9]*$"
         }
     },
     "Metadata" :
