@@ -7,7 +7,7 @@
         {
             "Description" : "ID of the AMI to use for all instances",
             "Type" : "String",
-            "AllowedPattern" : "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$"
+            "AllowedPattern" : "^$|^ami-(?=(?:.{8}|.{17})$)[a-z0-9]*$"
         },
         "KeyPairName" :
         {
