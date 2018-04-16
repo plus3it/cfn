@@ -1,0 +1,95 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This element creates a Private Subnet and associates it with a given Route Table.",
+    "Outputs": {
+        "AvailabilityZoneName": {
+            "Description": "Name of the Availability Zone where the private subnet was created",
+            "Value": {
+                "Ref": "AvailabilityZoneName"
+            }
+        },
+        "PrivateSubnetCIDR": {
+            "Description": "Private Subnet CIDR",
+            "Value": {
+                "Ref": "CIDRPrivateSubnet"
+            }
+        },
+        "PrivateSubnetId": {
+            "Description": "Subnet ID for the private subnet",
+            "Value": {
+                "Ref": "PrivateSubnet"
+            }
+        }
+    },
+    "Parameters": {
+        "AvailabilityZoneName": {
+            "Description": "Availability Zone Name",
+            "Type": "AWS::EC2::AvailabilityZone::Name"
+        },
+        "CIDRPrivateSubnet": {
+            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
+            "Default": "10.0.0.0/19",
+            "Description": "CIDR Block for a Private Subnet (Example: 10.0.0.0/19, 10.0.64.0/19, etc...)",
+            "Type": "String"
+        },
+        "PrivateRouteTableId": {
+            "Description": "ID of the Route Table the private subnet will be associated with.",
+            "Type": "String"
+        },
+        "VPC": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "PrivateSubnet": {
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AvailabilityZoneName"
+                },
+                "CidrBlock": {
+                    "Ref": "CIDRPrivateSubnet"
+                },
+                "Tags": [
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "Private-",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-",
+                                    {
+                                        "Ref": "AvailabilityZoneName"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::Subnet"
+        },
+        "PrivateSubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTableId"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateSubnet"
+                }
+            },
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        }
+    }
+}

@@ -51,6 +51,7 @@ done
 log "Retrieved VPC CIDR range ${VPC_CIDR_RANGE} from meta-data."
 
 log "Enabling PAT..."
+# shellcheck disable=2015
 sysctl -q -w net.ipv4.ip_forward=1 net.ipv4.conf."${ETH}".send_redirects=0 && (
    iptables -t nat -C POSTROUTING -o "${ETH}" -s "${VPC_CIDR_RANGE}" -j MASQUERADE 2> /dev/null ||
    iptables -t nat -A POSTROUTING -o "${ETH}" -s "${VPC_CIDR_RANGE}" -j MASQUERADE ) ||
