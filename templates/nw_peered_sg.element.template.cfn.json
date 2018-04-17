@@ -1,0 +1,71 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This element creates a Security Group to allow remote access from instances in the specified security group within the peered account.",
+    "Outputs": {
+        "VpcPeerSecurityGroupId": {
+            "Description": "Security Group ID that allows remote access from instances in the specified security group within the peered account",
+            "Value": {
+                "Ref": "VpcPeerSecurityGroup"
+            }
+        }
+    },
+    "Parameters": {
+        "SourcePeerIngress": {
+            "AllowedPattern": "^$|^sg-(?=(?:.{8}|.{17})$)[a-z0-9]*$",
+            "Default": "",
+            "Description": "Creates a Security Group and ingress rule to allow remote access from instances in the specified security group within the peered account (Example: sg-12345678).",
+            "Type": "String"
+        },
+        "VPC": {
+            "Description": "VPC ID that will contain the security group",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "RDPIngressTcp3389": {
+            "Properties": {
+                "FromPort": "3389",
+                "GroupId": {
+                    "Ref": "VpcPeerSecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "SourceSecurityGroupId": {
+                    "Ref": "SourcePeerIngress"
+                },
+                "ToPort": "3389"
+            },
+            "Type": "AWS::EC2::SecurityGroupIngress"
+        },
+        "SSHIngressTcp22": {
+            "Properties": {
+                "FromPort": "22",
+                "GroupId": {
+                    "Ref": "VpcPeerSecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "SourceSecurityGroupId": {
+                    "Ref": "SourcePeerIngress"
+                },
+                "ToPort": "22"
+            },
+            "Type": "AWS::EC2::SecurityGroupIngress"
+        },
+        "VpcPeerSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Enables remote access from instances in the specified security group within the peered account",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        }
+    }
+}

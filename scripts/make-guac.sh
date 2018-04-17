@@ -68,6 +68,7 @@ retry()
         sleep $n
         $cmd
         result=$?
+        # shellcheck disable=2015
         test $result -eq 0 && break || {
             ((n++))
             echo "Attempt $n, command failed :: $cmd"
@@ -153,7 +154,7 @@ write_manifest()
     ) > "${guac_manifest}"
     if ! ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
     then
-        sed -i '/html/d' ${guac_manifest}
+        sed -i '/html/d' "${guac_manifest}"
     fi
     log "Successfully wrote manifest for custom Guacamole branding extension"
 }  # ----------  end of function write_manifest  ----------
@@ -173,10 +174,10 @@ write_links()
         printf "\n"
         printf "<div class=\"welcome\">\n"
         printf "<p>\n"
-        printf "<a target=\"_blank\" href=\"${URL_1}\">${URLTEXT_1}</a>\n"
+        printf "<a target=\"_blank\" href=\"%s\">%s</a>\n" "$URL_1" "$URLTEXT_1"
         printf "</p>\n"
         printf "<p>\n"
-        printf "<a target=\"_blank\" href=\"${URL_2}\">${URLTEXT_2}</a>\n"
+        printf "<a target=\"_blank\" href=\"%s\">%s</a>\n" "$URL_2" "$URLTEXT_2"
         printf "</p>\n"
         printf "</div>\n"
     ) > "${guac_links}"
@@ -198,7 +199,7 @@ write_brand()
     mkdir -p "${guac_translations}"
     (
         printf "{\n"
-        printf "\"APP\" : { \"NAME\" : \"${BRANDTEXT}\" }\n"
+        printf "\"APP\" : { \"NAME\" : \"%s\" }\n" "$BRANDTEXT"
         printf "}\n"
     ) > "${guac_translations_en}"
     log "Successfully added branding text to Guacamole login page"

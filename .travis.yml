@@ -1,13 +1,48 @@
-language: python
+language: bash
 
-python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
-  - "3.4"
+env:
+  global:
+    - FIND_JSON="find $TRAVIS_BUILD_DIR -name '*.json' -type f -print0"
+    - FIND_SH="find $TRAVIS_BUILD_DIR -name '*.sh' -type f -print0"
+    - FIND_CFN="find $TRAVIS_BUILD_DIR \( -name '*.template.cfn.json' -o -name '*.template.cfn.yaml' -o -name '*.template.cfn.yml' \) -type f -print0"
+    - XARGS_CMD="xargs -0 -n1 -I {} -t"
+    - REPO="${TRAVIS_REPO_SLUG#*/}"
+    - OWNER=plus3it
+    - DEPLOY_SLUG=$OWNER/$REPO
 
-sudo: false
-
-install: true
-
-script: true
+jobs:
+  include:
+    - stage: test
+      env:
+        - JOB="JSON Lint/Format"
+      install:
+        - jq --version
+      script:
+        - bash -c "$FIND_JSON | $XARGS_CMD bash -c 'cmp {} <(jq --indent 4 -S . {}) || (echo DIRTY; exit 1)'"
+    - stage: test
+      env:
+        - JOB="Shell Script Lint"
+        - SHELLCHECK_OPTS="-s bash"
+      install:
+        - shellcheck --version
+      script:
+        - bash -c "$FIND_SH | $XARGS_CMD shellcheck {}"
+    - stage: test
+      env:
+        - JOB="CFN Lint"
+      install:
+        - npm install -g cfn-lint
+        - cfn-lint --version
+      language: npm
+      script:
+        - bash -c "$FIND_CFN | $XARGS_CMD cfn-lint validate --verbose {}"
+    - stage: test
+      env:
+        - JOB="YAML Lint"
+      install:
+        - pip install --user yamllint
+        - yamllint --version
+      script:
+        - yamllint --strict .
+  allow_failures:
+    - language: npm

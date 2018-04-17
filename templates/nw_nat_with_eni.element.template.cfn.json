@@ -1,0 +1,549 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This element creates a self-healing NAT instance with an Elastic Network Interface.",
+    "Mappings": {
+        "AWSInstanceType2Arch": {
+            "c4.large": {
+                "Arch": "64"
+            },
+            "c4.xlarge": {
+                "Arch": "64"
+            },
+            "m4.large": {
+                "Arch": "64"
+            },
+            "m4.xlarge": {
+                "Arch": "64"
+            },
+            "t2.medium": {
+                "Arch": "64"
+            },
+            "t2.micro": {
+                "Arch": "64"
+            },
+            "t2.small": {
+                "Arch": "64"
+            }
+        },
+        "AWSRegionArchNatAMI": {
+            "ap-northeast-1": {
+                "64": "ami-cbf90ecb"
+            },
+            "ap-southeast-1": {
+                "64": "ami-68d8e93a"
+            },
+            "ap-southeast-2": {
+                "64": "ami-fd9cecc7"
+            },
+            "eu-central-1": {
+                "64": "ami-a8221fb5"
+            },
+            "eu-west-1": {
+                "64": "ami-a10897d6"
+            },
+            "sa-east-1": {
+                "64": "ami-b52890a8"
+            },
+            "us-east-1": {
+                "64": "ami-1ecae776"
+            },
+            "us-west-1": {
+                "64": "ami-d114f295"
+            },
+            "us-west-2": {
+                "64": "ami-e7527ed7"
+            }
+        }
+    },
+    "Outputs": {
+        "NATElasticNetworkInterfaceId": {
+            "Description": "ID of the NAT Elastic Network Interface",
+            "Value": {
+                "Ref": "NATElasticNetworkInterface"
+            }
+        },
+        "NATSecurityGroupId": {
+            "Description": "ID of the NAT Security Group",
+            "Value": {
+                "Ref": "NATSecurityGroup"
+            }
+        },
+        "PrivateRouteTableId": {
+            "Description": "ID of the Private Route Table",
+            "Value": {
+                "Ref": "PrivateRouteTable"
+            }
+        }
+    },
+    "Parameters": {
+        "CIDRVPC": {
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "Default": "10.0.0.0/16",
+            "Description": "CIDR Block for the VPC. This is used in the security group for the NAT instance, to allow inbound connections from instances in the VPC.",
+            "Type": "String"
+        },
+        "InstanceTypeNAT": {
+            "AllowedValues": [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ],
+            "Default": "t2.micro",
+            "Description": "Amazon EC2 instance type for the NAT Instance.",
+            "Type": "String"
+        },
+        "IpAddressNAT": {
+            "Default": "10.0.47.254",
+            "Description": "Fixed IP in the public subnet for the ENI that will be attached to the NAT instance (Example: 10.0.47.254, 10.0.111.254, etc)",
+            "Type": "String"
+        },
+        "KeyPairName": {
+            "Description": "Public/private key pairs allow you to securely connect to your instance after it launches.",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "PublicSubnetId": {
+            "Description": "Subnet ID for the Public Subnet where the NAT instance will run.",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+        "VPC": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "IamNatInstanceProfile": {
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "IamNatRole"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::InstanceProfile"
+        },
+        "IamNatRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "Path": "/"
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "IamNatRolePolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "ec2:AttachNetworkInterface",
+                                "ec2:DetachNetworkInterface",
+                                "ec2:DescribeNetworkInterfaces",
+                                "ec2:DescribeInstances"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": "*"
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "PolicyName": "IamNatRolePolicy",
+                "Roles": [
+                    {
+                        "Ref": "IamNatRole"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Policy"
+        },
+        "NATAutoScalingGroup": {
+            "CreationPolicy": {
+                "ResourceSignal": {
+                    "Count": "1",
+                    "Timeout": "PT15M"
+                }
+            },
+            "Properties": {
+                "DesiredCapacity": "1",
+                "LaunchConfigurationName": {
+                    "Ref": "NATLaunchConfig"
+                },
+                "MaxSize": "1",
+                "MinSize": "1",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "PropagateAtLaunch": "true",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "NAT-",
+                                    {
+                                        "Ref": "PublicSubnetId"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VPCZoneIdentifier": [
+                    {
+                        "Ref": "PublicSubnetId"
+                    }
+                ]
+            },
+            "Type": "AWS::AutoScaling::AutoScalingGroup"
+        },
+        "NATElasticIP": {
+            "Properties": {
+                "Domain": "vpc"
+            },
+            "Type": "AWS::EC2::EIP"
+        },
+        "NATElasticIPAssociation": {
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NATElasticIP",
+                        "AllocationId"
+                    ]
+                },
+                "NetworkInterfaceId": {
+                    "Ref": "NATElasticNetworkInterface"
+                }
+            },
+            "Type": "AWS::EC2::EIPAssociation"
+        },
+        "NATElasticNetworkInterface": {
+            "Properties": {
+                "Description": "Network Interface for NAT Instance",
+                "GroupSet": [
+                    {
+                        "Ref": "NATSecurityGroup"
+                    }
+                ],
+                "PrivateIpAddress": {
+                    "Ref": "IpAddressNAT"
+                },
+                "SourceDestCheck": "false",
+                "SubnetId": {
+                    "Ref": "PublicSubnetId"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "NAT-",
+                                    {
+                                        "Ref": "PublicSubnetId"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Type": "AWS::EC2::NetworkInterface"
+        },
+        "NATLaunchConfig": {
+            "DependsOn": [
+                "NATElasticNetworkInterface"
+            ],
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "configSets": {
+                        "config": [
+                            "setup",
+                            "configure-nat"
+                        ]
+                    },
+                    "configure-nat": {
+                        "commands": {
+                            "10-attach-eni": {
+                                "command": "/etc/cfn/scripts/configure-nat-eni.sh Name"
+                            },
+                            "20-configure-pat": {
+                                "command": "/etc/cfn/scripts/configure-pat.sh eth1"
+                            },
+                            "30-disable-eth0": {
+                                "command": "ec2ifdown eth0"
+                            },
+                            "5-sleep-for-tags": {
+                                "command": "echo 'Sleeping 30 seconds to allow tags to propagate...' && sleep 30 && echo 'Proceeding...'"
+                            }
+                        }
+                    },
+                    "setup": {
+                        "commands": {
+                            "a-yum-update": {
+                                "command": "yum -y update"
+                            }
+                        },
+                        "files": {
+                            "/etc/cfn/cfn-hup.conf": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "[main]\n",
+                                            "stack=",
+                                            {
+                                                "Ref": "AWS::StackId"
+                                            },
+                                            "\n",
+                                            "region=",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            "\n",
+                                            "interval=1",
+                                            "\n",
+                                            "verbose=true",
+                                            "\n"
+                                        ]
+                                    ]
+                                },
+                                "group": "root",
+                                "mode": "000400",
+                                "owner": "root"
+                            },
+                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "[cfn-auto-reloader-hook]\n",
+                                            "triggers=post.update\n",
+                                            "path=Resources.NATLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                            "action=/opt/aws/bin/cfn-init -v -c config ",
+                                            "         --stack ",
+                                            {
+                                                "Ref": "AWS::StackName"
+                                            },
+                                            "         --resource NATLaunchConfig ",
+                                            "         --region ",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            "\n",
+                                            "runas=root\n"
+                                        ]
+                                    ]
+                                },
+                                "group": "root",
+                                "mode": "000400",
+                                "owner": "root"
+                            },
+                            "/etc/cfn/scripts/configure-nat-eni.sh": {
+                                "group": "root",
+                                "mode": "000700",
+                                "owner": "root",
+                                "source": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-nat-eni.sh"
+                            },
+                            "/etc/cfn/scripts/configure-pat.sh": {
+                                "group": "root",
+                                "mode": "000700",
+                                "owner": "root",
+                                "source": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-pat.sh"
+                            }
+                        },
+                        "services": {
+                            "sysvinit": {
+                                "cfn-hup": {
+                                    "enabled": "true",
+                                    "ensureRunning": "true",
+                                    "files": [
+                                        "/etc/cfn/cfn-hup.conf",
+                                        "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "Comment": "Configure NAT Instance"
+            },
+            "Properties": {
+                "AssociatePublicIpAddress": "true",
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/xvda",
+                        "Ebs": {
+                            "DeleteOnTermination": "true",
+                            "VolumeType": "gp2"
+                        }
+                    }
+                ],
+                "IamInstanceProfile": {
+                    "Ref": "IamNatInstanceProfile"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSRegionArchNatAMI",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap": [
+                                "AWSInstanceType2Arch",
+                                {
+                                    "Ref": "InstanceTypeNAT"
+                                },
+                                "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "InstanceTypeNAT"
+                },
+                "KeyName": {
+                    "Ref": "KeyPairName"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "NATSecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash -xe\n\n",
+                                "/opt/aws/bin/cfn-init -v -c config ",
+                                "    --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "    --resource NATLaunchConfig ",
+                                "    --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n\n",
+                                "/opt/aws/bin/cfn-signal -e $? ",
+                                "   --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "   --resource NATAutoScalingGroup ",
+                                "   --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::AutoScaling::LaunchConfiguration"
+        },
+        "NATSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Enables outbound internet access for private subnets via the NAT instances",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": {
+                            "Ref": "CIDRVPC"
+                        },
+                        "FromPort": "1",
+                        "IpProtocol": "-1",
+                        "ToPort": "65535"
+                    },
+                    {
+                        "CidrIp": {
+                            "Ref": "CIDRVPC"
+                        },
+                        "FromPort": "-1",
+                        "IpProtocol": "icmp",
+                        "ToPort": "-1"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "NAT-",
+                                    {
+                                        "Ref": "PublicSubnetId"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "PrivateRoute": {
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NetworkInterfaceId": {
+                    "Ref": "NATElasticNetworkInterface"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                }
+            },
+            "Type": "AWS::EC2::Route"
+        },
+        "PrivateRouteTable": {
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "Private-",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::RouteTable"
+        }
+    }
+}

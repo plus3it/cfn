@@ -1,0 +1,218 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This template deploys a MySQL RDS instance",
+    "Outputs": {
+        "JDBCConnectionString": {
+            "Description": "JDBC connection string for database",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "jdbc:mysql://",
+                        {
+                            "Fn::GetAtt": [
+                                "RdsInstance",
+                                "Endpoint.Address"
+                            ]
+                        },
+                        ":",
+                        {
+                            "Fn::GetAtt": [
+                                "RdsInstance",
+                                "Endpoint.Port"
+                            ]
+                        },
+                        "/",
+                        {
+                            "Ref": "RdsDbName"
+                        }
+                    ]
+                ]
+            }
+        },
+        "RdsEndpointAddress": {
+            "Description": "Endpoint address for the RDS instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "RdsInstance",
+                    "Endpoint.Address"
+                ]
+            }
+        },
+        "RdsEndpointPort": {
+            "Description": "Endpoint port for the RDS instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "RdsInstance",
+                    "Endpoint.Port"
+                ]
+            }
+        }
+    },
+    "Parameters": {
+        "RdsDbAllocatedStorage": {
+            "ConstraintDescription": "Must be between 5GB and 6144GB.",
+            "Default": "5",
+            "Description": "The size of the database (GB)",
+            "MaxValue": "6144",
+            "MinValue": "5",
+            "Type": "Number"
+        },
+        "RdsDbClass": {
+            "AllowedValues": [
+                "db.t2.micro",
+                "db.t2.small",
+                "db.t2.medium",
+                "db.t2.large",
+                "db.m4.large",
+                "db.m4.xlarge",
+                "db.m4.2xlarge",
+                "db.m4.4xlarge",
+                "db.m4.10xlarge",
+                "db.r3.large",
+                "db.r3.xlarge",
+                "db.r3.2xlarge",
+                "db.r3.4xlarge",
+                "db.r3.8xlarge"
+            ],
+            "Default": "db.t2.micro",
+            "Description": "Database instance class",
+            "Type": "String"
+        },
+        "RdsDbInstanceName": {
+            "AllowedPattern": "^([a-zA-Z])([-a-zA-Z0-9])*",
+            "Description": "The name for the RDS database instance",
+            "MaxLength": "63",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "RdsDbName": {
+            "AllowedPattern": "[a-zA-Z0-9_]*",
+            "Default": "MyDatabase_1",
+            "Description": "The database name; must begin with a letter and contain only alphanumeric characters",
+            "MaxLength": "64",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "RdsDbPassword": {
+            "AllowedPattern": "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "ConstraintDescription": "Must contain letters, numbers and symbols.",
+            "Default": "RdsDbAdmin456$%^",
+            "Description": "The database admin account password, these characters are not valid: \", @, and /",
+            "MaxLength": "41",
+            "MinLength": "16",
+            "NoEcho": "true",
+            "Type": "String"
+        },
+        "RdsDbUsername": {
+            "AllowedPattern": "^([a-zA-Z])([-a-zA-Z0-9])*",
+            "Default": "rdsdbadmin",
+            "Description": "The database admin account username",
+            "MaxLength": "16",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "RdsMultiAzDatabase": {
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "ConstraintDescription": "Must be either true or false.",
+            "Default": "false",
+            "Description": "Create a Multi-AZ MySQL Amazon RDS database instance",
+            "Type": "String"
+        },
+        "RdsSecurityGroupIds": {
+            "Description": "Security groups to attach to the RDS instance",
+            "Type": "List<AWS::EC2::SecurityGroup::Id>"
+        },
+        "RdsSubnets": {
+            "Description": "Select at least two subnets, each in different Availability Zones",
+            "Type": "List<AWS::EC2::Subnet::Id>"
+        },
+        "RdsVpcId": {
+            "Description": "VpcId for the RDS instance",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "RdsInstance": {
+            "DeletionPolicy": "Snapshot",
+            "Properties": {
+                "AllocatedStorage": {
+                    "Ref": "RdsDbAllocatedStorage"
+                },
+                "DBInstanceClass": {
+                    "Ref": "RdsDbClass"
+                },
+                "DBInstanceIdentifier": {
+                    "Ref": "RdsDbInstanceName"
+                },
+                "DBName": {
+                    "Ref": "RdsDbName"
+                },
+                "DBSubnetGroupName": {
+                    "Ref": "RdsSubnetGroup"
+                },
+                "Engine": "MySQL",
+                "EngineVersion": "5.6.29",
+                "MasterUserPassword": {
+                    "Ref": "RdsDbPassword"
+                },
+                "MasterUsername": {
+                    "Ref": "RdsDbUsername"
+                },
+                "MultiAZ": {
+                    "Ref": "RdsMultiAzDatabase"
+                },
+                "OptionGroupName": {
+                    "Ref": "RdsOptionGroup"
+                },
+                "StorageType": "gp2",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ],
+                "VPCSecurityGroups": {
+                    "Ref": "RdsSecurityGroupIds"
+                }
+            },
+            "Type": "AWS::RDS::DBInstance"
+        },
+        "RdsOptionGroup": {
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "EngineName": "mysql",
+                "MajorEngineVersion": "5.6",
+                "OptionConfigurations": [
+                    {
+                        "OptionName": "MARIADB_AUDIT_PLUGIN"
+                    }
+                ],
+                "OptionGroupDescription": "MySQL Option Group with Maria DB Audit Plugin",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ]
+            },
+            "Type": "AWS::RDS::OptionGroup"
+        },
+        "RdsSubnetGroup": {
+            "Properties": {
+                "DBSubnetGroupDescription": "Subnets available for the RDS DB Instance",
+                "SubnetIds": {
+                    "Ref": "RdsSubnets"
+                }
+            },
+            "Type": "AWS::RDS::DBSubnetGroup"
+        }
+    }
+}

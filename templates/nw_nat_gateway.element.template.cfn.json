@@ -1,0 +1,86 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This element creates a NAT Gateway with an Elastic IP, Private route table with route to the NAT Gateway.",
+    "Outputs": {
+        "NATGatewayElasticIP": {
+            "Description": "Elastic IP for NAT Gateway",
+            "Value": {
+                "Ref": "NATGatewayElasticIP"
+            }
+        },
+        "PrivateRouteTableId": {
+            "Description": "ID of the Private Route Table for NAT Gateway",
+            "Value": {
+                "Ref": "PrivateRouteTable"
+            }
+        }
+    },
+    "Parameters": {
+        "PublicSubnetId": {
+            "Description": "Subnet ID for the NAT Gateway Public Subnet.",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+        "VPC": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "NATGateway": {
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NATGatewayElasticIP",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnetId"
+                }
+            },
+            "Type": "AWS::EC2::NatGateway"
+        },
+        "NATGatewayElasticIP": {
+            "Properties": {
+                "Domain": "vpc"
+            },
+            "Type": "AWS::EC2::EIP"
+        },
+        "PrivateRoute": {
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NATGateway"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                }
+            },
+            "Type": "AWS::EC2::Route"
+        },
+        "PrivateRouteTable": {
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "Private-",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::RouteTable"
+        }
+    }
+}

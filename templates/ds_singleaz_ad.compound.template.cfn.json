@@ -1,0 +1,254 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This template creates an Active Directory infrastructure in a Single AZ.",
+    "Outputs": {
+        "DomainAdmin": {
+            "Description": "Domain administrator account",
+            "Value": {
+                "Fn::GetAtt": [
+                    "PrimaryDcStack",
+                    "Outputs.DomainAdmin"
+                ]
+            }
+        },
+        "DomainController1ID": {
+            "Description": "Instance ID of the Domain Controller",
+            "Value": {
+                "Fn::GetAtt": [
+                    "PrimaryDcStack",
+                    "Outputs.DomainControllerID"
+                ]
+            }
+        },
+        "DomainControllerSGID": {
+            "Description": "Domain Controller Security Group ID",
+            "Value": {
+                "Fn::GetAtt": [
+                    "AdSecurityGroupStack",
+                    "Outputs.DomainControllerSGID"
+                ]
+            }
+        },
+        "DomainMemberSGID": {
+            "Description": "Domain Member Security Group ID",
+            "Value": {
+                "Fn::GetAtt": [
+                    "AdSecurityGroupStack",
+                    "Outputs.DomainMemberSGID"
+                ]
+            }
+        },
+        "HostedZoneId": {
+            "Description": "ID of the Route53 private hosted zone",
+            "Value": {
+                "Fn::GetAtt": [
+                    "HostedZoneStack",
+                    "Outputs.HostedZoneId"
+                ]
+            }
+        }
+    },
+    "Parameters": {
+        "ADDomainAdminPw": {
+            "AllowedPattern": "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "Default": "Password123",
+            "Description": "Password for the domain admin user. Must be at least 8 characters containing letters, numbers and symbols",
+            "MaxLength": "32",
+            "MinLength": "8",
+            "NoEcho": "true",
+            "Type": "String"
+        },
+        "ADDomainDNSName": {
+            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
+            "Default": "example.com",
+            "Description": "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+            "MaxLength": "25",
+            "MinLength": "3",
+            "Type": "String"
+        },
+        "ADDomainNetBIOSName": {
+            "AllowedPattern": "[a-zA-Z0-9]+",
+            "Default": "EXAMPLE",
+            "Description": "NetBIOS name of the domain (e.g. EXAMPLE)",
+            "MaxLength": "15",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "ADRestoreModePw": {
+            "AllowedPattern": "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+            "Default": "Password123",
+            "Description": "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
+            "MaxLength": "32",
+            "MinLength": "8",
+            "NoEcho": "True",
+            "Type": "String"
+        },
+        "CIDRPrivateSubnet1": {
+            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
+            "Default": "10.0.0.0/19",
+            "Description": "CIDR Block for Private Subnet 1 (Example: 10.0.0.0/19, 10.0.64.0/19, etc...)",
+            "Type": "String"
+        },
+        "CIDRPublicSubnet1": {
+            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
+            "Default": "10.0.32.0/20",
+            "Description": "CIDR Block for Public DMZ Subnet 1 (Example: 10.0.32.0/20, 10.0.96.0/20, etc...)",
+            "Type": "String"
+        },
+        "CIDRVPC": {
+            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
+            "Default": "10.0.0.0/16",
+            "Description": "CIDR Block for the VPC (Example: 10.0.0.0/16, etc...)",
+            "Type": "String"
+        },
+        "InstanceTypeDC": {
+            "AllowedValues": [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "c4.large",
+                "c4.xlarge",
+                "m4.large",
+                "m4.xlarge"
+            ],
+            "Default": "t2.micro",
+            "Description": "Amazon EC2 instance type for the Domain Controller instance",
+            "Type": "String"
+        },
+        "KeyPairName": {
+            "Description": "Public/private key pairs allow you to securely connect to your instance after it launches",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "PrivateIpDC1": {
+            "Default": "10.0.0.10",
+            "Description": "Fixed private IP for the Domain Controller instance (e.g. 10.0.0.10, 10.0.64.10, etc...)",
+            "Type": "String"
+        },
+        "PrivateSubnet1Id": {
+            "Description": "Private Subnet ID where the first domain controller instance will run.",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+        "RemoteAccessUserGroup": {
+            "Default": "Remote Access Users",
+            "Description": "Domain group of users authorized to use the RDGW",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "VPC": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "AdSecurityGroupStack": {
+            "Properties": {
+                "Parameters": {
+                    "CIDRVPC": {
+                        "Ref": "CIDRVPC"
+                    },
+                    "VPC": {
+                        "Ref": "VPC"
+                    }
+                },
+                "TemplateURL": "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_security_groups.element.template.cfn.json"
+            },
+            "Type": "AWS::CloudFormation::Stack"
+        },
+        "DhcpOptionsStack": {
+            "DependsOn": "PrimaryDcStack",
+            "Properties": {
+                "Parameters": {
+                    "DomainControllerIPs": {
+                        "Fn::Join": [
+                            ",",
+                            [
+                                {
+                                    "Ref": "PrivateIpDC1"
+                                }
+                            ]
+                        ]
+                    },
+                    "DomainDNSName": {
+                        "Ref": "ADDomainDNSName"
+                    },
+                    "VPC": {
+                        "Ref": "VPC"
+                    }
+                },
+                "TemplateURL": "https://s3.amazonaws.com/app-chemistry/templates/ds_dhcp_options.element.template.cfn.json"
+            },
+            "Type": "AWS::CloudFormation::Stack"
+        },
+        "HostedZoneStack": {
+            "Properties": {
+                "Parameters": {
+                    "DNSName": {
+                        "Ref": "ADDomainDNSName"
+                    },
+                    "VPC": {
+                        "Ref": "VPC"
+                    }
+                },
+                "TemplateURL": "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_private_hosted_zone.element.template.cfn.json"
+            },
+            "Type": "AWS::CloudFormation::Stack"
+        },
+        "PrimaryDcStack": {
+            "DependsOn": [
+                "AdSecurityGroupStack",
+                "HostedZoneStack"
+            ],
+            "Properties": {
+                "Parameters": {
+                    "ADDomainAdminPw": {
+                        "Ref": "ADDomainAdminPw"
+                    },
+                    "ADDomainDNSName": {
+                        "Ref": "ADDomainDNSName"
+                    },
+                    "ADDomainNetBIOSName": {
+                        "Ref": "ADDomainNetBIOSName"
+                    },
+                    "ADRestoreModePw": {
+                        "Ref": "ADRestoreModePw"
+                    },
+                    "CIDRPrivateSubnet": {
+                        "Ref": "CIDRPrivateSubnet1"
+                    },
+                    "CIDRPublicSubnet": {
+                        "Ref": "CIDRPublicSubnet1"
+                    },
+                    "CIDRVPC": {
+                        "Ref": "CIDRVPC"
+                    },
+                    "DcInstanceType": {
+                        "Ref": "InstanceTypeDC"
+                    },
+                    "DcPrivateIp": {
+                        "Ref": "PrivateIpDC1"
+                    },
+                    "DcSecurityGroupId": {
+                        "Fn::GetAtt": [
+                            "AdSecurityGroupStack",
+                            "Outputs.DomainControllerSGID"
+                        ]
+                    },
+                    "KeyPairName": {
+                        "Ref": "KeyPairName"
+                    },
+                    "PrivateSubnetId": {
+                        "Ref": "PrivateSubnet1Id"
+                    },
+                    "RemoteAccessUserGroup": {
+                        "Ref": "RemoteAccessUserGroup"
+                    },
+                    "VPC": {
+                        "Ref": "VPC"
+                    }
+                },
+                "TemplateURL": "https://s3.amazonaws.com/app-chemistry/templates/ds_ad_primary_dc.element.template.cfn.json"
+            },
+            "Type": "AWS::CloudFormation::Stack"
+        }
+    }
+}

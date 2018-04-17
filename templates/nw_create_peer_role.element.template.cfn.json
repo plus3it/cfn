@@ -1,0 +1,58 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This template creates an assumable role for cross account VPC peering.",
+    "Outputs": {
+        "RoleARN": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "PeerRole",
+                    "Arn"
+                ]
+            }
+        }
+    },
+    "Parameters": {
+        "PeerRequesterAccountId": {
+            "Description": "Account ID of account that will be requesting the VPC peering connection. To specify multiple accounts use \",\" as separator (Example: 123456789012,012345678901).",
+            "Type": "List<Number>"
+        }
+    },
+    "Resources": {
+        "PeerRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {
+                                    "Ref": "PeerRequesterAccountId"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": "ec2:AcceptVpcPeeringConnection",
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                }
+                            ],
+                            "Version": "2012-10-17"
+                        },
+                        "PolicyName": "VPCPeer-Policy"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

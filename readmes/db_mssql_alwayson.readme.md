@@ -80,8 +80,8 @@ shell. If you are not comfortable with the CLI, then see the next section,
 2.  Set the environment variables:
 
     ```bash
-    PARAM_MAP="https://url/to/db_mssql_alwayson.params.json"
-    TEMPLATE="https://s3.amazonaws.com/app-chemistry/templates/db_mssql_alwayson.compound"
+    PARAM_MAP="https://url/to/db_mssql_alwayson.params.cfn.json"
+    TEMPLATE="https://s3.amazonaws.com/app-chemistry/templates/db_mssql_alwayson.template.cfn.json"
     ```
 
 3.  Set the variables for the MSSQL AlwayOn build (Some params may be hard-

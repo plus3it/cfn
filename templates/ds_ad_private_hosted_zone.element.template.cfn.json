@@ -1,0 +1,65 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This element creates a Route53 private hosted zone, to resolve the domain to the AD Domain Controllers via DHCP.",
+    "Outputs": {
+        "HostedZoneId": {
+            "Description": "ID of the Route53 private hosted zone",
+            "Value": {
+                "Ref": "HostedZone"
+            }
+        }
+    },
+    "Parameters": {
+        "DNSName": {
+            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
+            "Default": "example.com",
+            "Description": "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+            "MaxLength": "25",
+            "MinLength": "3",
+            "Type": "String"
+        },
+        "VPC": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "HostedZone": {
+            "Properties": {
+                "HostedZoneTags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "DNSName"
+                                    },
+                                    "-",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "Name": {
+                    "Ref": "DNSName"
+                },
+                "VPCs": [
+                    {
+                        "VPCId": {
+                            "Ref": "VPC"
+                        },
+                        "VPCRegion": {
+                            "Ref": "AWS::Region"
+                        }
+                    }
+                ]
+            },
+            "Type": "AWS::Route53::HostedZone"
+        }
+    }
+}
