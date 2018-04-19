@@ -82,5 +82,8 @@ jobs:
       deploy:
         provider: script
         script: |
-          aws s3 sync --delete --exclude .git/* $TRAVIS_BUILD_DIR s3://$BUCKET/repos/$REPO || travis_terminate 1
-          aws s3api list-objects --bucket $BUCKET --query 'Contents[?starts_with(Key, `repos/'"$REPO"'/`)].{Key:Key}' --out text | xargs -n1 -P8 -I {} -t aws s3api put-object-tagging --bucket $BUCKET --tagging "TagSet=[{Key=Version,Value=$TRAVIS_TAG}]" --key {}
+          aws s3 sync --delete --exclude '.git/*' $TRAVIS_BUILD_DIR s3://$BUCKET/repos/$REPO && \
+          aws s3api list-objects --bucket $BUCKET --query "Contents[?starts_with(Key, \`repos/$REPO/\`)].{Key:Key}" --out text | xargs -n1 -P8 -I {} -t aws s3api put-object-tagging --bucket $BUCKET --tagging "TagSet=[{Key=Version,Value=$TRAVIS_TAG}]" --key {}
+        on:  # yamllint disable-line rule:truthy
+          tags: true
+          repo: $DEPLOY_SLUG
