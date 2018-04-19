@@ -6,4 +6,4 @@ rules:
     spaces: 2
     indent-sequences: true
   line-length:
-    max: 200
+    max: 800

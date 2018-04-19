@@ -11,6 +11,8 @@ env:
     - DEPLOY_SLUG=$OWNER/$REPO
 
 jobs:
+  allow_failures:
+    - language: npm
   include:
     - stage: test
       env:
@@ -44,5 +46,41 @@ jobs:
         - yamllint --version
       script:
         - yamllint --strict .
-  allow_failures:
-    - language: npm
+    - stage: deploy
+      if: branch = master AND type = push AND repo = env(DEPLOY_SLUG)
+      env:
+        - JOB="Deploy to GitHub Releases"
+        - PRIOR_VERSION=$(git describe --abbrev=0 --tags)
+        - RELEASE_VERSION=$(grep current_version $TRAVIS_BUILD_DIR/.bumpversion.cfg | sed 's/^.*= //')
+        - RELEASE_BODY="* [$REPO v$RELEASE_VERSION changes](https://github.com/$OWNER/$REPO/compare/$PRIOR_VERSION...$RELEASE_VERSION)"
+      before_script:
+        - echo PRIOR_VERSION=$PRIOR_VERSION
+        - echo RELEASE_VERSION=$RELEASE_VERSION
+        - echo RELEASE_BODY=$RELEASE_BODY
+      script:
+        - test "$PRIOR_VERSION" = "$RELEASE_VERSION" && travis_terminate || echo "Deploying new version..."
+      deploy:
+        provider: releases
+        api_key:
+          secure: C0a1Fx1j13vjQomZB6xGo9AyFHfCzl2V1d335WuuupVbWV0flWBabRN4qdvvQwK0qpiOFm9biatoWegFj6TcUNx2jq2izdjFiPzH+ieObvCNgf92yZ0aWk9Lj5vwXcA+FmypZLelgVwhM5Ic/NbNecrmqNYrVN9otKRf9Df7JofKFUDRvMP2yMB9RSl0qv22EHQD13+fX+63Qoc33N/vO0SHqfs0APdpihD+tWQuhQN7dSZ7tvGgjY5uEvIeXWSrKhjEhPOZ84nVQbJNnVkNnheAjiqVlKobIGWzhevLCsygNkk33cuj4f/QTgsLNpcbwKyPbGj+p2dqkQyC8D4VpZ0/46G4sbYnN4FiXFtPPDnL9TQCPBe97xL7zg1nG6fKSh/5PY6c+I47Z3kdv6ry4X4aGVD4M2wtdduFi4Z6v+MBoqfi+jNzDtMyP1FMh6sYxVvsSS6QqMLNCyyqCRTd7TuY3wdrTZOuCzCHoLMV17VuCq5XV0aOtNytUFBg3G0D8gxGVA55G/k6ATmqjXbBrvh9ei4YH7baVvOIPs/Qy2wge5fh4P1us+OFIJINBaJodUGJGE9XRKaHh1pkI1l1VPrKUsj+5LZODyq7kBxEoOvpQiE3Lds16ek+hUF0tlNkcsesAe1bqRjG7Bdr9CG9Rn1IPmOiarX0+qFCgBv31dQ=
+        name: $RELEASE_VERSION
+        tag_name: $RELEASE_VERSION
+        target_commitish: $TRAVIS_COMMIT
+        body: $RELEASE_BODY
+        draft: false
+    - stage: deploy
+      if: tag IS present AND repo = env(DEPLOY_SLUG)
+      provider: script
+      language: python
+      env:
+        - JOB="Deploy to S3"
+      script: skip
+      before_deploy:
+        - pip install awscli
+        - which aws
+        - aws --version
+      deploy:
+        provider: script
+        script: |
+          aws s3 sync --delete --exclude .git/* $TRAVIS_BUILD_DIR s3://$BUCKET/repos/$REPO || travis_terminate 1
+          aws s3api list-objects --bucket $BUCKET --query 'Contents[?starts_with(Key, `repos/'"$REPO"'/`)].{Key:Key}' --out text | xargs -n1 -P8 -I {} -t aws s3api put-object-tagging --bucket $BUCKET --tagging "TagSet=[{Key=Version,Value=$TRAVIS_TAG}]" --key {}
