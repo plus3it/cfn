@@ -82,7 +82,7 @@ jobs:
         - aws --version
       deploy:
         provider: script
-        script: BUCKET=$BUCKET REPO=$REPO VERSION=$TRAVIS_TAG make deploy
+        script: BUCKET=$BUCKET PREFIX=repos/$REPO/ VERSION=$TRAVIS_TAG make deploy
         on:  # yamllint disable-line rule:truthy
           tags: true
           repo: $DEPLOY_SLUG
