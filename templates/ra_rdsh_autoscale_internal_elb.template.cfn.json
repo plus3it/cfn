@@ -9,6 +9,18 @@
                 ""
             ]
         },
+        "UseAutoUpdateStack": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "UpdateSchedule"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        },
         "UseScheduledAction": {
             "Fn::And": [
                 {
@@ -318,6 +330,13 @@
             "Description": "List of Subnet IDs where the RDSH instances and ELB we be launched",
             "Type": "List<AWS::EC2::Subnet::Id>"
         },
+        "UpdateSchedule": {
+            "AllowedPattern": "^$|^cron\\(.*\\)$|^rate\\(.*\\)$|^$",
+            "ConstraintDescription": "Must be in CloudWatch events schedule expression format (Cron or Rate).",
+            "Default": "",
+            "Description": "(Optional) Time interval between auto stack updates. Refer to the AWS documentation for valid input syntax: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html",
+            "Type": "String"
+        },
         "UserProfileDiskPath": {
             "AllowedPattern": "^[\\\\\\\\]{2}[a-zA-Z0-9_\\\\-]+\\..+",
             "Default": "\\\\home.example.com\\Profiles$",
@@ -418,6 +437,38 @@
                     "WillReplace": "true"
                 }
             }
+        },
+        "AutoUpdateStack": {
+            "Condition": "UseAutoUpdateStack",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            "arn:aws:lambda",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            "function:cfn-update-scheduler-dev-cfn_auto_update_broker"
+                        ]
+                    ]
+                },
+                "StackName": {
+                    "Ref": "AWS::StackName"
+                },
+                "ToggleParameter": "ForceUpdateToggle",
+                "ToggleValues": [
+                    "A",
+                    "B"
+                ],
+                "UpdateSchedule": {
+                    "Ref": "UpdateSchedule"
+                }
+            },
+            "Type": "Custom::AutoUpdateStack"
         },
         "ELB": {
             "Properties": {
