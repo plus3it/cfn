@@ -1,6 +1,9 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This template creates an assumable role for cross account VPC peering.",
+    "Metadata": {
+        "Version": "0.0.6"
+    },
     "Outputs": {
         "RoleARN": {
             "Value": {

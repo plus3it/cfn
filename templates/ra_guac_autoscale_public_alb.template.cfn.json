@@ -149,6 +149,9 @@
             }
         }
     },
+    "Metadata": {
+        "Version": "0.0.6"
+    },
     "Outputs": {
         "AlbSecurityGroupId": {
             "Description": "Security Group ID for the Guacamole Application Load Balancer",

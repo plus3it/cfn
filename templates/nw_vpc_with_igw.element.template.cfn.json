@@ -1,6 +1,9 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a VPC network with an Internet Gateway.",
+    "Metadata": {
+        "Version": "0.0.6"
+    },
     "Outputs": {
         "InternetGatewayId": {
             "Description": "ID of the Internet Gateway",

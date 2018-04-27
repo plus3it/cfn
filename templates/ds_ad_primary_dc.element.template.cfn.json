@@ -55,6 +55,9 @@
             }
         }
     },
+    "Metadata": {
+        "Version": "0.0.6"
+    },
     "Outputs": {
         "DomainAdmin": {
             "Description": "Domain administrator account",

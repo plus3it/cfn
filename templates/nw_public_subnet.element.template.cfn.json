@@ -1,6 +1,9 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a Public Subnet and associates it with a given Route Table.",
+    "Metadata": {
+        "Version": "0.0.6"
+    },
     "Outputs": {
         "AvailabilityZoneName": {
             "Description": "Name of the Availability Zone where the public subnet was created",

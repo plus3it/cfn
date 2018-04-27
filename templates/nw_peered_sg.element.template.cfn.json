@@ -1,6 +1,9 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a Security Group to allow remote access from instances in the specified security group within the peered account.",
+    "Metadata": {
+        "Version": "0.0.6"
+    },
     "Outputs": {
         "VpcPeerSecurityGroupId": {
             "Description": "Security Group ID that allows remote access from instances in the specified security group within the peered account",
