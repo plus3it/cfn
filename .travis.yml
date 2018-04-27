@@ -4,11 +4,12 @@ env:
   global:
     - FIND_JSON="find $TRAVIS_BUILD_DIR -name '*.json' -type f -print0"
     - FIND_SH="find $TRAVIS_BUILD_DIR -name '*.sh' -type f -print0"
-    - FIND_CFN="find $TRAVIS_BUILD_DIR \( -name '*.template.cfn.json' -o -name '*.template.cfn.yaml' -o -name '*.template.cfn.yml' \) -type f -print0"
-    - XARGS_CMD="xargs -0 -n1 -I {} -t"
+    - FIND_CFN="find $TRAVIS_BUILD_DIR -name '*.template.cfn.*' -type f -print0"
+    - XARGS_CMD="xargs -0 -I {}"
     - REPO="${TRAVIS_REPO_SLUG#*/}"
     - OWNER=plus3it
     - DEPLOY_SLUG=$OWNER/$REPO
+    - RELEASE_VERSION=$(grep -E '^current_version' $TRAVIS_BUILD_DIR/.bumpversion.cfg | sed 's/^.*= //')
 
 jobs:
   allow_failures:
@@ -31,6 +32,13 @@ jobs:
         - bash -c "$FIND_SH | $XARGS_CMD shellcheck {}"
     - stage: test
       env:
+        - JOB="CFN Version Validation"
+      install:
+        - jq --version
+      script:
+        - find $TRAVIS_BUILD_DIR -name '*.template.cfn.*' -type f -print0 | $XARGS_CMD bash -c 'jq -e '"'"'.Metadata.Version | test("^'$RELEASE_VERSION'$")'"'"' {} > /dev/null || (echo "[{}] BAD/MISSING Cfn Version Metadata"; exit 1)'
+    - stage: test
+      env:
         - JOB="CFN Lint"
       install:
         - npm install -g cfn-lint
@@ -51,7 +59,6 @@ jobs:
       env:
         - JOB="Deploy to GitHub Releases"
         - PRIOR_VERSION=$(git describe --abbrev=0 --tags)
-        - RELEASE_VERSION=$(grep current_version $TRAVIS_BUILD_DIR/.bumpversion.cfg | sed 's/^.*= //')
         - RELEASE_BODY="* [$REPO v$RELEASE_VERSION changes](https://github.com/$OWNER/$REPO/compare/$PRIOR_VERSION...$RELEASE_VERSION)"
       before_script:
         - echo PRIOR_VERSION=$PRIOR_VERSION
