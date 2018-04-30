@@ -1,6 +1,9 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This template creates an Active Directory infrastructure in a Single AZ.",
+    "Metadata": {
+        "Version": "0.0.7"
+    },
     "Outputs": {
         "DomainAdmin": {
             "Description": "Domain administrator account",

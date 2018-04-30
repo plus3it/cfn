@@ -144,7 +144,8 @@
                     "default": "Scale Down Desired Capacity"
                 }
             }
-        }
+        },
+        "Version": "0.0.7"
     },
     "Outputs": {
         "AlbSecurityGroupId": {

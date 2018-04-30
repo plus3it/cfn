@@ -1,6 +1,9 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This template deploys a MySQL RDS instance",
+    "Metadata": {
+        "Version": "0.0.7"
+    },
     "Outputs": {
         "JDBCConnectionString": {
             "Description": "JDBC connection string for database",

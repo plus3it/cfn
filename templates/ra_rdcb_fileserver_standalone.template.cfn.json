@@ -121,7 +121,8 @@
                     "default": "AMI Name Search Pattern"
                 }
             }
-        }
+        },
+        "Version": "0.0.7"
     },
     "Outputs": {
         "RdcbEc2InstanceId": {

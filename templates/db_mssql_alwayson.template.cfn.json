@@ -301,7 +301,8 @@
                     "default": "Force Cfn Init Update"
                 }
             }
-        }
+        },
+        "Version": "0.0.7"
     },
     "Outputs": {
         "MssqlNode1InstanceId": {

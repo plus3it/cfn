@@ -55,6 +55,9 @@
             }
         }
     },
+    "Metadata": {
+        "Version": "0.0.7"
+    },
     "Outputs": {
         "NATElasticNetworkInterfaceId": {
             "Description": "ID of the NAT Elastic Network Interface",
