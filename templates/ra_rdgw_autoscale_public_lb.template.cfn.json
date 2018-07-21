@@ -58,7 +58,7 @@
             ]
         }
     },
-    "Description": "This template deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind an Application LB, and joins them to a domain.",
+    "Description": "This template deploys Remote Desktop Gateway (RDGW) instances in an autoscale group behind a Load Balancer, and joins them to a domain.",
     "Mappings": {
         "InstanceTypeMap": {
             "Fn::Transform": {
@@ -119,7 +119,7 @@
                 },
                 {
                     "Label": {
-                        "default": "Application LB Configuration"
+                        "default": "Load Balancer Configuration"
                     },
                     "Parameters": [
                         "SslCertificateName",
@@ -148,31 +148,31 @@
         "Version": "0.0.7"
     },
     "Outputs": {
-        "AlbSecurityGroupId": {
-            "Description": "Security Group ID for RDGW Elastic Load Balancer",
-            "Value": {
-                "Ref": "AlbSecurityGroup"
-            }
-        },
         "Ec2SecurityGroupId": {
             "Description": "Security Group ID for RDGW EC2 instances",
             "Value": {
                 "Ref": "Ec2SecurityGroup"
             }
         },
+        "LbSecurityGroupId": {
+            "Description": "Security Group ID for RDGW Load Balancer",
+            "Value": {
+                "Ref": "LbSecurityGroup"
+            }
+        },
         "LoadBalancerDns": {
-            "Description": "DNS name for the ALB",
+            "Description": "DNS name for the LoadBalancer",
             "Value": {
                 "Fn::GetAtt": [
-                    "ALB",
+                    "LoadBalancer",
                     "DNSName"
                 ]
             }
         },
         "LoadBalancerName": {
-            "Description": "Name of the Elastic Load Balancer",
+            "Description": "Name of the Load Balancer",
             "Value": {
-                "Ref": "ALB"
+                "Ref": "LoadBalancer"
             }
         }
     },
@@ -293,7 +293,7 @@
             "Type": "String"
         },
         "SslCertificateName": {
-            "Description": "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ALB -- the cert must already exist in the service",
+            "Description": "The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the LB -- the cert must already exist in the service",
             "Type": "String"
         },
         "SslCertificateService": {
@@ -318,211 +318,6 @@
         }
     },
     "Resources": {
-        "ALB": {
-            "Properties": {
-                "LoadBalancerAttributes": [
-                    {
-                        "Key": "idle_timeout.timeout_seconds",
-                        "Value": "900"
-                    },
-                    {
-                        "Key": "routing.http2.enabled",
-                        "Value": "true"
-                    }
-                ],
-                "Scheme": "internet-facing",
-                "SecurityGroups": [
-                    {
-                        "Ref": "AlbSecurityGroup"
-                    }
-                ],
-                "Subnets": {
-                    "Ref": "PublicSubnetIDs"
-                },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": {
-                            "Ref": "AWS::StackName"
-                        }
-                    }
-                ],
-                "Type": "application"
-            },
-            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
-        },
-        "ALBTargetGroup": {
-            "Properties": {
-                "HealthCheckIntervalSeconds": "60",
-                "HealthCheckPath": "/ping.html",
-                "HealthCheckPort": "8091",
-                "HealthCheckProtocol": "HTTP",
-                "HealthCheckTimeoutSeconds": "5",
-                "HealthyThresholdCount": "5",
-                "Port": "443",
-                "Protocol": "HTTPS",
-                "TargetGroupAttributes": [
-                    {
-                        "Key": "deregistration_delay.timeout_seconds",
-                        "Value": "1800"
-                    }
-                ],
-                "UnhealthyThresholdCount": "10",
-                "VpcId": {
-                    "Ref": "VPC"
-                }
-            },
-            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
-        },
-        "AlbListener": {
-            "Properties": {
-                "Certificates": [
-                    {
-                        "CertificateArn": {
-                            "Fn::If": [
-                                "UseACM",
-                                {
-                                    "Fn::Join": [
-                                        ":",
-                                        [
-                                            "arn:aws:acm",
-                                            {
-                                                "Ref": "AWS::Region"
-                                            },
-                                            {
-                                                "Ref": "AWS::AccountId"
-                                            },
-                                            {
-                                                "Fn::Join": [
-                                                    "",
-                                                    [
-                                                        "certificate/",
-                                                        {
-                                                            "Ref": "SslCertificateName"
-                                                        }
-                                                    ]
-                                                ]
-                                            }
-                                        ]
-                                    ]
-                                },
-                                {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "arn:aws:iam::",
-                                            {
-                                                "Ref": "AWS::AccountId"
-                                            },
-                                            ":server-certificate/",
-                                            {
-                                                "Ref": "SslCertificateName"
-                                            }
-                                        ]
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                ],
-                "DefaultActions": [
-                    {
-                        "TargetGroupArn": {
-                            "Ref": "ALBTargetGroup"
-                        },
-                        "Type": "forward"
-                    }
-                ],
-                "LoadBalancerArn": {
-                    "Ref": "ALB"
-                },
-                "Port": "443",
-                "Protocol": "HTTPS",
-                "SslPolicy": "ELBSecurityPolicy-TLS-1-2-2017-01"
-            },
-            "Type": "AWS::ElasticLoadBalancingV2::Listener"
-        },
-        "AlbSecurityGroup": {
-            "Properties": {
-                "GroupDescription": "Enable RDGW access from the Internet",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": {
-                            "Fn::Join": [
-                                "",
-                                [
-                                    "ra-rdgw-alb-",
-                                    {
-                                        "Ref": "AWS::StackName"
-                                    }
-                                ]
-                            ]
-                        }
-                    }
-                ],
-                "VpcId": {
-                    "Ref": "VPC"
-                }
-            },
-            "Type": "AWS::EC2::SecurityGroup"
-        },
-        "AlbToEc2EgressTcp443": {
-            "Properties": {
-                "DestinationSecurityGroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "FromPort": "443",
-                "GroupId": {
-                    "Ref": "AlbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "ToPort": "443"
-            },
-            "Type": "AWS::EC2::SecurityGroupEgress"
-        },
-        "AlbToEc2EgressTcp8091": {
-            "Properties": {
-                "DestinationSecurityGroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "FromPort": "8091",
-                "GroupId": {
-                    "Ref": "AlbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "ToPort": "8091"
-            },
-            "Type": "AWS::EC2::SecurityGroupEgress"
-        },
-        "AlbToEc2IngressTcp443": {
-            "Properties": {
-                "FromPort": "443",
-                "GroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
-                    "Ref": "AlbSecurityGroup"
-                },
-                "ToPort": "443"
-            },
-            "Type": "AWS::EC2::SecurityGroupIngress"
-        },
-        "AlbToEc2IngressTcp8091": {
-            "Properties": {
-                "FromPort": "8091",
-                "GroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
-                    "Ref": "AlbSecurityGroup"
-                },
-                "ToPort": "8091"
-            },
-            "Type": "AWS::EC2::SecurityGroupIngress"
-        },
         "AmiIdLookup": {
             "Condition": "UseAmiLookup",
             "Properties": {
@@ -571,6 +366,11 @@
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfig"
                 },
+                "LoadBalancerNames": [
+                    {
+                        "Ref": "LoadBalancer"
+                    }
+                ],
                 "MaxSize": {
                     "Ref": "MaxCapacity"
                 },
@@ -589,11 +389,6 @@
                         "Value": {
                             "Ref": "AWS::StackName"
                         }
-                    }
-                ],
-                "TargetGroupARNs": [
-                    {
-                        "Ref": "ALBTargetGroup"
                     }
                 ],
                 "TerminationPolicies": [
@@ -786,7 +581,7 @@
         },
         "Ec2SecurityGroup": {
             "Properties": {
-                "GroupDescription": "Enable RDGW access from the ALB",
+                "GroupDescription": "Enable RDGW access from the Load Balancer",
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1048,12 +843,198 @@
             },
             "Type": "AWS::AutoScaling::LaunchConfiguration"
         },
-        "PublicToAlbIngressTcp443": {
+        "LbSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Enable RDGW access from the Internet",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "ra-rdgw-lb-",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "LbToEc2EgressTcp443": {
+            "Properties": {
+                "DestinationSecurityGroupId": {
+                    "Ref": "Ec2SecurityGroup"
+                },
+                "FromPort": "443",
+                "GroupId": {
+                    "Ref": "LbSecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "ToPort": "443"
+            },
+            "Type": "AWS::EC2::SecurityGroupEgress"
+        },
+        "LbToEc2EgressTcp8091": {
+            "Properties": {
+                "DestinationSecurityGroupId": {
+                    "Ref": "Ec2SecurityGroup"
+                },
+                "FromPort": "8091",
+                "GroupId": {
+                    "Ref": "LbSecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "ToPort": "8091"
+            },
+            "Type": "AWS::EC2::SecurityGroupEgress"
+        },
+        "LbToEc2IngressTcp443": {
+            "Properties": {
+                "FromPort": "443",
+                "GroupId": {
+                    "Ref": "Ec2SecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "SourceSecurityGroupId": {
+                    "Ref": "LbSecurityGroup"
+                },
+                "ToPort": "443"
+            },
+            "Type": "AWS::EC2::SecurityGroupIngress"
+        },
+        "LbToEc2IngressTcp8091": {
+            "Properties": {
+                "FromPort": "8091",
+                "GroupId": {
+                    "Ref": "Ec2SecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "SourceSecurityGroupId": {
+                    "Ref": "LbSecurityGroup"
+                },
+                "ToPort": "8091"
+            },
+            "Type": "AWS::EC2::SecurityGroupIngress"
+        },
+        "LoadBalancer": {
+            "Properties": {
+                "ConnectionDrainingPolicy": {
+                    "Enabled": "true",
+                    "Timeout": "1800"
+                },
+                "ConnectionSettings": {
+                    "IdleTimeout": "900"
+                },
+                "CrossZone": "false",
+                "HealthCheck": {
+                    "HealthyThreshold": "5",
+                    "Interval": "60",
+                    "Target": "HTTP:8091/ping.html",
+                    "Timeout": "5",
+                    "UnhealthyThreshold": "10"
+                },
+                "Listeners": [
+                    {
+                        "InstancePort": "443",
+                        "InstanceProtocol": "SSL",
+                        "LoadBalancerPort": "443",
+                        "Protocol": "SSL",
+                        "SSLCertificateId": {
+                            "Fn::If": [
+                                "UseACM",
+                                {
+                                    "Fn::Join": [
+                                        ":",
+                                        [
+                                            "arn",
+                                            {
+                                                "Ref": "AWS::Partition"
+                                            },
+                                            "acm",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            {
+                                                "Ref": "AWS::AccountId"
+                                            },
+                                            {
+                                                "Fn::Join": [
+                                                    "",
+                                                    [
+                                                        "certificate/",
+                                                        {
+                                                            "Ref": "SslCertificateName"
+                                                        }
+                                                    ]
+                                                ]
+                                            }
+                                        ]
+                                    ]
+                                },
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "arn",
+                                            {
+                                                "Ref": "AWS::Partition"
+                                            },
+                                            "iam",
+                                            {
+                                                "Ref": "AWS::AccountId"
+                                            },
+                                            ":server-certificate/",
+                                            {
+                                                "Ref": "SslCertificateName"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "InstancePort": "8091",
+                        "InstanceProtocol": "HTTP",
+                        "LoadBalancerPort": "8091",
+                        "Protocol": "HTTP"
+                    }
+                ],
+                "Policies": [],
+                "Scheme": "internet-facing",
+                "SecurityGroups": [
+                    {
+                        "Ref": "LbSecurityGroup"
+                    }
+                ],
+                "Subnets": {
+                    "Ref": "PublicSubnetIDs"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ]
+            },
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+        },
+        "PublicToLbIngressTcp443": {
             "Properties": {
                 "CidrIp": "0.0.0.0/0",
                 "FromPort": "443",
                 "GroupId": {
-                    "Ref": "AlbSecurityGroup"
+                    "Ref": "LbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
                 "ToPort": "443"
