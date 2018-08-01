@@ -26,6 +26,7 @@
     },
     "Resources": {
         "RDPIngressTcp3389": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "FromPort": "3389",
                 "GroupId": {
@@ -40,6 +41,7 @@
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "SSHIngressTcp22": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "FromPort": "22",
                 "GroupId": {
@@ -54,6 +56,7 @@
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "VpcPeerSecurityGroup": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "GroupDescription": "Enables remote access from instances in the specified security group within the peered account",
                 "Tags": [
