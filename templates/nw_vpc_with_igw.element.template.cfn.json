@@ -40,6 +40,7 @@
     },
     "Resources": {
         "AttachGateway": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "InternetGatewayId": {
                     "Ref": "InternetGateway"
@@ -51,6 +52,7 @@
             "Type": "AWS::EC2::VPCGatewayAttachment"
         },
         "InternetGateway": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {
@@ -64,6 +66,7 @@
             "Type": "AWS::EC2::InternetGateway"
         },
         "PublicRoute": {
+            "DeletionPolicy": "Retain",
             "DependsOn": "AttachGateway",
             "Properties": {
                 "DestinationCidrBlock": "0.0.0.0/0",
@@ -77,6 +80,7 @@
             "Type": "AWS::EC2::Route"
         },
         "PublicRouteTable": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {
@@ -101,6 +105,7 @@
             "Type": "AWS::EC2::RouteTable"
         },
         "VPC": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "CidrBlock": {
                     "Ref": "CIDRVPC"

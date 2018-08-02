@@ -113,6 +113,24 @@
                 ]
             }
         },
+        "NATGatewayElasticIpId": {
+            "Description": "Allocation ID of the Elastic IP for NAT Gateway",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATGatewayStack",
+                    "Outputs.NATGatewayElasticIpId"
+                ]
+            }
+        },
+        "NATGatewayId": {
+            "Description": "Resource ID of the NAT Gateway",
+            "Value": {
+                "Fn::GetAtt": [
+                    "NATGatewayStack",
+                    "Outputs.NATGatewayId"
+                ]
+            }
+        },
         "PrivateRouteTable1Id": {
             "Description": "ID of the Private Route Table for NAT Gateway",
             "Value": {

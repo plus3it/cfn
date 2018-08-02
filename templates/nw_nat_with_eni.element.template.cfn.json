@@ -119,6 +119,7 @@
     },
     "Resources": {
         "IamNatInstanceProfile": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "Path": "/",
                 "Roles": [
@@ -130,6 +131,7 @@
             "Type": "AWS::IAM::InstanceProfile"
         },
         "IamNatRole": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "AssumeRolePolicyDocument": {
                     "Statement": [
@@ -152,6 +154,7 @@
             "Type": "AWS::IAM::Role"
         },
         "IamNatRolePolicy": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "PolicyDocument": {
                     "Statement": [
@@ -184,6 +187,7 @@
                     "Timeout": "PT15M"
                 }
             },
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "DesiredCapacity": "1",
                 "LaunchConfigurationName": {
@@ -217,12 +221,14 @@
             "Type": "AWS::AutoScaling::AutoScalingGroup"
         },
         "NATElasticIP": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "Domain": "vpc"
             },
             "Type": "AWS::EC2::EIP"
         },
         "NATElasticIPAssociation": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "AllocationId": {
                     "Fn::GetAtt": [
@@ -237,6 +243,7 @@
             "Type": "AWS::EC2::EIPAssociation"
         },
         "NATElasticNetworkInterface": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "Description": "Network Interface for NAT Instance",
                 "GroupSet": [
@@ -271,6 +278,7 @@
             "Type": "AWS::EC2::NetworkInterface"
         },
         "NATLaunchConfig": {
+            "DeletionPolicy": "Retain",
             "DependsOn": [
                 "NATElasticNetworkInterface"
             ],
@@ -466,6 +474,7 @@
             "Type": "AWS::AutoScaling::LaunchConfiguration"
         },
         "NATSecurityGroup": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "GroupDescription": "Enables outbound internet access for private subnets via the NAT instances",
                 "SecurityGroupIngress": [
@@ -509,6 +518,7 @@
             "Type": "AWS::EC2::SecurityGroup"
         },
         "PrivateRoute": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": "0.0.0.0/0",
                 "NetworkInterfaceId": {
@@ -521,6 +531,7 @@
             "Type": "AWS::EC2::Route"
         },
         "PrivateRouteTable": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {

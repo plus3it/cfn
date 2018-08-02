@@ -46,6 +46,7 @@
     },
     "Resources": {
         "PrivateSubnet": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "AvailabilityZone": {
                     "Ref": "AvailabilityZoneName"
@@ -84,6 +85,7 @@
             "Type": "AWS::EC2::Subnet"
         },
         "PrivateSubnetRouteTableAssociation": {
+            "DeletionPolicy": "Retain",
             "Properties": {
                 "RouteTableId": {
                     "Ref": "PrivateRouteTableId"
