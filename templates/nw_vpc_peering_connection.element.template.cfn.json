@@ -52,7 +52,7 @@
     },
     "Description": "This element creates a VPC peering connection and adds the necessary route to specified route tables.",
     "Metadata": {
-        "Version": "0.0.8"
+        "Version": "0.0.9"
     },
     "Outputs": {
         "VpcPeeringConnection": {

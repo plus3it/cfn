@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a Route53 private hosted zone, to resolve the domain to the AD Domain Controllers via DHCP.",
     "Metadata": {
-        "Version": "0.0.8"
+        "Version": "0.0.9"
     },
     "Outputs": {
         "HostedZoneId": {

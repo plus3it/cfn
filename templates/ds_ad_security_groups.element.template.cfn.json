@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates 2 security groups for an Active Directory domain -- one for Domain Controllers and one for Domain Members.",
     "Metadata": {
-        "Version": "0.0.8"
+        "Version": "0.0.9"
     },
     "Outputs": {
         "DomainControllerSGID": {

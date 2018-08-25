@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a Route53 Private Hosted Zone and the associated resource records for a peered domain.",
     "Metadata": {
-        "Version": "0.0.8"
+        "Version": "0.0.9"
     },
     "Outputs": {
         "PrivateHostedZoneId": {
@@ -156,19 +156,7 @@
                     }
                 ],
                 "SetIdentifier": {
-                    "Fn::Join": [
-                        "",
-                        [
-                            {
-                                "Ref": "PeeredDc1Name"
-                            },
-                            ".",
-                            {
-                                "Ref": "AWS::StackName"
-                            },
-                            "."
-                        ]
-                    ]
+                    "Ref": "PeeredDc1Name"
                 },
                 "TTL": "300",
                 "Type": "SRV",
@@ -214,19 +202,7 @@
                     }
                 ],
                 "SetIdentifier": {
-                    "Fn::Join": [
-                        "",
-                        [
-                            {
-                                "Ref": "PeeredDc2Name"
-                            },
-                            ".",
-                            {
-                                "Ref": "AWS::StackName"
-                            },
-                            "."
-                        ]
-                    ]
+                    "Ref": "PeeredDc2Name"
                 },
                 "TTL": "300",
                 "Type": "SRV",
@@ -234,7 +210,7 @@
             },
             "Type": "AWS::Route53::RecordSet"
         },
-        "PeeredDomainARecordSet1": {
+        "PeeredDomainARecordSet": {
             "DeletionPolicy": "Retain",
             "DependsOn": "PrivateHostedZone",
             "Properties": {
@@ -255,70 +231,13 @@
                 "ResourceRecords": [
                     {
                         "Ref": "PeeredDc1Ip"
-                    }
-                ],
-                "SetIdentifier": {
-                    "Fn::Join": [
-                        "",
-                        [
-                            {
-                                "Ref": "PeeredDc1Name"
-                            },
-                            ".",
-                            {
-                                "Ref": "AWS::StackName"
-                            },
-                            "."
-                        ]
-                    ]
-                },
-                "TTL": "300",
-                "Type": "A",
-                "Weight": "20"
-            },
-            "Type": "AWS::Route53::RecordSet"
-        },
-        "PeeredDomainARecordSet2": {
-            "DeletionPolicy": "Retain",
-            "DependsOn": "PrivateHostedZone",
-            "Properties": {
-                "HostedZoneId": {
-                    "Ref": "PrivateHostedZone"
-                },
-                "Name": {
-                    "Fn::Join": [
-                        "",
-                        [
-                            {
-                                "Ref": "PeeredDomainDnsName"
-                            },
-                            "."
-                        ]
-                    ]
-                },
-                "ResourceRecords": [
+                    },
                     {
                         "Ref": "PeeredDc2Ip"
                     }
                 ],
-                "SetIdentifier": {
-                    "Fn::Join": [
-                        "",
-                        [
-                            {
-                                "Ref": "PeeredDc2Name"
-                            },
-                            ".",
-                            {
-                                "Ref": "AWS::StackName"
-                            },
-                            "."
-                        ]
-                    ]
-                },
                 "TTL": "300",
-                "Type": "A",
-                "Weight": "20"
+                "Type": "A"
             },
             "Type": "AWS::Route53::RecordSet"
         },

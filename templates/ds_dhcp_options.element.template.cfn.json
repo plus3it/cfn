@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates an Active Directory domain with a single domain controller. The default Domain Administrator password will be the one retrieved from the instance.",
     "Metadata": {
-        "Version": "0.0.8"
+        "Version": "0.0.9"
     },
     "Parameters": {
         "DomainControllerIPs": {
