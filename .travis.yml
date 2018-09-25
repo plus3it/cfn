@@ -17,7 +17,7 @@ jobs:
       install:
         - jq --version
       script:
-        - make json.lint
+        - make json/lint
     - stage: test
       env:
         - JOB="Shell Script Lint"
@@ -25,14 +25,14 @@ jobs:
       install:
         - shellcheck --version
       script:
-        - make sh.lint
+        - make sh/lint
     - stage: test
       env:
         - JOB="CFN Version Validation"
       install:
         - jq --version
       script:
-        - make cfn.version VERSION=$RELEASE_VERSION
+        - make cfn/version VERSION=$RELEASE_VERSION
     - stage: test
       env:
         - JOB="CFN Lint"
@@ -41,7 +41,7 @@ jobs:
         - cfn-lint --version
       language: npm
       script:
-        - make cfn.lint
+        - make cfn/lint
     - stage: test
       env:
         - JOB="YAML Lint"
@@ -49,7 +49,7 @@ jobs:
         - pip install --user yamllint
         - yamllint --version
       script:
-        - make yaml.lint
+        - make yaml/lint
     - stage: deploy
       if: branch = master AND type = push AND repo = env(DEPLOY_SLUG)
       env:

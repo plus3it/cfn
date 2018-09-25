@@ -1,32 +1,58 @@
-FIND_JSON ?= find . -name '*.json' -type f
-FIND_SH ?= find . -name '*.sh' -type f
-FIND_CFN ?= find . -name '*.template.cfn.*' -type f
-XARGS_CMD ?= xargs -I {}
+CURL ?= curl --fail -sSL
+XARGS ?= xargs -I {}
+BIN_DIR ?= ${HOME}/bin
+PATH := $(BIN_DIR):$(PATH)
+
 VERSION ?= $$(grep -E '^current_version' .bumpversion.cfg | sed 's/^.*= //')
 
+MAKEFLAGS += --no-print-directory
+SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
+.SUFFIXES:
+
+.PHONY: %/lint %/format
 .PHONY: deploy
+
+guard/program/%:
+	@ which $* > /dev/null || $(MAKE) $*/install
+
 deploy:
 	@echo "make: Deploying files to S3 bucket, using aws sync"
 	aws s3 sync --delete --exclude '.git/*' . s3://$(BUCKET)/$(PREFIX)
 	@echo "make: Applying version tag to bucket objects"
-	aws s3api list-objects --bucket $(BUCKET) --query "Contents[?starts_with(Key, \`$(PREFIX)\`)].{Key:Key}" --out text | $(XARGS_CMD) -n1 -P8 -t aws s3api put-object-tagging --bucket $(BUCKET) --tagging "TagSet=[{Key=Version,Value=$(VERSION)}]" --key {}
+	aws s3api list-objects --bucket $(BUCKET) --query "Contents[?starts_with(Key, \`$(PREFIX)\`)].{Key:Key}" --out text | $(XARGS) -n1 -P8 -t aws s3api put-object-tagging --bucket $(BUCKET) --tagging "TagSet=[{Key=Version,Value=$(VERSION)}]" --key {}
 
-.PHONY: json.lint
-json.lint:
-	$(FIND_JSON) | $(XARGS_CMD) bash -c 'cmp {} <(jq --indent 4 -S . {}) || (echo "[{}]: Failed JSON Lint Test"; exit 1)'
+jq/install: JQ_VERSION ?= jq-1.5
+jq/install: JQ_URL ?= https://github.com/stedolan/jq/releases/download/$(JQ_VERSION)/jq-linux64
+jq/install: | $(BIN_DIR)
+	@ echo "[$@]: Installing $(@D)..."
+	@ echo "[$@]: JQ_URL=$(JQ_URL)"
+	$(CURL) -o $(BIN_DIR)/$(@D) "$(JQ_URL)"
+	chmod +x $(BIN_DIR)/$(@D)
+	$(@D) --version
+	@ echo "[$@]: Completed successfully!"
 
-.PHONY: sh.lint
-sh.lint:
-	$(FIND_SH) | $(XARGS_CMD) shellcheck {}
+json/%: FIND_JSON := find . -name '*.json' -type f
+json/lint: | guard/program/jq
+	@ echo "[$@]: Linting JSON files..."
+	$(FIND_JSON) | $(XARGS) bash -c 'cmp {} <(jq --indent 4 -S . {}) || (echo "[{}]: Failed JSON Lint Test"; exit 1)'
+	@ echo "[$@]: JSON files PASSED lint test!"
 
-.PHONY: yaml.lint
-yaml.lint:
+json/format: | guard/program/jq
+	@ echo "[$@]: Formatting JSON files..."
+	$(FIND_JSON) | $(XARGS) bash -c 'echo "$$(jq --indent 4 -S . "{}")" > "{}"'
+	@ echo "[$@]: Successfully formatted JSON files!"
+
+sh/%: FIND_SH ?= find . -name '*.sh' -type f
+sh/lint: | guard/program/shellcheck
+	$(FIND_SH) | $(XARGS) shellcheck {}
+
+yaml/lint: | guard/program/yamllint
 	yamllint --strict .
 
-.PHONY: cfn.lint
-cfn.lint:
-	$(FIND_CFN) | $(XARGS_CMD) cfn-lint validate --verbose {}
+cfn/%: FIND_CFN ?= find . -name '*.template.cfn.*' -type f
+cfn/lint: | guard/program/cfn-lint
+	$(FIND_CFN) | $(XARGS) cfn-lint validate --verbose {}
 
-.PHONY: cfn.version
-cfn.version:
-	$(FIND_CFN) | $(XARGS_CMD) bash -c "jq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
+cfn/version:
+	$(FIND_CFN) | $(XARGS) bash -c "jq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"

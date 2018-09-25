@@ -73,6 +73,10 @@
                 "HasInstanceVolume": "false",
                 "SupportsEbsOptimized": "true"
             },
+            "t2.2xlarge": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "false"
+            },
             "t2.large": {
                 "HasInstanceVolume": "false",
                 "SupportsEbsOptimized": "false"
@@ -92,6 +96,30 @@
             "t2.xlarge": {
                 "HasInstanceVolume": "false",
                 "SupportsEbsOptimized": "false"
+            },
+            "t3.2xlarge": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "true"
+            },
+            "t3.large": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "true"
+            },
+            "t3.medium": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "true"
+            },
+            "t3.micro": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "true"
+            },
+            "t3.small": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "true"
+            },
+            "t3.xlarge": {
+                "HasInstanceVolume": "false",
+                "SupportsEbsOptimized": "true"
             }
         },
         "ShellCommandMap": {
@@ -289,6 +317,13 @@
                 "t2.medium",
                 "t2.large",
                 "t2.xlarge",
+                "t2.2xlarge",
+                "t3.micro",
+                "t3.small",
+                "t3.medium",
+                "t3.large",
+                "t3.xlarge",
+                "t3.2xlarge",
                 "c4.large",
                 "c4.xlarge",
                 "m4.large",
