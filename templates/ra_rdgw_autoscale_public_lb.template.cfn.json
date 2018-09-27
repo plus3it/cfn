@@ -1,6 +1,18 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Conditions": {
+        "InstallCloudWatchAgent": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "CloudWatchAgentUrl"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        },
         "UseACM": {
             "Fn::Equals": [
                 {
@@ -134,6 +146,14 @@
                     "Parameters": [
                         "VPC"
                     ]
+                },
+                {
+                    "Label": {
+                        "default": "CloudFormation Configuration"
+                    },
+                    "Parameters": [
+                        "CloudWatchAgentUrl"
+                    ]
                 }
             ],
             "ParameterLabels": {
@@ -185,6 +205,12 @@
         "AmiNameSearchString": {
             "Default": "Windows_Server-2016-English-Full-Base-*",
             "Description": "Search pattern to match against an AMI Name",
+            "Type": "String"
+        },
+        "CloudWatchAgentUrl": {
+            "AllowedPattern": "^$|^s3://.*$",
+            "Default": "",
+            "Description": "(Optional) S3 URL to CloudWatch Agent installer. Example: s3://amazoncloudwatch-agent/windows/amd64/latest/AmazonCloudWatchAgent.zip",
             "Type": "String"
         },
         "DesiredCapacity": {
@@ -546,7 +572,10 @@
                                 "s3:GetObject"
                             ],
                             "Effect": "Allow",
-                            "Resource": "arn:aws:s3:::amazon-ssm-*"
+                            "Resource": [
+                                "arn:aws:s3:::amazon-ssm-*",
+                                "arn:aws:s3:::amazoncloudwatch-agent/*"
+                            ]
                         },
                         {
                             "Action": [
@@ -614,6 +643,7 @@
                 "AWS::CloudFormation::Init": {
                     "configSets": {
                         "config": [
+                            "install-cloudwatch-agent",
                             "join-domain",
                             "setup",
                             "installRDS",
@@ -646,6 +676,111 @@
                                 },
                                 "ignoreErrors": "true",
                                 "waitAfterCompletion": "0"
+                            }
+                        }
+                    },
+                    "install-cloudwatch-agent": {
+                        "commands": {
+                            "10-install-cloudwatch-agent": {
+                                "command": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            {
+                                                "Fn::FindInMap": [
+                                                    "ShellCommandMap",
+                                                    "powershell",
+                                                    "command"
+                                                ]
+                                            },
+                                            " \"& { ",
+                                            "$CloudWatchAgentUri = [System.Uri]'",
+                                            {
+                                                "Ref": "CloudWatchAgentUrl"
+                                            },
+                                            "'; ",
+                                            "$CloudWatchAgentScriptDir = 'c:\\cfn\\scripts\\AmazonCloudWatchAgent'; ",
+                                            "$CloudWatchAgentZipFile = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)]; ",
+                                            "$Null = New-Item $CloudWatchAgentScriptDir -Type Directory -Force; ",
+                                            "Read-S3Object",
+                                            " -BucketName $CloudWatchAgentUri.Host",
+                                            " -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '')",
+                                            " -File $CloudWatchAgentZipFile",
+                                            " -Region ",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            "; ",
+                                            "$CloudWatchAgentInstallScript =  \"$CloudWatchAgentScriptDir\"+'\\install.ps1';",
+                                            "$CloudWatchAgentConfig =  \"$CloudWatchAgentScriptDir\"+'\\aws-cloudwatch-agent-config.json';",
+                                            " Expand-Archive -Path $CloudWatchAgentZipFile -DestinationPath $CloudWatchAgentScriptDir;",
+                                            "Push-Location -Path $CloudWatchAgentScriptDir;",
+                                            "iex $CloudWatchAgentInstallScript;",
+                                            ".\\amazon-cloudwatch-agent-ctl.ps1 -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;",
+                                            "Pop-Location",
+                                            "}\""
+                                        ]
+                                    ]
+                                },
+                                "waitAfterCompletion": "0"
+                            }
+                        },
+                        "files": {
+                            "c:\\cfn\\scripts\\AmazonCloudWatchAgent\\aws-cloudwatch-agent-config.json": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "{",
+                                            "    \"logs\": {\n",
+                                            "        \"logs_collected\": {\n",
+                                            "            \"files\": {\n",
+                                            "                \"collect_list\": [\n",
+                                            "                    {\n",
+                                            "                        \"file_path\": \"c:\\\\ProgramData\\\\Amazon\\\\AmazonCloudWatchAgent\\\\Logs\\\\amazon-cloudwatch-agent.log\",\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "LaunchConfigLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"cloudwatch_agent_logs_{instance_id}\",\n",
+                                            "                        \"timestamp_format\": \"%H:%M:%S %y %b %-d\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"file_path\": \"c:\\\\cfn\\\\log\\\\cfn-init.log\",\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "LaunchConfigLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"cloudformation_init_logs_{instance_id}\",\n",
+                                            "                        \"timestamp_format\": \"%H:%M:%S %y %b %-d\"\n",
+                                            "                    }\n",
+                                            "                ]\n",
+                                            "            }\n",
+                                            "        },\n",
+                                            "        \"log_stream_name\": \"default_logs_{instance_id}\"\n",
+                                            "    }\n",
+                                            "}\n"
+                                        ]
+                                    ]
+                                }
                             }
                         }
                     },
@@ -847,6 +982,23 @@
                 }
             },
             "Type": "AWS::AutoScaling::LaunchConfiguration"
+        },
+        "LaunchConfigLogGroup": {
+            "Condition": "InstallCloudWatchAgent",
+            "Properties": {
+                "LogGroupName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "/aws/ec2/win/",
+                            {
+                                "Ref": "AWS::StackName"
+                            }
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Logs::LogGroup"
         },
         "LbSecurityGroup": {
             "Properties": {
