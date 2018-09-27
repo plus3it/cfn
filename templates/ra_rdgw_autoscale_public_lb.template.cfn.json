@@ -1,6 +1,18 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Conditions": {
+        "InstallCloudWatchAgent": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "CloudWatchAgentUrl"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        },
         "UseACM": {
             "Fn::Equals": [
                 {
@@ -23,18 +35,6 @@
                     "Fn::Equals": [
                         {
                             "Ref": "UpdateSchedule"
-                        },
-                        ""
-                    ]
-                }
-            ]
-        },
-        "InstallCloudWatchAgent": {
-            "Fn::Not": [
-                {
-                    "Fn::Equals": [
-                        {
-                            "Ref": "CloudWatchAgentUrl"
                         },
                         ""
                     ]
@@ -150,10 +150,10 @@
                 {
                     "Label": {
                         "default": "CloudFormation Configuration"
-                   },
-                   "Parameters": [
-                       "CloudWatchAgentUrl"
-                   ]
+                    },
+                    "Parameters": [
+                        "CloudWatchAgentUrl"
+                    ]
                 }
             ],
             "ParameterLabels": {
