@@ -1113,6 +1113,105 @@
                                             "                        \"timestamp_format\": \"%H:%M:%S %y %b %-d\"\n",
                                             "                    }\n",
                                             "                ]\n",
+                                            "            },\n",
+                                            "            \"windows_events\": {\n",
+                                            "                \"collect_list\": [\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"System\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "InstanceLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"Windows_System_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"Application\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "InstanceLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"Windows_Application_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"Microsoft-Rdms-UI/Operational\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\",\"INFORMATION\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "InstanceLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"MS-Rdms-UI/Oper_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"Microsoft-Windows-TerminalServices-SessionBroker/Operational\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\",\"INFORMATION\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "InstanceLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"Microsoft-Windows-TerminalServices-SessionBroker/Operational_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"Microsoft-Rdms-UI/Admin\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\",\"INFORMATION\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "InstanceLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"MS-Rdms-UI/Admin_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    }\n",
+                                            "                ]\n",
                                             "            }\n",
                                             "        },\n",
                                             "        \"log_stream_name\": \"default_logs_{instance_id}\"\n",

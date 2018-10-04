@@ -643,8 +643,8 @@
                 "AWS::CloudFormation::Init": {
                     "configSets": {
                         "config": [
-                            "install-cloudwatch-agent",
                             "join-domain",
+                            "install-cloudwatch-agent",
                             "setup",
                             "installRDS",
                             "finalize"
@@ -773,6 +773,67 @@
                                             "                        \"timestamp_format\": \"%H:%M:%S %y %b %-d\"\n",
                                             "                    }\n",
                                             "                ]\n",
+                                            "            },\n",
+                                            "            \"windows_events\": {\n",
+                                            "                \"collect_list\": [\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"System\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "LaunchConfigLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"Windows_System_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"Application\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "LaunchConfigLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"Windows_Application_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    },\n",
+                                            "                    {\n",
+                                            "                        \"event_name\": \"Microsoft-Windows-TerminalServices-Gateway/Operational\",\n",
+                                            "                        \"event_levels\": [\"WARNING\",\"ERROR\",\"INFORMATION\"],\n",
+                                            "                        \"log_group_name\": \"",
+                                            {
+                                                "Fn::If": [
+                                                    "InstallCloudWatchAgent",
+                                                    {
+                                                        "Ref": "LaunchConfigLogGroup"
+                                                    },
+                                                    {
+                                                        "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            "\",\n",
+                                            "                        \"log_stream_name\": \"RDGW_Connections_{instance_id}\",\n",
+                                            "                        \"event_format\": \"text\"\n",
+                                            "                    }\n",
+                                            "                ]\n",
                                             "            }\n",
                                             "        },\n",
                                             "        \"log_stream_name\": \"default_logs_{instance_id}\"\n",
@@ -788,6 +849,10 @@
                         "commands": {
                             "10-install-rds": {
                                 "command": "powershell.exe \"Install-WindowsFeature RDS-Gateway,RSAT-RDS-Gateway -Verbose\"",
+                                "waitAfterCompletion": "0"
+                            },
+                            "15-restart-cwa": {
+                                "command": "net stop AmazonCloudWatchAgent && net start AmazonCloudWatchAgent",
                                 "waitAfterCompletion": "0"
                             },
                             "20-configure-rdgw": {
