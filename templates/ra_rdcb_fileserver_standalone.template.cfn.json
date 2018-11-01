@@ -701,7 +701,12 @@
                                 "ignoreErrors": "true",
                                 "waitAfterCompletion": "0"
                             },
-                            "d-unzip-pstools": {
+                            "d-extend-disks": {
+                                "command": "powershell.exe c:\\cfn\\scripts\\extend-volumes.ps1 -verbose",
+                                "ignoreErrors": "true",
+                                "waitAfterCompletion": "0"
+                            },
+                            "e-unzip-pstools": {
                                 "command": "powershell.exe c:\\cfn\\scripts\\unzip-archive.ps1 c:\\cfn\\files\\pstools.zip c:\\cfn\\files\\pstools",
                                 "ignoreErrors": "true",
                                 "waitAfterCompletion": "0"
@@ -766,6 +771,29 @@
                             },
                             "c:\\cfn\\scripts\\configure-rdcb.ps1": {
                                 "source": "https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1"
+                            },
+                            "c:\\cfn\\scripts\\extend-volumes.ps1": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "[CmdLetBinding()]\n",
+                                            "Param()\n",
+                                            "foreach ($disk in (Get-Disk)) {\n",
+                                            "    $disk | Update-Disk\n",
+                                            "    $Size = (Get-Partition -DiskNumber $disk.Number -PartitionNumber 1).size\n",
+                                            "    $SizeMax = (Get-PartitionSupportedSize -DiskNumber $disk.Number).SizeMax\n",
+                                            "    Write-Verbose \"Disk: $($disk.Number); Current Size: $Size; Maximum Size: $SizeMax\"\n",
+                                            "    if ($SizeMax -gt $Size) {\n",
+                                            "        Resize-Partition -DiskNumber $disk.Number -PartitionNumber 1 -Size $SizeMax\n",
+                                            "        Write-Verbose \"Extended disk $($disk.Number) partition 1\"\n",
+                                            "    } else {\n",
+                                            "        Write-Verbose \"No change to disk $($disk.Number) partition 1\"\n",
+                                            "    }\n",
+                                            "}\n"
+                                        ]
+                                    ]
+                                }
                             },
                             "c:\\cfn\\scripts\\snap-by-group.ps1": {
                                 "source": "https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapByCgroup.ps1"
