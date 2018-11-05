@@ -51,17 +51,15 @@ jobs:
       script:
         - make yaml/lint
     - stage: deploy
-      if: branch = master AND type = push AND repo = env(DEPLOY_SLUG)
       env:
         - JOB="Deploy to GitHub Releases"
         - PRIOR_VERSION=$(git describe --abbrev=0 --tags)
         - RELEASE_BODY="* [$REPO v$RELEASE_VERSION changes](https://github.com/$OWNER/$REPO/compare/$PRIOR_VERSION...$RELEASE_VERSION)"
-      before_script:
+      script: skip
+      before_deploy:
         - echo PRIOR_VERSION=$PRIOR_VERSION
         - echo RELEASE_VERSION=$RELEASE_VERSION
         - echo RELEASE_BODY=$RELEASE_BODY
-      script:
-        - test "$PRIOR_VERSION" = "$RELEASE_VERSION" && travis_terminate || echo "Deploying new version..."
       deploy:
         provider: releases
         api_key:
@@ -71,8 +69,11 @@ jobs:
         target_commitish: $TRAVIS_COMMIT
         body: $RELEASE_BODY
         draft: false
+        'on':
+          branch: master
+          repo: $DEPLOY_SLUG
+          condition: '"$PRIOR_VERSION" != "$RELEASE_VERSION"'
     - stage: deploy
-      if: tag IS present AND repo = env(DEPLOY_SLUG)
       provider: script
       language: python
       env:
@@ -86,6 +87,6 @@ jobs:
       deploy:
         provider: script
         script: BUCKET=$BUCKET PREFIX=repos/$REPO/ VERSION=$TRAVIS_TAG make deploy
-        on:  # yamllint disable-line rule:truthy
+        'on':
           tags: true
           repo: $DEPLOY_SLUG
