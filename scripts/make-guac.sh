@@ -130,6 +130,8 @@ usage()
   -t  Text to be displayed for the URL provided with -l.  If -l is specified,
       then this parameter is required for successful modification.
   -B  Text for branding of the homepage. Default is "Apache Guacamole".
+  -V  Dockerfile to use for Guacamole. Default is "guacamole/guacamole"
+  -v  Dockerfile to use for guacd. Default is "guacamole/guacd"
 EOT
 }  # ----------  end of function usage  ----------
 
@@ -215,7 +217,7 @@ write_guacamole_dockerfile()
 
     log "Writing Guacamole Dockerfile, ${guac_dockerfile}"
     (
-        printf "FROM guacamole/guacamole\n"
+        printf "FROM %s\n" "$DOCKER_GUACAMOLE_IMAGE"
         printf "\n"
         printf "RUN rm -rf /usr/local/tomcat/webapps/* && \\"
         printf "\n"
@@ -240,10 +242,11 @@ URLTEXT_1=
 URL_2=
 URLTEXT_2=
 BRANDTEXT="Apache Guacamole"
-
+DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole
+DOCKER_GUACD_IMAGE=guacamole/guacd
 
 # Parse command-line parameters
-while getopts :hH:D:U:R:A:C:P:L:T:l:t:B: opt
+while getopts :hH:D:U:R:A:C:P:L:T:l:t:B:V:v: opt
 do
     case "${opt}" in
         h)
@@ -285,6 +288,12 @@ do
             ;;
         B)
             BRANDTEXT="${OPTARG}"
+            ;;
+        V)
+            DOCKER_GUACAMOLE_IMAGE="${OPTARG}"
+            ;;
+        v)
+            DOCKER_GUACD_IMAGE="${OPTARG}"
             ;;
         \?)
             usage
@@ -335,8 +344,6 @@ fi
 
 # Set internal variables
 DOCKER_GUACD=guacd
-DOCKER_GUACD_IMAGE=guacamole/guacd
-DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole
 DOCKER_GUACAMOLE_IMAGE_LOCAL=local/guacamole
 DOCKER_GUACAMOLE=guacamole
 DOCKER_GUACAMOLE_LOCAL=/root/guacamole

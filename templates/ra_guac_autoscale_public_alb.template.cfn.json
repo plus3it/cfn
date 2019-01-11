@@ -209,6 +209,16 @@
             "MinLength": "1",
             "Type": "String"
         },
+        "DockerGuacamoleImage": {
+            "Default": "guacamole/guacamole",
+            "Description": "Dockerhub path to GUACAMOLE docker image. Defaults to guacamole/guacamole",
+            "Type": "String"
+        },
+        "DockerGuacdImage": {
+            "Default": "guacamole/guacd",
+            "Description": "Dockerhub path to GUACD docker image. Defaults to guacamole/guacd",
+            "Type": "String"
+        },
         "ForceUpdateToggle": {
             "AllowedValues": [
                 "A",
@@ -818,6 +828,14 @@
                                             " -D ",
                                             {
                                                 "Ref": "LdapDN"
+                                            },
+                                            " -V ",
+                                            {
+                                                "Ref": "DockerGuacamoleImage"
+                                            },
+                                            " -v ",
+                                            {
+                                                "Ref": "DockerGuacdImage"
                                             },
                                             {
                                                 "Fn::If": [
