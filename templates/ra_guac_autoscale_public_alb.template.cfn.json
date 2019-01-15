@@ -228,6 +228,11 @@
             "Description": "A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy",
             "Type": "String"
         },
+        "GuacBaseDN": {
+            "Default": "CN=GuacConfigGroups",
+            "Description": "The base of the DN for all Guacamole configurations.",
+            "Type": "String"
+        },
         "InstanceType": {
             "AllowedValues": [
                 "t2.micro",
@@ -836,6 +841,10 @@
                                             " -v ",
                                             {
                                                 "Ref": "DockerGuacdImage"
+                                            },
+                                            " -C ",
+                                            {
+                                                "Ref": "GuacBaseDN"
                                             },
                                             {
                                                 "Fn::If": [

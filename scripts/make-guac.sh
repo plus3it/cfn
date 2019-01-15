@@ -244,6 +244,7 @@ URLTEXT_2=
 BRANDTEXT="Apache Guacamole"
 DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole
 DOCKER_GUACD_IMAGE=guacamole/guacd
+GUACD_LOG_LEVEL=debug
 
 # Parse command-line parameters
 while getopts :hH:D:U:R:A:C:P:L:T:l:t:B:V:v: opt
@@ -432,6 +433,8 @@ log "Starting guacd container, ${DOCKER_GUACD_IMAGE}"
 docker run --name guacd \
     --restart unless-stopped \
     -v "${GUAC_DRIVE}":"${GUAC_DRIVE}" \
+    -e GUACD_LOG_LEVEL="${GUACD_LOG_LEVEL}" \
+    -e WLOG_LEVEL=DEBUG \
     -d "${DOCKER_GUACD_IMAGE}" | log
 
 
