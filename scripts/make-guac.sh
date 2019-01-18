@@ -226,7 +226,26 @@ write_guacamole_dockerfile()
         printf "CMD [\"/opt/guacamole/bin/start.sh\" ]\n"
     ) > "${guac_dockerfile}"
     log "Successfully added Guacamole Dockerfile"
-}  # ----------  end of function write_brand  ----------
+}  # ----------  end of function write_guacamole_dockerfile  ----------
+
+
+# revert guacd docker to ubunt base image due to freerdp issue in debian base
+# see https://jira.apache.org/jira/browse/GUACAMOLE-707 for more details
+write_guacd_dockerfile()
+{
+    log "Reverting guacd docker to ubunut base"
+    git clone https://github.com/apache/guacamole-server.git "$GUACD_PATH" | log
+    cd "$GUACD_PATH"
+    # diff the Dockerfile against the commit where the base was changed to debian
+    git diff eb282e49d96c9398908147285744483c52447d1e~ Dockerfile > commit.patch
+    # apply the captured diff to the Dockerfile
+    patch Dockerfile commit.patch -R | log
+    # revert ubuntu release to LTS (xenial)
+    sed -i -e 's/artful/xenial/g' Dockerfile
+    cd -
+    log "Successfully reverted guacd Dockerfile"
+}  # ----------  end of function write_guacd_dockerfile  ----------
+
 
 
 # Define default values
@@ -243,8 +262,6 @@ URL_2=
 URLTEXT_2=
 BRANDTEXT="Apache Guacamole"
 DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole
-DOCKER_GUACD_IMAGE=guacamole/guacd
-GUACD_LOG_LEVEL=debug
 
 # Parse command-line parameters
 while getopts :hH:D:U:R:A:C:P:L:T:l:t:B:V:v: opt
@@ -292,9 +309,6 @@ do
             ;;
         V)
             DOCKER_GUACAMOLE_IMAGE="${OPTARG}"
-            ;;
-        v)
-            DOCKER_GUACD_IMAGE="${OPTARG}"
             ;;
         \?)
             usage
@@ -348,9 +362,11 @@ DOCKER_GUACD=guacd
 DOCKER_GUACAMOLE_IMAGE_LOCAL=local/guacamole
 DOCKER_GUACAMOLE=guacamole
 DOCKER_GUACAMOLE_LOCAL=/root/guacamole
+DOCKER_GUACD_IMAGE_LOCAL=local/guacd
 GUAC_EXT=/tmp/extensions
 GUAC_HOME=/root/guac-home
 GUAC_DRIVE=/var/tmp/guacamole
+GUACD_PATH=root/guacd
 
 
 # Setup build directories
@@ -358,19 +374,34 @@ log "Initializing ${__SCRIPTNAME} build directories"
 rm -rf "${GUAC_EXT}" "${GUAC_HOME}" "${GUAC_DRIVE}" "${DOCKER_GUACAMOLE_LOCAL}" | log
 mkdir -p "${GUAC_EXT}" "${GUAC_HOME}/extensions" "${GUAC_DRIVE}" "${DOCKER_GUACAMOLE_LOCAL}" | log
 
+# Install dependencies
+log "installing git"
+retry 2 yum -y install git | log
 
-# Get docker
+log "install patch"
+retry 2 yum -y install patch | log
+
 log "Installing docker"
 retry 2 yum -y install docker | log
 
+# start docker
 log "Starting docker"
 service docker start | log
 
+# enable docker service
 log "Enabling docker services"
 chkconfig docker on | log
 
-log "Fetching the guacd image, ${DOCKER_GUACD_IMAGE}"
-docker pull "${DOCKER_GUACD_IMAGE}" | log
+# git pull the working guacd docker image
+log "Fetching the guacd image"
+write_guacd_dockerfile
+
+# Build local guacd image
+log "Building local guacd image from dockerfile"
+cd $GUACD_PATH
+docker build -t "${DOCKER_GUACD_IMAGE_LOCAL}" . | log
+cd -
+
 
 log "Fetching the guacamole image, ${DOCKER_GUACAMOLE_IMAGE}"
 docker pull "${DOCKER_GUACAMOLE_IMAGE}" | log
@@ -429,13 +460,11 @@ fi
 
 
 # Starting guacd container
-log "Starting guacd container, ${DOCKER_GUACD_IMAGE}"
+log "Starting guacd container, ${DOCKER_GUACD_IMAGE_LOCAL}"
 docker run --name guacd \
     --restart unless-stopped \
     -v "${GUAC_DRIVE}":"${GUAC_DRIVE}" \
-    -e GUACD_LOG_LEVEL="${GUACD_LOG_LEVEL}" \
-    -e WLOG_LEVEL=DEBUG \
-    -d "${DOCKER_GUACD_IMAGE}" | log
+    -d "${DOCKER_GUACD_IMAGE_LOCAL}" | log
 
 
 # Starting guacamole container
