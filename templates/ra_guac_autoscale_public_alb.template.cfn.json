@@ -209,16 +209,6 @@
             "MinLength": "1",
             "Type": "String"
         },
-        "DockerGuacamoleImage": {
-            "Default": "guacamole/guacamole",
-            "Description": "Dockerhub path to GUACAMOLE docker image. Defaults to guacamole/guacamole",
-            "Type": "String"
-        },
-        "DockerGuacdImage": {
-            "Default": "guacamole/guacd",
-            "Description": "Dockerhub path to GUACD docker image. Defaults to guacamole/guacd",
-            "Type": "String"
-        },
         "ForceUpdateToggle": {
             "AllowedValues": [
                 "A",
@@ -231,6 +221,16 @@
         "GuacBaseDN": {
             "Default": "CN=GuacConfigGroups",
             "Description": "The base of the DN for all Guacamole configurations.",
+            "Type": "String"
+        },
+        "GuacamoleVersion": {
+            "Default": "1.0.0",
+            "Description": "Guacamole version tag. Defaults to 1.0.0",
+            "Type": "String"
+        },
+        "GuacdVersion": {
+            "Default": "1.0.0",
+            "Description": "Guacd version tag. Defaults to 1.0.0",
             "Type": "String"
         },
         "InstanceType": {
@@ -836,11 +836,11 @@
                                             },
                                             " -V ",
                                             {
-                                                "Ref": "DockerGuacamoleImage"
+                                                "Ref": "GuacamoleVersion"
                                             },
                                             " -v ",
                                             {
-                                                "Ref": "DockerGuacdImage"
+                                                "Ref": "GuacdVersion"
                                             },
                                             " -C ",
                                             {

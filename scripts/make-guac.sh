@@ -229,12 +229,17 @@ write_guacamole_dockerfile()
 }  # ----------  end of function write_guacamole_dockerfile  ----------
 
 
-# revert guacd docker to ubunt base image due to freerdp issue in debian base
+# revert guacd docker to ubuntu base image due to freerdp issue in debian base
 # see https://jira.apache.org/jira/browse/GUACAMOLE-707 for more details
 write_guacd_dockerfile()
 {
-    log "Reverting guacd docker to ubunut base"
-    git clone https://github.com/apache/guacamole-server.git "$GUACD_PATH" | log
+    log "Reverting guacd docker to ubuntu base"
+    # configure git
+    export HOME=/root
+    git config --global user.email "none@none.com"
+    git config --global user.name "EC2 Instance"
+    # clone the target guacd version
+    git clone --branch "$GUACD_VERSION" https://git-wip-us.apache.org/repos/asf/guacamole-server.git  "$GUACD_PATH" | log
     cd "$GUACD_PATH"
     # diff the Dockerfile against the commit where the base was changed to debian
     git diff eb282e49d96c9398908147285744483c52447d1e~ Dockerfile > commit.patch
@@ -261,7 +266,8 @@ URLTEXT_1=
 URL_2=
 URLTEXT_2=
 BRANDTEXT="Apache Guacamole"
-DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole
+GUACD_VERSION="1.0.0"
+GUACAMOLE_VERSION="1.0.0"
 
 # Parse command-line parameters
 while getopts :hH:D:U:R:A:C:P:L:T:l:t:B:V:v: opt
@@ -308,7 +314,10 @@ do
             BRANDTEXT="${OPTARG}"
             ;;
         V)
-            DOCKER_GUACAMOLE_IMAGE="${OPTARG}"
+            GUACAMOLE_VERSION="${OPTARG}"
+            ;;
+        v)
+            GUACD_VERSION="${OPTARG}"
             ;;
         \?)
             usage
@@ -359,6 +368,7 @@ fi
 
 # Set internal variables
 DOCKER_GUACD=guacd
+DOCKER_GUACAMOLE_IMAGE=guacamole/guacamole:$GUACAMOLE_VERSION
 DOCKER_GUACAMOLE_IMAGE_LOCAL=local/guacamole
 DOCKER_GUACAMOLE=guacamole
 DOCKER_GUACAMOLE_LOCAL=/root/guacamole
@@ -398,9 +408,7 @@ write_guacd_dockerfile
 
 # Build local guacd image
 log "Building local guacd image from dockerfile"
-cd $GUACD_PATH
-docker build -t "${DOCKER_GUACD_IMAGE_LOCAL}" . | log
-cd -
+docker build -t "${DOCKER_GUACD_IMAGE_LOCAL}" "${GUACD_PATH}" | log
 
 
 log "Fetching the guacamole image, ${DOCKER_GUACAMOLE_IMAGE}"
