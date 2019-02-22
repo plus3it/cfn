@@ -10,6 +10,10 @@ Param(
     [String] $GroupName = "Administrators",
 
     [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
+    [ValidateSet("Password","Smartcard")]
+    [String] $AuthenticationMethod = "Password",
+
+    [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
     [Switch] $HealthCheckEndPoint,
 
     [Parameter(Mandatory=$false,ValueFromPipeLine=$false,ValueFromPipeLineByPropertyName=$false)]
@@ -43,6 +47,16 @@ if (-not $ServerFQDN)
 
 $null = Install-WindowsFeature RDS-Gateway,RSAT-RDS-Gateway
 $null = Import-Module RemoteDesktopServices
+
+$AuthMethods = @{
+    "Password" = 1
+    "Smartcard" = 2
+}
+
+$SslBridging = @{
+    "Password" = 1
+    "Smartcard" = 2
+}
 
 # Remove self-signed certs from the personal store before creating a new one
 dir cert:\localmachine\my | ? { $_.Issuer -eq $_.Subject } | % { Remove-Item  $_.PSPath }
@@ -95,7 +109,7 @@ if (test-path RDS:\GatewayServer\CAP\Default-CAP) {
   remove-item -path RDS:\GatewayServer\CAP\Default-CAP -Recurse
 }
 
-$null = new-item -path RDS:\GatewayServer\CAP -Name Default-CAP -UserGroups "$GroupName@$DomainNetBiosName" -AuthMethod 1
+$null = new-item -path RDS:\GatewayServer\CAP -Name Default-CAP -UserGroups "$GroupName@$DomainNetBiosName" -AuthMethod $AuthMethods[$AuthenticationMethod]
 
 if (test-path RDS:\GatewayServer\RAP\Default-RAP) {
   remove-item -Path RDS:\GatewayServer\RAP\Default-RAP -Recurse
@@ -103,7 +117,7 @@ if (test-path RDS:\GatewayServer\RAP\Default-RAP) {
 
 $null = new-item -Path RDS:\GatewayServer\RAP -Name Default-RAP -UserGroups "$GroupName@$DomainNetBiosName" -ComputerGroupType 2
 
-$null = set-item -Path RDS:\GatewayServer\SSLBridging 1
+$null = set-item -Path RDS:\GatewayServer\SSLBridging $SslBridging[$AuthenticationMethod]
 
 $null = Set-Item -Path RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("c:\$ServerFQDN.cer")).Thumbprint)
 

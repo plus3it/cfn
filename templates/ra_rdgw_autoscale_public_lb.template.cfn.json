@@ -109,6 +109,7 @@
                         "default": "RDGW Configuration"
                     },
                     "Parameters": [
+                        "AuthenticationMethod",
                         "DomainDirectoryId",
                         "DomainDnsName",
                         "DomainNetbiosName",
@@ -165,7 +166,7 @@
                 }
             }
         },
-        "Version": "0.1.2"
+        "Version": "0.2.0"
     },
     "Outputs": {
         "Ec2SecurityGroupId": {
@@ -205,6 +206,15 @@
         "AmiNameSearchString": {
             "Default": "Windows_Server-2016-English-Full-Base-*",
             "Description": "Search pattern to match against an AMI Name",
+            "Type": "String"
+        },
+        "AuthenticationMethod": {
+            "AllowedValues": [
+                "Password",
+                "Smartcard"
+            ],
+            "Default": "Password",
+            "Description": "Configures the RDGW for either Password or Smartcard authentication",
             "Type": "String"
         },
         "CloudWatchAgentUrl": {
@@ -872,6 +882,10 @@
                                                 "Ref": "RemoteAccessUserGroup"
                                             },
                                             "'",
+                                            " -AuthenticationMethod ",
+                                            {
+                                                "Ref": "AuthenticationMethod"
+                                            },
                                             " -HealthCheckEndPoint",
                                             " -HealthCheckDir 'C:\\inetpub\\healthcheck'",
                                             " -HealthCheckSiteName 'RDGW Healthcheck Web Site'",
