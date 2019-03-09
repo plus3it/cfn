@@ -52,7 +52,7 @@ yaml/lint: | guard/program/yamllint
 
 cfn/%: FIND_CFN ?= find . -name '*.template.cfn.*' -type f
 cfn/lint: | guard/program/cfn-lint
-	$(FIND_CFN) | $(XARGS) cfn-lint validate --verbose {}
+	$(FIND_CFN) | $(XARGS) cfn-lint -t {}
 
 cfn/version:
 	$(FIND_CFN) | $(XARGS) bash -c "jq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
