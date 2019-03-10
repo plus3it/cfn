@@ -35,7 +35,7 @@
                 "NetbiosNameServers": {
                     "Ref": "DomainControllerIPs"
                 },
-                "NetbiosNodeType": "2",
+                "NetbiosNodeType": 2,
                 "NtpServers": {
                     "Ref": "DomainControllerIPs"
                 },

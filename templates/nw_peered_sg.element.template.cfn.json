@@ -14,10 +14,9 @@
     },
     "Parameters": {
         "SourcePeerIngress": {
-            "AllowedPattern": "^$|^sg-(?=(?:.{8}|.{17})$)[a-z0-9]*$",
-            "Default": "",
+            "AllowedPattern": "^sg-(?=(?:.{8}|.{17})$)[a-z0-9]*$",
             "Description": "Creates a Security Group and ingress rule to allow remote access from instances in the specified security group within the peered account (Example: sg-12345678).",
-            "Type": "String"
+            "Type": "AWS::EC2::SecurityGroup::Id"
         },
         "VPC": {
             "Description": "VPC ID that will contain the security group",
@@ -28,7 +27,7 @@
         "RDPIngressTcp3389": {
             "DeletionPolicy": "Retain",
             "Properties": {
-                "FromPort": "3389",
+                "FromPort": 3389,
                 "GroupId": {
                     "Ref": "VpcPeerSecurityGroup"
                 },
@@ -36,14 +35,14 @@
                 "SourceSecurityGroupId": {
                     "Ref": "SourcePeerIngress"
                 },
-                "ToPort": "3389"
+                "ToPort": 3389
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "SSHIngressTcp22": {
             "DeletionPolicy": "Retain",
             "Properties": {
-                "FromPort": "22",
+                "FromPort": 22,
                 "GroupId": {
                     "Ref": "VpcPeerSecurityGroup"
                 },
@@ -51,7 +50,7 @@
                 "SourceSecurityGroupId": {
                     "Ref": "SourcePeerIngress"
                 },
-                "ToPort": "22"
+                "ToPort": 22
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },

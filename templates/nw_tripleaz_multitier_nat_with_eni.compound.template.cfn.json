@@ -443,7 +443,6 @@
     },
     "Resources": {
         "NATwithENI1Stack": {
-            "DependsOn": "PublicSubnet1Stack",
             "Properties": {
                 "Parameters": {
                     "CIDRVPC": {
@@ -561,7 +560,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PrivateSubnet1Stack": {
-            "DependsOn": "NATwithENI1Stack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -593,7 +591,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PrivateSubnet2Stack": {
-            "DependsOn": "NATwithENI2Stack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -625,7 +622,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PrivateSubnet3Stack": {
-            "DependsOn": "NATwithENI3Stack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -657,7 +653,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PublicSubnet1Stack": {
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -689,7 +684,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PublicSubnet2Stack": {
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -721,7 +715,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PublicSubnet3Stack": {
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -765,7 +758,6 @@
         },
         "VpcPeeredZoneStack": {
             "Condition": "CreatePeeredZone",
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "PeeredDc1Ip": {
@@ -796,7 +788,6 @@
         },
         "VpcPeeringConnectionStack": {
             "Condition": "PeerVpc",
-            "DependsOn": "NATwithENI3Stack",
             "Properties": {
                 "Parameters": {
                     "RouteTableId1": {

@@ -110,8 +110,8 @@
                 "CidrBlock": {
                     "Ref": "CIDRVPC"
                 },
-                "EnableDnsHostnames": "true",
-                "EnableDnsSupport": "true",
+                "EnableDnsHostnames": true,
+                "EnableDnsSupport": true,
                 "Tags": [
                     {
                         "Key": "Name",

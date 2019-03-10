@@ -56,7 +56,6 @@
     "Resources": {
         "PeeredDcARecordSet1": {
             "DeletionPolicy": "Retain",
-            "DependsOn": "PrivateHostedZone",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -88,7 +87,6 @@
         },
         "PeeredDcARecordSet2": {
             "DeletionPolicy": "Retain",
-            "DependsOn": "PrivateHostedZone",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -120,7 +118,6 @@
         },
         "PeeredDcSrvRecordSet1": {
             "DeletionPolicy": "Retain",
-            "DependsOn": "PrivateHostedZone",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -160,13 +157,12 @@
                 },
                 "TTL": "300",
                 "Type": "SRV",
-                "Weight": "20"
+                "Weight": 20
             },
             "Type": "AWS::Route53::RecordSet"
         },
         "PeeredDcSrvRecordSet2": {
             "DeletionPolicy": "Retain",
-            "DependsOn": "PrivateHostedZone",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -206,13 +202,12 @@
                 },
                 "TTL": "300",
                 "Type": "SRV",
-                "Weight": "20"
+                "Weight": 20
             },
             "Type": "AWS::Route53::RecordSet"
         },
         "PeeredDomainARecordSet": {
             "DeletionPolicy": "Retain",
-            "DependsOn": "PrivateHostedZone",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"

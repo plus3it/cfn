@@ -143,15 +143,10 @@
         "PrivateSubnetId": {
             "Description": "Subnet ID for the Private Subnet where the AD Domain Controller instance will run",
             "Type": "AWS::EC2::Subnet::Id"
-        },
-        "VPC": {
-            "Description": "VPC ID",
-            "Type": "AWS::EC2::VPC::Id"
         }
     },
     "Resources": {
         "DcARecordSet": {
-            "DependsOn": "DomainController",
             "Properties": {
                 "HostedZoneName": {
                     "Fn::Join": [
@@ -286,7 +281,7 @@
                 },
                 "TTL": "300",
                 "Type": "SRV",
-                "Weight": "20"
+                "Weight": 20
             },
             "Type": "AWS::Route53::RecordSet"
         },
@@ -344,7 +339,7 @@
                 },
                 "TTL": "300",
                 "Type": "A",
-                "Weight": "20"
+                "Weight": 20
             },
             "Type": "AWS::Route53::RecordSet"
         },
@@ -771,8 +766,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "100",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 100,
                             "VolumeType": "gp2"
                         }
                     }

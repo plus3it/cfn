@@ -198,7 +198,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "PropagateAtLaunch": "true",
+                        "PropagateAtLaunch": true,
                         "Value": {
                             "Fn::Join": [
                                 "",
@@ -254,7 +254,7 @@
                 "PrivateIpAddress": {
                     "Ref": "IpAddressNAT"
                 },
-                "SourceDestCheck": "false",
+                "SourceDestCheck": false,
                 "SubnetId": {
                     "Ref": "PublicSubnetId"
                 },
@@ -397,12 +397,12 @@
                 "Comment": "Configure NAT Instance"
             },
             "Properties": {
-                "AssociatePublicIpAddress": "true",
+                "AssociatePublicIpAddress": true,
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/xvda",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
+                            "DeleteOnTermination": true,
                             "VolumeType": "gp2"
                         }
                     }
@@ -482,17 +482,17 @@
                         "CidrIp": {
                             "Ref": "CIDRVPC"
                         },
-                        "FromPort": "1",
+                        "FromPort": 1,
                         "IpProtocol": "-1",
-                        "ToPort": "65535"
+                        "ToPort": 65535
                     },
                     {
                         "CidrIp": {
                             "Ref": "CIDRVPC"
                         },
-                        "FromPort": "-1",
+                        "FromPort": -1,
                         "IpProtocol": "icmp",
-                        "ToPort": "-1"
+                        "ToPort": -1
                     }
                 ],
                 "Tags": [

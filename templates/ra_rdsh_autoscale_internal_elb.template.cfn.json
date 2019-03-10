@@ -425,7 +425,7 @@
                 "DesiredCapacity": {
                     "Ref": "DesiredCapacity"
                 },
-                "HealthCheckGracePeriod": "8100",
+                "HealthCheckGracePeriod": 8100,
                 "HealthCheckType": "ELB",
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfig"
@@ -449,7 +449,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "PropagateAtLaunch": "true",
+                        "PropagateAtLaunch": true,
                         "Value": {
                             "Ref": "AWS::StackName"
                         }
@@ -466,7 +466,7 @@
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "UpdatePolicy": {
                 "AutoScalingReplacingUpdate": {
-                    "WillReplace": "true"
+                    "WillReplace": true
                 }
             }
         },
@@ -505,13 +505,13 @@
         "ELB": {
             "Properties": {
                 "ConnectionDrainingPolicy": {
-                    "Enabled": "true",
-                    "Timeout": "1800"
+                    "Enabled": true,
+                    "Timeout": 1800
                 },
                 "ConnectionSettings": {
-                    "IdleTimeout": "900"
+                    "IdleTimeout": 900
                 },
-                "CrossZone": "false",
+                "CrossZone": false,
                 "HealthCheck": {
                     "HealthyThreshold": "5",
                     "Interval": "60",
@@ -784,12 +784,12 @@
                 "DestinationSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
-                "FromPort": "3389",
+                "FromPort": 3389,
                 "GroupId": {
                     "Ref": "ElbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "3389"
+                "ToPort": 3389
             },
             "Type": "AWS::EC2::SecurityGroupEgress"
         },
@@ -798,18 +798,18 @@
                 "DestinationSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
-                "FromPort": "8091",
+                "FromPort": 8091,
                 "GroupId": {
                     "Ref": "ElbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "8091"
+                "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupEgress"
         },
         "ElbToRdshIngressTcp3389": {
             "Properties": {
-                "FromPort": "3389",
+                "FromPort": 3389,
                 "GroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
@@ -817,13 +817,13 @@
                 "SourceSecurityGroupId": {
                     "Ref": "ElbSecurityGroup"
                 },
-                "ToPort": "3389"
+                "ToPort": 3389
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "ElbToRdshIngressTcp8091": {
             "Properties": {
-                "FromPort": "8091",
+                "FromPort": 8091,
                 "GroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
@@ -831,7 +831,7 @@
                 "SourceSecurityGroupId": {
                     "Ref": "ElbSecurityGroup"
                 },
-                "ToPort": "8091"
+                "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
@@ -1302,8 +1302,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "50",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 50,
                             "VolumeType": "gp2"
                         }
                     }
@@ -1413,18 +1413,18 @@
         "PublicToElbIngressTcp3389": {
             "Properties": {
                 "CidrIp": "0.0.0.0/0",
-                "FromPort": "3389",
+                "FromPort": 3389,
                 "GroupId": {
                     "Ref": "ElbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "3389"
+                "ToPort": 3389
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "RdshToElbIngressTcp8091": {
             "Properties": {
-                "FromPort": "8091",
+                "FromPort": 8091,
                 "GroupId": {
                     "Ref": "ElbSecurityGroup"
                 },
@@ -1432,7 +1432,7 @@
                 "SourceSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
-                "ToPort": "8091"
+                "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },

@@ -325,7 +325,6 @@
     },
     "Resources": {
         "NATGatewayStack": {
-            "DependsOn": "PublicSubnet1Stack",
             "Properties": {
                 "Parameters": {
                     "PublicSubnetId": {
@@ -365,7 +364,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PrivateSubnet1Stack": {
-            "DependsOn": "NATGatewayStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -397,7 +395,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PrivateSubnet2Stack": {
-            "DependsOn": "NATGatewayStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -429,7 +426,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PublicSubnet1Stack": {
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -461,7 +457,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PublicSubnet2Stack": {
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -505,7 +500,6 @@
         },
         "VpcPeeredZoneStack": {
             "Condition": "CreatePeeredZone",
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "PeeredDc1Ip": {
@@ -536,7 +530,6 @@
         },
         "VpcPeeringConnectionStack": {
             "Condition": "PeerVpc",
-            "DependsOn": "NATGatewayStack",
             "Properties": {
                 "Parameters": {
                     "RouteTableId1": {

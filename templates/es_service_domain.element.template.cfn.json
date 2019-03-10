@@ -235,7 +235,7 @@
                     "Ref": "ElasticsearchVersion"
                 },
                 "SnapshotOptions": {
-                    "AutomatedSnapshotStartHour": "0"
+                    "AutomatedSnapshotStartHour": 0
                 }
             },
             "Type": "AWS::Elasticsearch::Domain"
