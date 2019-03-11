@@ -156,7 +156,17 @@
                 }
             }
         },
-        "Version": "0.2.0"
+        "Version": "0.2.0",
+        "cfn-lint": {
+            "config": {
+                "ignore_checks": [
+                    "E3001",
+                    "E7001",
+                    "W1011",
+                    "W2001"
+                ]
+            }
+        }
     },
     "Outputs": {
         "Ec2SecurityGroupId": {

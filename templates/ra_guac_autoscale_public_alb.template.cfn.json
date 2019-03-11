@@ -150,7 +150,15 @@
         }
     },
     "Metadata": {
-        "Version": "0.2.0"
+        "Version": "0.2.0",
+        "cfn-lint": {
+            "config": {
+                "ignore_checks": [
+                    "E7001",
+                    "W1011"
+                ]
+            }
+        }
     },
     "Outputs": {
         "AlbSecurityGroupId": {
