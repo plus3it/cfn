@@ -56,7 +56,7 @@
         }
     },
     "Metadata": {
-        "Version": "0.2.0"
+        "Version": "0.2.1"
     },
     "Outputs": {
         "DomainAdmin": {
@@ -170,15 +170,10 @@
             "Description": "Domain group that will be used to authorize users to connect via the RDGW",
             "MinLength": "1",
             "Type": "String"
-        },
-        "VPC": {
-            "Description": "VPC ID",
-            "Type": "AWS::EC2::VPC::Id"
         }
     },
     "Resources": {
         "DcARecordSet": {
-            "DependsOn": "DomainController",
             "Properties": {
                 "HostedZoneName": {
                     "Fn::Join": [
@@ -313,7 +308,7 @@
                 },
                 "TTL": "300",
                 "Type": "SRV",
-                "Weight": "20"
+                "Weight": 20
             },
             "Type": "AWS::Route53::RecordSet"
         },
@@ -371,7 +366,7 @@
                 },
                 "TTL": "300",
                 "Type": "A",
-                "Weight": "20"
+                "Weight": 20
             },
             "Type": "AWS::Route53::RecordSet"
         },
@@ -1021,8 +1016,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "100",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 100,
                             "VolumeType": "gp2"
                         }
                     }

@@ -279,8 +279,7 @@
                         "default": "CloudFormation Configuration"
                     },
                     "Parameters": [
-                        "CfnEndpointUrl",
-                        "ToggleCfnInitUpdate"
+                        "CfnEndpointUrl"
                     ]
                 }
             ],
@@ -296,13 +295,10 @@
                 },
                 "SqlServiceAccountPassword": {
                     "default": "Sql Service Account Password"
-                },
-                "ToggleCfnInitUpdate": {
-                    "default": "Force Cfn Init Update"
                 }
             }
         },
-        "Version": "0.2.0"
+        "Version": "0.2.1"
     },
     "Outputs": {
         "MssqlNode1InstanceId": {
@@ -346,7 +342,7 @@
         "AmiId": {
             "AllowedPattern": "^$|^ami-(?=(?:.{8}|.{17})$)[a-z0-9]*$",
             "Description": "ID of the AMI to use for all instances",
-            "Type": "String"
+            "Type": "AWS::EC2::Image::Id"
         },
         "CarbonUrl": {
             "AllowedPattern": "^http://.*\\.zip$|^https://.*\\.zip$",
@@ -592,15 +588,6 @@
             "Description": "DN of the OU to place the instance when joining a domain. If blank and \"SystemPrepEnvironment\" enforces a domain join, the instance will be placed in a default container. Leave blank if not joining a domain, or if \"SystemPrepEnvironment\" is \"$false\"",
             "Type": "String"
         },
-        "ToggleCfnInitUpdate": {
-            "AllowedValues": [
-                "A",
-                "B"
-            ],
-            "Default": "A",
-            "Description": "A/B toggle that forces a change to instance metadata, triggering the cfn-init update sequence",
-            "Type": "String"
-        },
         "VPC": {
             "Description": "ID of the VPC (e.g., vpc-0343606e)",
             "Type": "AWS::EC2::VPC::Id"
@@ -637,7 +624,7 @@
     "Resources": {
         "ClientToMssqlIngressTcp1433": {
             "Properties": {
-                "FromPort": "1433",
+                "FromPort": 1433,
                 "GroupId": {
                     "Ref": "MssqlSecurityGroup"
                 },
@@ -645,7 +632,7 @@
                 "SourceSecurityGroupId": {
                     "Ref": "MssqlClientSecurityGroup"
                 },
-                "ToPort": "1433"
+                "ToPort": 1433
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
@@ -1306,8 +1293,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "100",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 100,
                             "VolumeType": "gp2"
                         }
                     },
@@ -1326,24 +1313,24 @@
                     {
                         "DeviceName": "/dev/xvdf",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "500",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 500,
                             "VolumeType": "gp2"
                         }
                     },
                     {
                         "DeviceName": "/dev/xvdh",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "500",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 500,
                             "VolumeType": "gp2"
                         }
                     },
                     {
                         "DeviceName": "/dev/xvdg",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "500",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 500,
                             "VolumeType": "gp2"
                         }
                     }
@@ -1382,12 +1369,12 @@
                         "AssociatePublicIpAddress": {
                             "Fn::If": [
                                 "AssignPublicIp",
-                                "true",
-                                "false"
+                                true,
+                                false
                             ]
                         },
-                        "DeleteOnTermination": "true",
-                        "DeviceIndex": 0,
+                        "DeleteOnTermination": true,
+                        "DeviceIndex": "0",
                         "GroupSet": [
                             {
                                 "Fn::If": [
@@ -1406,19 +1393,19 @@
                         ],
                         "PrivateIpAddresses": [
                             {
-                                "Primary": "true",
+                                "Primary": true,
                                 "PrivateIpAddress": {
                                     "Ref": "MssqlNode1PrivateIp"
                                 }
                             },
                             {
-                                "Primary": "false",
+                                "Primary": false,
                                 "PrivateIpAddress": {
                                     "Ref": "MssqlNode1PrivateIp2"
                                 }
                             },
                             {
-                                "Primary": "false",
+                                "Primary": false,
                                 "PrivateIpAddress": {
                                     "Ref": "MssqlNode1PrivateIp3"
                                 }
@@ -1556,8 +1543,7 @@
                 }
             },
             "DependsOn": [
-                "MssqlNode1",
-                "WitnessNode"
+                "MssqlNode1"
             ],
             "Metadata": {
                 "AWS::CloudFormation::Init": {
@@ -2365,8 +2351,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "100",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 100,
                             "VolumeType": "gp2"
                         }
                     },
@@ -2385,24 +2371,24 @@
                     {
                         "DeviceName": "/dev/xvdf",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "500",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 500,
                             "VolumeType": "gp2"
                         }
                     },
                     {
                         "DeviceName": "/dev/xvdh",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "500",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 500,
                             "VolumeType": "gp2"
                         }
                     },
                     {
                         "DeviceName": "/dev/xvdg",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "500",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 500,
                             "VolumeType": "gp2"
                         }
                     }
@@ -2441,12 +2427,12 @@
                         "AssociatePublicIpAddress": {
                             "Fn::If": [
                                 "AssignPublicIp",
-                                "true",
-                                "false"
+                                true,
+                                false
                             ]
                         },
-                        "DeleteOnTermination": "true",
-                        "DeviceIndex": 0,
+                        "DeleteOnTermination": true,
+                        "DeviceIndex": "0",
                         "GroupSet": [
                             {
                                 "Fn::If": [
@@ -2465,19 +2451,19 @@
                         ],
                         "PrivateIpAddresses": [
                             {
-                                "Primary": "true",
+                                "Primary": true,
                                 "PrivateIpAddress": {
                                     "Ref": "MssqlNode2PrivateIp"
                                 }
                             },
                             {
-                                "Primary": "false",
+                                "Primary": false,
                                 "PrivateIpAddress": {
                                     "Ref": "MssqlNode2PrivateIp2"
                                 }
                             },
                             {
-                                "Primary": "false",
+                                "Primary": false,
                                 "PrivateIpAddress": {
                                     "Ref": "MssqlNode2PrivateIp3"
                                 }
@@ -3272,8 +3258,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "100",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 100,
                             "VolumeType": "gp2"
                         }
                     }
@@ -3312,12 +3298,12 @@
                         "AssociatePublicIpAddress": {
                             "Fn::If": [
                                 "AssignPublicIp",
-                                "true",
-                                "false"
+                                true,
+                                false
                             ]
                         },
-                        "DeleteOnTermination": "true",
-                        "DeviceIndex": 0,
+                        "DeleteOnTermination": true,
+                        "DeviceIndex": "0",
                         "GroupSet": [
                             {
                                 "Fn::If": [

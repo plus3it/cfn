@@ -150,7 +150,15 @@
         }
     },
     "Metadata": {
-        "Version": "0.2.0"
+        "Version": "0.2.1",
+        "cfn-lint": {
+            "config": {
+                "ignore_checks": [
+                    "E7001",
+                    "W1011"
+                ]
+            }
+        }
     },
     "Outputs": {
         "AlbSecurityGroupId": {
@@ -383,14 +391,14 @@
         },
         "ALBTargetGroup": {
             "Properties": {
-                "HealthCheckIntervalSeconds": "30",
+                "HealthCheckIntervalSeconds": 30,
                 "HealthCheckPort": "8080",
                 "HealthCheckProtocol": "HTTP",
-                "HealthCheckTimeoutSeconds": "10",
-                "HealthyThresholdCount": "5",
-                "Port": "8080",
+                "HealthCheckTimeoutSeconds": 10,
+                "HealthyThresholdCount": 5,
+                "Port": 8080,
                 "Protocol": "HTTP",
-                "UnhealthyThresholdCount": "10",
+                "UnhealthyThresholdCount": 10,
                 "VpcId": {
                     "Ref": "VPC"
                 }
@@ -427,18 +435,18 @@
                 "DestinationSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
-                "FromPort": "8080",
+                "FromPort": 8080,
                 "GroupId": {
                     "Ref": "AlbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "8080"
+                "ToPort": 8080
             },
             "Type": "AWS::EC2::SecurityGroupEgress"
         },
         "AlbToGuacIngressTcp80": {
             "Properties": {
-                "FromPort": "8080",
+                "FromPort": 8080,
                 "GroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
@@ -446,7 +454,7 @@
                 "SourceSecurityGroupId": {
                     "Ref": "AlbSecurityGroup"
                 },
-                "ToPort": "8080"
+                "ToPort": 8080
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
@@ -493,7 +501,7 @@
                 "DesiredCapacity": {
                     "Ref": "DesiredCapacity"
                 },
-                "HealthCheckGracePeriod": "3600",
+                "HealthCheckGracePeriod": 3600,
                 "HealthCheckType": "ELB",
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfig"
@@ -512,7 +520,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "PropagateAtLaunch": "true",
+                        "PropagateAtLaunch": true,
                         "Value": {
                             "Ref": "AWS::StackName"
                         }
@@ -530,7 +538,7 @@
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "UpdatePolicy": {
                 "AutoScalingReplacingUpdate": {
-                    "WillReplace": "true"
+                    "WillReplace": true
                 }
             }
         },
@@ -584,12 +592,12 @@
                         }
                     }
                 ],
-                "EvaluationPeriods": "5",
+                "EvaluationPeriods": 5,
                 "MetricName": "CPUUtilization",
                 "Namespace": "AWS/EC2",
-                "Period": "60",
+                "Period": 60,
                 "Statistic": "Average",
-                "Threshold": "30"
+                "Threshold": 30
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
@@ -1046,7 +1054,7 @@
                     {
                         "DeviceName": "/dev/xvda",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
+                            "DeleteOnTermination": true,
                             "VolumeType": "gp2"
                         }
                     }
@@ -1234,7 +1242,7 @@
                 "LoadBalancerArn": {
                     "Ref": "ALB"
                 },
-                "Port": "443",
+                "Port": 443,
                 "Protocol": "HTTPS"
             },
             "Type": "AWS::ElasticLoadBalancingV2::Listener"
@@ -1242,12 +1250,12 @@
         "PublicToAlbIngressTcp443": {
             "Properties": {
                 "CidrIp": "0.0.0.0/0",
-                "FromPort": "443",
+                "FromPort": 443,
                 "GroupId": {
                     "Ref": "AlbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "443"
+                "ToPort": 443
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
@@ -1274,7 +1282,7 @@
                     "Ref": "AutoScalingGroup"
                 },
                 "Cooldown": "60",
-                "ScalingAdjustment": "1"
+                "ScalingAdjustment": 1
             },
             "Type": "AWS::AutoScaling::ScalingPolicy"
         },

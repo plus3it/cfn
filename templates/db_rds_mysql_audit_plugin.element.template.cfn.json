@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This template deploys a MySQL RDS instance",
     "Metadata": {
-        "Version": "0.2.0"
+        "Version": "0.2.1"
     },
     "Outputs": {
         "JDBCConnectionString": {
@@ -132,10 +132,6 @@
         "RdsSubnets": {
             "Description": "Select at least two subnets, each in different Availability Zones",
             "Type": "List<AWS::EC2::Subnet::Id>"
-        },
-        "RdsVpcId": {
-            "Description": "VpcId for the RDS instance",
-            "Type": "AWS::EC2::VPC::Id"
         }
     },
     "Resources": {

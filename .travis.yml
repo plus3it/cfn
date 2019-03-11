@@ -8,8 +8,6 @@ env:
     - RELEASE_VERSION=$(grep -E '^current_version' $TRAVIS_BUILD_DIR/.bumpversion.cfg | sed 's/^.*= //')
 
 jobs:
-  allow_failures:
-    - language: npm
   include:
     - stage: test
       env:
@@ -37,9 +35,9 @@ jobs:
       env:
         - JOB="CFN Lint"
       install:
-        - npm install -g cfn-lint
+        - pip install -r .requirements/cfn-lint.txt
         - cfn-lint --version
-      language: npm
+      language: python
       script:
         - make cfn/lint
     - stage: test

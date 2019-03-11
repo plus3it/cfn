@@ -92,7 +92,7 @@
                 }
             ]
         },
-        "Version": "0.2.0"
+        "Version": "0.2.1"
     },
     "Outputs": {
         "InternetGatewayId": {
@@ -293,7 +293,6 @@
     },
     "Resources": {
         "NATGatewayStack": {
-            "DependsOn": "PublicSubnet1Stack",
             "Properties": {
                 "Parameters": {
                     "PublicSubnetId": {
@@ -333,7 +332,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PrivateSubnet1Stack": {
-            "DependsOn": "NATGatewayStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -365,7 +363,6 @@
             "Type": "AWS::CloudFormation::Stack"
         },
         "PublicSubnet1Stack": {
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "AvailabilityZoneName": {
@@ -409,7 +406,6 @@
         },
         "VpcPeeredZoneStack": {
             "Condition": "CreatePeeredZone",
-            "DependsOn": "VPCStack",
             "Properties": {
                 "Parameters": {
                     "PeeredDc1Ip": {
@@ -440,7 +436,6 @@
         },
         "VpcPeeringConnectionStack": {
             "Condition": "PeerVpc",
-            "DependsOn": "NATGatewayStack",
             "Properties": {
                 "Parameters": {
                     "RouteTableId1": {

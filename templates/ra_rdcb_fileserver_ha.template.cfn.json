@@ -207,7 +207,7 @@
                 }
             }
         },
-        "Version": "0.2.0"
+        "Version": "0.2.1"
     },
     "Outputs": {
         "RdcbEc2InstanceId": {
@@ -251,7 +251,7 @@
         "AmiId": {
             "Default": "",
             "Description": "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
-            "Type": "String"
+            "Type": "AWS::EC2::Image::Id"
         },
         "AmiNameSearchString": {
             "Default": "Windows_Server-2016-English-Full-Base-*",
@@ -684,12 +684,12 @@
                         }
                     }
                 ],
-                "EvaluationPeriods": "5",
+                "EvaluationPeriods": 5,
                 "MetricName": "LogicalDiskPercentFreeSpace_C",
                 "Namespace": "Windows-Default",
-                "Period": "60",
+                "Period": 60,
                 "Statistic": "Average",
-                "Threshold": "20"
+                "Threshold": 20
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
@@ -710,12 +710,12 @@
                         }
                     }
                 ],
-                "EvaluationPeriods": "5",
+                "EvaluationPeriods": 5,
                 "MetricName": "LogicalDiskPercentFreeSpace_D",
                 "Namespace": "Windows-Default",
-                "Period": "60",
+                "Period": 60,
                 "Statistic": "Average",
-                "Threshold": "20"
+                "Threshold": 20
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
@@ -736,12 +736,12 @@
                         }
                     }
                 ],
-                "EvaluationPeriods": "5",
+                "EvaluationPeriods": 5,
                 "MetricName": "LogicalDiskPercentFreeSpace_C",
                 "Namespace": "Windows-Default",
-                "Period": "60",
+                "Period": 60,
                 "Statistic": "Average",
-                "Threshold": "40"
+                "Threshold": 40
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
@@ -762,12 +762,12 @@
                         }
                     }
                 ],
-                "EvaluationPeriods": "5",
+                "EvaluationPeriods": 5,
                 "MetricName": "LogicalDiskPercentFreeSpace_D",
                 "Namespace": "Windows-Default",
-                "Period": "60",
+                "Period": 60,
                 "Statistic": "Average",
-                "Threshold": "40"
+                "Threshold": 40
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
@@ -797,12 +797,12 @@
                         }
                     }
                 ],
-                "EvaluationPeriods": "15",
+                "EvaluationPeriods": 15,
                 "MetricName": "StatusCheckFailed_System",
                 "Namespace": "AWS/EC2",
-                "Period": "60",
+                "Period": 60,
                 "Statistic": "Minimum",
-                "Threshold": "0"
+                "Threshold": 0
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
@@ -820,7 +820,7 @@
         },
         "Ec2ToRdsIngressTcp1433": {
             "Properties": {
-                "FromPort": "1433",
+                "FromPort": 1433,
                 "GroupId": {
                     "Ref": "RdcbRdsSecurityGroup"
                 },
@@ -828,7 +828,7 @@
                 "SourceSecurityGroupId": {
                     "Ref": "RdcbEc2SecurityGroup"
                 },
-                "ToPort": "1433"
+                "ToPort": 1433
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
@@ -1260,13 +1260,13 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "50",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 50,
                             "VolumeType": "gp2"
                         }
                     }
                 ],
-                "DisableApiTermination": "true",
+                "DisableApiTermination": true,
                 "EbsOptimized": {
                     "Fn::FindInMap": [
                         "InstanceTypeMap",
@@ -1288,18 +1288,18 @@
                 "KeyName": {
                     "Ref": "KeyPairName"
                 },
-                "Monitoring": "true",
+                "Monitoring": true,
                 "NetworkInterfaces": [
                     {
                         "AssociatePublicIpAddress": {
                             "Fn::If": [
                                 "AssignPublicIp",
-                                "true",
-                                "false"
+                                true,
+                                false
                             ]
                         },
-                        "DeleteOnTermination": "true",
-                        "DeviceIndex": 0,
+                        "DeleteOnTermination": true,
+                        "DeviceIndex": "0",
                         "GroupSet": {
                             "Fn::Split": [
                                 ",",
@@ -1550,7 +1550,10 @@
                 "MasterUserPassword": {
                     "Ref": "RdsDbPassword"
                 },
-                "MonitoringInterval": "1",
+                "MasterUsername": {
+                    "Ref": "RdsDbUsername"
+                },
+                "MonitoringInterval": 1,
                 "MonitoringRoleArn": {
                     "Fn::GetAtt": [
                         "RdsIamRole",

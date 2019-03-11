@@ -166,7 +166,17 @@
                 }
             }
         },
-        "Version": "0.2.0"
+        "Version": "0.2.1",
+        "cfn-lint": {
+            "config": {
+                "ignore_checks": [
+                    "E3001",
+                    "E7001",
+                    "W1011",
+                    "W2001"
+                ]
+            }
+        }
     },
     "Outputs": {
         "Ec2SecurityGroupId": {
@@ -402,7 +412,7 @@
                 "DesiredCapacity": {
                     "Ref": "DesiredCapacity"
                 },
-                "HealthCheckGracePeriod": "3600",
+                "HealthCheckGracePeriod": 3600,
                 "HealthCheckType": "ELB",
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfig"
@@ -426,7 +436,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "PropagateAtLaunch": "true",
+                        "PropagateAtLaunch": true,
                         "Value": {
                             "Ref": "AWS::StackName"
                         }
@@ -443,7 +453,7 @@
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "UpdatePolicy": {
                 "AutoScalingReplacingUpdate": {
-                    "WillReplace": "true"
+                    "WillReplace": true
                 }
             }
         },
@@ -989,8 +999,8 @@
                     {
                         "DeviceName": "/dev/sda1",
                         "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "VolumeSize": "50",
+                            "DeleteOnTermination": true,
+                            "VolumeSize": 50,
                             "VolumeType": "gp2"
                         }
                     }
@@ -1109,12 +1119,12 @@
                 "DestinationSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
-                "FromPort": "443",
+                "FromPort": 443,
                 "GroupId": {
                     "Ref": "LbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "443"
+                "ToPort": 443
             },
             "Type": "AWS::EC2::SecurityGroupEgress"
         },
@@ -1123,18 +1133,18 @@
                 "DestinationSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
-                "FromPort": "8091",
+                "FromPort": 8091,
                 "GroupId": {
                     "Ref": "LbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "8091"
+                "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupEgress"
         },
         "LbToEc2IngressTcp443": {
             "Properties": {
-                "FromPort": "443",
+                "FromPort": 443,
                 "GroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
@@ -1142,13 +1152,13 @@
                 "SourceSecurityGroupId": {
                     "Ref": "LbSecurityGroup"
                 },
-                "ToPort": "443"
+                "ToPort": 443
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "LbToEc2IngressTcp8091": {
             "Properties": {
-                "FromPort": "8091",
+                "FromPort": 8091,
                 "GroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
@@ -1156,20 +1166,20 @@
                 "SourceSecurityGroupId": {
                     "Ref": "LbSecurityGroup"
                 },
-                "ToPort": "8091"
+                "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "LoadBalancer": {
             "Properties": {
                 "ConnectionDrainingPolicy": {
-                    "Enabled": "true",
-                    "Timeout": "1800"
+                    "Enabled": true,
+                    "Timeout": 1800
                 },
                 "ConnectionSettings": {
-                    "IdleTimeout": "900"
+                    "IdleTimeout": 900
                 },
-                "CrossZone": "false",
+                "CrossZone": false,
                 "HealthCheck": {
                     "HealthyThreshold": "5",
                     "Interval": "60",
@@ -1268,12 +1278,12 @@
         "PublicToLbIngressTcp443": {
             "Properties": {
                 "CidrIp": "0.0.0.0/0",
-                "FromPort": "443",
+                "FromPort": 443,
                 "GroupId": {
                     "Ref": "LbSecurityGroup"
                 },
                 "IpProtocol": "tcp",
-                "ToPort": "443"
+                "ToPort": 443
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },

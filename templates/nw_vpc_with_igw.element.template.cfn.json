@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a VPC network with an Internet Gateway.",
     "Metadata": {
-        "Version": "0.2.0"
+        "Version": "0.2.1"
     },
     "Outputs": {
         "InternetGatewayId": {
@@ -110,8 +110,8 @@
                 "CidrBlock": {
                     "Ref": "CIDRVPC"
                 },
-                "EnableDnsHostnames": "true",
-                "EnableDnsSupport": "true",
+                "EnableDnsHostnames": true,
+                "EnableDnsSupport": true,
                 "Tags": [
                     {
                         "Key": "Name",
