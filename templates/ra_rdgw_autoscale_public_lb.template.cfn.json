@@ -185,17 +185,11 @@
                 "Ref": "Ec2SecurityGroup"
             }
         },
-        "LbSecurityGroupId": {
-            "Description": "Security Group ID for RDGW Load Balancer",
-            "Value": {
-                "Ref": "LbSecurityGroup"
-            }
-        },
         "LoadBalancerDns": {
             "Description": "DNS name for the LoadBalancer",
             "Value": {
                 "Fn::GetAtt": [
-                    "LoadBalancer",
+                    "LoadBalancerNlb",
                     "DNSName"
                 ]
             }
@@ -203,7 +197,7 @@
         "LoadBalancerName": {
             "Description": "Name of the Load Balancer",
             "Value": {
-                "Ref": "LoadBalancer"
+                "Ref": "LoadBalancerNlb"
             }
         }
     },
@@ -417,11 +411,6 @@
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfig"
                 },
-                "LoadBalancerNames": [
-                    {
-                        "Ref": "LoadBalancer"
-                    }
-                ],
                 "MaxSize": {
                     "Ref": "MaxCapacity"
                 },
@@ -440,6 +429,11 @@
                         "Value": {
                             "Ref": "AWS::StackName"
                         }
+                    }
+                ],
+                "TargetGroupARNs": [
+                    {
+                        "Ref": "TargetGroup"
                     }
                 ],
                 "TerminationPolicies": [
@@ -1089,111 +1083,11 @@
             },
             "Type": "AWS::Logs::LogGroup"
         },
-        "LbSecurityGroup": {
+        "LoadBalancerListener443": {
             "Properties": {
-                "GroupDescription": "Enable RDGW access from the Internet",
-                "Tags": [
+                "Certificates": [
                     {
-                        "Key": "Name",
-                        "Value": {
-                            "Fn::Join": [
-                                "",
-                                [
-                                    "ra-rdgw-lb-",
-                                    {
-                                        "Ref": "AWS::StackName"
-                                    }
-                                ]
-                            ]
-                        }
-                    }
-                ],
-                "VpcId": {
-                    "Ref": "VPC"
-                }
-            },
-            "Type": "AWS::EC2::SecurityGroup"
-        },
-        "LbToEc2EgressTcp443": {
-            "Properties": {
-                "DestinationSecurityGroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "FromPort": 443,
-                "GroupId": {
-                    "Ref": "LbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "ToPort": 443
-            },
-            "Type": "AWS::EC2::SecurityGroupEgress"
-        },
-        "LbToEc2EgressTcp8091": {
-            "Properties": {
-                "DestinationSecurityGroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "FromPort": 8091,
-                "GroupId": {
-                    "Ref": "LbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "ToPort": 8091
-            },
-            "Type": "AWS::EC2::SecurityGroupEgress"
-        },
-        "LbToEc2IngressTcp443": {
-            "Properties": {
-                "FromPort": 443,
-                "GroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
-                    "Ref": "LbSecurityGroup"
-                },
-                "ToPort": 443
-            },
-            "Type": "AWS::EC2::SecurityGroupIngress"
-        },
-        "LbToEc2IngressTcp8091": {
-            "Properties": {
-                "FromPort": 8091,
-                "GroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
-                    "Ref": "LbSecurityGroup"
-                },
-                "ToPort": 8091
-            },
-            "Type": "AWS::EC2::SecurityGroupIngress"
-        },
-        "LoadBalancer": {
-            "Properties": {
-                "ConnectionDrainingPolicy": {
-                    "Enabled": true,
-                    "Timeout": 1800
-                },
-                "ConnectionSettings": {
-                    "IdleTimeout": 900
-                },
-                "CrossZone": false,
-                "HealthCheck": {
-                    "HealthyThreshold": "5",
-                    "Interval": "60",
-                    "Target": "HTTP:8091/ping.html",
-                    "Timeout": "5",
-                    "UnhealthyThreshold": "10"
-                },
-                "Listeners": [
-                    {
-                        "InstancePort": "443",
-                        "InstanceProtocol": "SSL",
-                        "LoadBalancerPort": "443",
-                        "Protocol": "SSL",
-                        "SSLCertificateId": {
+                        "CertificateArn": {
                             "Fn::If": [
                                 "UseACM",
                                 {
@@ -1246,21 +1140,28 @@
                                 }
                             ]
                         }
-                    },
-                    {
-                        "InstancePort": "8091",
-                        "InstanceProtocol": "HTTP",
-                        "LoadBalancerPort": "8091",
-                        "Protocol": "HTTP"
                     }
                 ],
-                "Policies": [],
+                "DefaultActions": [
+                    {
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
+                        },
+                        "Type": "forward"
+                    }
+                ],
+                "LoadBalancerArn": {
+                    "Ref": "LoadBalancerNlb"
+                },
+                "Port": 443,
+                "Protocol": "TLS",
+                "SslPolicy": "ELBSecurityPolicy-2016-08"
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::Listener"
+        },
+        "LoadBalancerNlb": {
+            "Properties": {
                 "Scheme": "internet-facing",
-                "SecurityGroups": [
-                    {
-                        "Ref": "LbSecurityGroup"
-                    }
-                ],
                 "Subnets": {
                     "Ref": "PublicSubnetIDs"
                 },
@@ -1271,19 +1172,32 @@
                             "Ref": "AWS::StackName"
                         }
                     }
-                ]
+                ],
+                "Type": "network"
             },
-            "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
         },
-        "PublicToLbIngressTcp443": {
+        "PublicToEc2IngressTcp443": {
             "Properties": {
                 "CidrIp": "0.0.0.0/0",
                 "FromPort": 443,
                 "GroupId": {
-                    "Ref": "LbSecurityGroup"
+                    "Ref": "Ec2SecurityGroup"
                 },
                 "IpProtocol": "tcp",
                 "ToPort": 443
+            },
+            "Type": "AWS::EC2::SecurityGroupIngress"
+        },
+        "PublicToEc2IngressTcp8091": {
+            "Properties": {
+                "CidrIp": "0.0.0.0/0",
+                "FromPort": 8091,
+                "GroupId": {
+                    "Ref": "Ec2SecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
@@ -1332,6 +1246,32 @@
                     "Location": "s3://app-chemistry/snippets/ssm_join_domain.snippet.cfn.yaml"
                 }
             }
+        },
+        "TargetGroup": {
+            "Properties": {
+                "HealthCheckIntervalSeconds": 30,
+                "HealthCheckPath": "/ping.html",
+                "HealthCheckPort": "8091",
+                "HealthCheckProtocol": "HTTP",
+                "HealthyThresholdCount": 3,
+                "Name": {
+                    "Ref": "AWS::StackName"
+                },
+                "Port": 443,
+                "Protocol": "TLS",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
         }
     }
 }
