@@ -497,8 +497,8 @@ Write-Verbose "Installed shellcheck"
 Write-Verbose "Installed psget"
 
 # Install nuget, a PowerShell Module provider
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-Write-Verbose "Installed nuget"
+# Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+# Write-Verbose "Installed nuget"
 
 if ($HealthCheckEndPoint)
 {
