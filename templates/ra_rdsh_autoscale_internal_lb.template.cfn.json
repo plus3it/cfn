@@ -156,7 +156,7 @@
                 }
             }
         },
-        "Version": "0.2.1",
+        "Version": "0.3.0",
         "cfn-lint": {
             "config": {
                 "ignore_checks": [
@@ -175,25 +175,19 @@
                 "Ref": "Ec2SecurityGroup"
             }
         },
-        "ElbSecurityGroupId": {
-            "Description": "Security Group ID for the RDSH Elastic Load Balancer",
-            "Value": {
-                "Ref": "ElbSecurityGroup"
-            }
-        },
         "LoadBalancerDns": {
-            "Description": "DNS name for the ELB",
+            "Description": "DNS name for the Load Balancer",
             "Value": {
                 "Fn::GetAtt": [
-                    "ELB",
+                    "LoadBalancer",
                     "DNSName"
                 ]
             }
         },
         "LoadBalancerName": {
-            "Description": "Name of the Elastic Load Balancer",
+            "Description": "Name of the Load Balancer",
             "Value": {
-                "Ref": "ELB"
+                "Ref": "LoadBalancer"
             }
         }
     },
@@ -309,7 +303,7 @@
                 "r4.large",
                 "r4.xlarge"
             ],
-            "Default": "t2.medium",
+            "Default": "t3.medium",
             "Description": "Amazon EC2 instance type for the Remote Desktop Session Instance",
             "Type": "String"
         },
@@ -440,11 +434,6 @@
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfig"
                 },
-                "LoadBalancerNames": [
-                    {
-                        "Ref": "ELB"
-                    }
-                ],
                 "MaxSize": {
                     "Ref": "MaxCapacity"
                 },
@@ -463,6 +452,11 @@
                         "Value": {
                             "Ref": "AWS::StackName"
                         }
+                    }
+                ],
+                "TargetGroupARNs": [
+                    {
+                        "Ref": "TargetGroup"
                     }
                 ],
                 "TerminationPolicies": [
@@ -511,58 +505,6 @@
                 }
             },
             "Type": "Custom::AutoUpdateStack"
-        },
-        "ELB": {
-            "Properties": {
-                "ConnectionDrainingPolicy": {
-                    "Enabled": true,
-                    "Timeout": 1800
-                },
-                "ConnectionSettings": {
-                    "IdleTimeout": 900
-                },
-                "CrossZone": false,
-                "HealthCheck": {
-                    "HealthyThreshold": "5",
-                    "Interval": "60",
-                    "Target": "HTTP:8091/ping.html",
-                    "Timeout": "5",
-                    "UnhealthyThreshold": "10"
-                },
-                "Listeners": [
-                    {
-                        "InstancePort": "3389",
-                        "InstanceProtocol": "TCP",
-                        "LoadBalancerPort": "3389",
-                        "Protocol": "TCP"
-                    },
-                    {
-                        "InstancePort": "8091",
-                        "InstanceProtocol": "HTTP",
-                        "LoadBalancerPort": "8091",
-                        "Protocol": "HTTP"
-                    }
-                ],
-                "Policies": [],
-                "Scheme": "internal",
-                "SecurityGroups": [
-                    {
-                        "Ref": "ElbSecurityGroup"
-                    }
-                ],
-                "Subnets": {
-                    "Ref": "SubnetIDs"
-                },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": {
-                            "Ref": "AWS::StackName"
-                        }
-                    }
-                ]
-            },
-            "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
         },
         "Ec2IamInstanceProfile": {
             "Properties": {
@@ -763,87 +705,6 @@
                 }
             },
             "Type": "AWS::EC2::SecurityGroup"
-        },
-        "ElbSecurityGroup": {
-            "Properties": {
-                "GroupDescription": "Allow connectivity through the RDSH ELB to RDSH instances",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": {
-                            "Fn::Join": [
-                                "",
-                                [
-                                    "ra-rdsh-elb-",
-                                    {
-                                        "Ref": "AWS::StackName"
-                                    }
-                                ]
-                            ]
-                        }
-                    }
-                ],
-                "VpcId": {
-                    "Ref": "VPC"
-                }
-            },
-            "Type": "AWS::EC2::SecurityGroup"
-        },
-        "ElbToRdshEgressTcp3389": {
-            "Properties": {
-                "DestinationSecurityGroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "FromPort": 3389,
-                "GroupId": {
-                    "Ref": "ElbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "ToPort": 3389
-            },
-            "Type": "AWS::EC2::SecurityGroupEgress"
-        },
-        "ElbToRdshEgressTcp8091": {
-            "Properties": {
-                "DestinationSecurityGroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "FromPort": 8091,
-                "GroupId": {
-                    "Ref": "ElbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "ToPort": 8091
-            },
-            "Type": "AWS::EC2::SecurityGroupEgress"
-        },
-        "ElbToRdshIngressTcp3389": {
-            "Properties": {
-                "FromPort": 3389,
-                "GroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
-                    "Ref": "ElbSecurityGroup"
-                },
-                "ToPort": 3389
-            },
-            "Type": "AWS::EC2::SecurityGroupIngress"
-        },
-        "ElbToRdshIngressTcp8091": {
-            "Properties": {
-                "FromPort": 8091,
-                "GroupId": {
-                    "Ref": "Ec2SecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
-                    "Ref": "ElbSecurityGroup"
-                },
-                "ToPort": 8091
-            },
-            "Type": "AWS::EC2::SecurityGroupIngress"
         },
         "LaunchConfig": {
             "Metadata": {
@@ -1420,28 +1281,62 @@
             },
             "Type": "AWS::Logs::LogGroup"
         },
-        "PublicToElbIngressTcp3389": {
+        "LoadBalancer": {
+            "Properties": {
+                "Scheme": "internal",
+                "Subnets": {
+                    "Ref": "SubnetIDs"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ],
+                "Type": "network"
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        },
+        "LoadBalancerListener3389": {
+            "Properties": {
+                "DefaultActions": [
+                    {
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
+                        },
+                        "Type": "forward"
+                    }
+                ],
+                "LoadBalancerArn": {
+                    "Ref": "LoadBalancer"
+                },
+                "Port": 3389,
+                "Protocol": "TCP"
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::Listener"
+        },
+        "PublicToRdshIngressTcp3389": {
             "Properties": {
                 "CidrIp": "0.0.0.0/0",
                 "FromPort": 3389,
                 "GroupId": {
-                    "Ref": "ElbSecurityGroup"
+                    "Ref": "Ec2SecurityGroup"
                 },
                 "IpProtocol": "tcp",
                 "ToPort": 3389
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
         },
-        "RdshToElbIngressTcp8091": {
+        "PublicToRdshIngressTcp8091": {
             "Properties": {
+                "CidrIp": "0.0.0.0/0",
                 "FromPort": 8091,
                 "GroupId": {
-                    "Ref": "ElbSecurityGroup"
-                },
-                "IpProtocol": "tcp",
-                "SourceSecurityGroupId": {
                     "Ref": "Ec2SecurityGroup"
                 },
+                "IpProtocol": "tcp",
                 "ToPort": 8091
             },
             "Type": "AWS::EC2::SecurityGroupIngress"
@@ -1491,6 +1386,32 @@
                     "Location": "s3://app-chemistry/snippets/ssm_join_domain_ou.snippet.cfn.yaml"
                 }
             }
+        },
+        "TargetGroup": {
+            "Properties": {
+                "HealthCheckIntervalSeconds": 30,
+                "HealthCheckPath": "/ping.html",
+                "HealthCheckPort": "8091",
+                "HealthCheckProtocol": "HTTP",
+                "HealthyThresholdCount": 3,
+                "Name": {
+                    "Ref": "AWS::StackName"
+                },
+                "Port": 3389,
+                "Protocol": "TCP",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
         }
     }
 }
