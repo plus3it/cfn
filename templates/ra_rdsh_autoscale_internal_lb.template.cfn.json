@@ -203,9 +203,9 @@
             "Type": "String"
         },
         "CloudWatchAgentUrl": {
-            "AllowedPattern": "^$|^s3://.*$",
+            "AllowedPattern": "^$|^s3://.*\\.msi$",
             "Default": "",
-            "Description": "(Optional) S3 URL to CloudWatch Agent installer. Example: s3://amazoncloudwatch-agent/windows/amd64/latest/AmazonCloudWatchAgent.zip",
+            "Description": "(Optional) S3 URL to CloudWatch Agent MSI. Example: s3://amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi",
             "Type": "String"
         },
         "ConnectionBrokerFqdn": {
@@ -771,34 +771,31 @@
                                                     "command"
                                                 ]
                                             },
-                                            " \"& { ",
+                                            " -Command \"Invoke-Command -ScriptBlock { ",
+                                            "$ErrorActionPreference = 'Stop'; ",
                                             "$CloudWatchAgentUri = [System.Uri]'",
                                             {
                                                 "Ref": "CloudWatchAgentUrl"
                                             },
                                             "'; ",
-                                            "Write-Host '$CloudWatchAgentUri is' $CloudWatchAgentUri ; ",
-                                            "Write-Host '$CloudWatchAgentUri.host is' $CloudWatchAgentUri.host ; ",
                                             "$CloudWatchAgentScriptDir = 'c:\\cfn\\scripts\\AmazonCloudWatchAgent'; ",
-                                            "$CloudWatchAgentZipFile = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)]; ",
+                                            "$CloudWatchAgentInstaller = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)]; ",
                                             "$Null = New-Item $CloudWatchAgentScriptDir -Type Directory -Force; ",
                                             "Read-S3Object",
                                             " -BucketName $CloudWatchAgentUri.Host",
                                             " -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '')",
-                                            " -File $CloudWatchAgentZipFile",
+                                            " -File $CloudWatchAgentInstaller",
                                             " -Region ",
                                             {
                                                 "Ref": "AWS::Region"
                                             },
                                             "; ",
-                                            "$CloudWatchAgentInstallScript =  $CloudWatchAgentScriptDir + '\\install.ps1';",
-                                            "$CloudWatchAgentConfig =  $CloudWatchAgentScriptDir + '\\aws-cloudwatch-agent-config.json';",
-                                            " Expand-Archive -Path $CloudWatchAgentZipFile -DestinationPath $CloudWatchAgentScriptDir;",
-                                            "Push-Location -Path $CloudWatchAgentScriptDir;",
-                                            "iex $CloudWatchAgentInstallScript;",
-                                            "& \\\"${Env:ProgramFiles}\\Amazon\\AmazonCloudWatchAgent\\amazon-cloudwatch-agent-ctl.ps1\\\" -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;",
-                                            "Pop-Location",
-                                            "}\""
+                                            "$CloudWatchAgentConfig =  $CloudWatchAgentScriptDir + '\\aws-cloudwatch-agent-config.json'; ",
+                                            "Start-Process msiexec.exe -Wait -ArgumentList \\\"/i $CloudWatchAgentInstaller\\\"; ",
+                                            "$CloudWatchAgentCtl = \\\"${Env:ProgramFiles}\\Amazon\\AmazonCloudWatchAgent\\amazon-cloudwatch-agent-ctl.ps1\\\"; ",
+                                            "& $CloudWatchAgentCtl -Action cond-restart; ",
+                                            "& $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s; ",
+                                            "} -Verbose -ErrorAction Stop\""
                                         ]
                                     ]
                                 },
