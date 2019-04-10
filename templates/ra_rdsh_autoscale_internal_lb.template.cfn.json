@@ -1242,16 +1242,33 @@
                                     "Ref": "ForceUpdateToggle"
                                 },
                                 "\n",
-                                "cfn-init.exe -v -c config",
-                                " --stack ",
+                                "cfn-init.exe -v -c config --stack ",
                                 {
                                     "Ref": "AWS::StackName"
                                 },
-                                " --resource LaunchConfig ",
-                                " --region ",
+                                " --resource LaunchConfig --region ",
                                 {
                                     "Ref": "AWS::Region"
                                 },
+                                "\n",
+                                "if %ERRORLEVEL% equ 0 goto success",
+                                "\n",
+                                ":error",
+                                "\n",
+                                "cfn-signal.exe -e 1 --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                " --resource LaunchConfig --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n",
+                                "echo 'ERROR: cfn-init failed! Aborting!'",
+                                "\n",
+                                "exit /b 1",
+                                "\n",
+                                ":success",
                                 "\n",
                                 "</script>\n"
                             ]
