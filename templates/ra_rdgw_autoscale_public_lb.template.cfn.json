@@ -725,12 +725,12 @@
                                                 "Ref": "AWS::Region"
                                             },
                                             "; ",
-                                            "$CloudWatchAgentInstallScript =  \"$CloudWatchAgentScriptDir\"+'\\install.ps1';",
-                                            "$CloudWatchAgentConfig =  \"$CloudWatchAgentScriptDir\"+'\\aws-cloudwatch-agent-config.json';",
+                                            "$CloudWatchAgentInstallScript = $CloudWatchAgentScriptDir + '\\install.ps1';",
+                                            "$CloudWatchAgentConfig = $CloudWatchAgentScriptDir + '\\aws-cloudwatch-agent-config.json';",
                                             " Expand-Archive -Path $CloudWatchAgentZipFile -DestinationPath $CloudWatchAgentScriptDir;",
                                             "Push-Location -Path $CloudWatchAgentScriptDir;",
                                             "iex $CloudWatchAgentInstallScript;",
-                                            ".\\amazon-cloudwatch-agent-ctl.ps1 -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;",
+                                            "& \\\"${Env:ProgramFiles}\\Amazon\\AmazonCloudWatchAgent\\amazon-cloudwatch-agent-ctl.ps1\\\" -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;",
                                             "Pop-Location",
                                             "}\""
                                         ]
