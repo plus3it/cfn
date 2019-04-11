@@ -791,7 +791,7 @@
                                             },
                                             "; ",
                                             "$CloudWatchAgentConfig =  $CloudWatchAgentScriptDir + '\\aws-cloudwatch-agent-config.json'; ",
-                                            "Start-Process msiexec.exe -Wait -ArgumentList \\\"/i $CloudWatchAgentInstaller\\\"; ",
+                                            "Start-Process msiexec.exe -ArgumentList @('/i', $CloudWatchAgentInstaller, '/qn') -NoNewWindow -PassThru -Wait; ",
                                             "$CloudWatchAgentCtl = \\\"${Env:ProgramFiles}\\Amazon\\AmazonCloudWatchAgent\\amazon-cloudwatch-agent-ctl.ps1\\\"; ",
                                             "& $CloudWatchAgentCtl -Action cond-restart; ",
                                             "& $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s; ",
