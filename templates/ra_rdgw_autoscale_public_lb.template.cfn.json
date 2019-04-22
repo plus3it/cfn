@@ -166,7 +166,7 @@
                 }
             }
         },
-        "Version": "0.3.0",
+        "Version": "0.3.1",
         "cfn-lint": {
             "config": {
                 "ignore_checks": [
@@ -658,12 +658,14 @@
                     "configSets": {
                         "config": [
                             "join-domain",
+                            "ps-modules",
                             "install-cloudwatch-agent",
                             "setup",
                             "installRDS",
                             "finalize"
                         ],
                         "update": [
+                            "ps-modules",
                             "setup",
                             "finalize"
                         ]
@@ -709,6 +711,7 @@
                                             },
                                             " -Command \"Invoke-Command -ScriptBlock { ",
                                             "$ErrorActionPreference = 'Stop'; ",
+                                            "Import-Module P3Utils; ",
                                             "$CloudWatchAgentUri = [System.Uri]'",
                                             {
                                                 "Ref": "CloudWatchAgentUrl"
@@ -727,7 +730,7 @@
                                             },
                                             "; ",
                                             "$CloudWatchAgentConfig =  $CloudWatchAgentScriptDir + '\\aws-cloudwatch-agent-config.json'; ",
-                                            "Start-Process msiexec.exe -Wait -ArgumentList \\\"/i $CloudWatchAgentInstaller\\\"; ",
+                                            "Invoke-RetryCommand -Command Start-Process -ArgList @{ FilePath='msiexec.exe'; ArgumentList = @('/i', $CloudWatchAgentInstaller, '/qn'); NoNewWindow = $true; PassThru = $true; Wait = $true } -CheckExpression '$Return.Result.ExitCode -eq 0' -InitialDelay 17 -MaxDelay 59 -Verbose; ",
                                             "$CloudWatchAgentCtl = \\\"${Env:ProgramFiles}\\Amazon\\AmazonCloudWatchAgent\\amazon-cloudwatch-agent-ctl.ps1\\\"; ",
                                             "& $CloudWatchAgentCtl -Action cond-restart; ",
                                             "& $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s; ",
@@ -920,6 +923,16 @@
                                     ]
                                 },
                                 "waitAfterCompletion": "forever"
+                            }
+                        }
+                    },
+                    "ps-modules": {
+                        "files": {
+                            "C:\\Program Files\\WindowsPowerShell\\Modules\\P3Utils\\P3Utils.psd1": {
+                                "source": "https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psd1"
+                            },
+                            "C:\\Program Files\\WindowsPowerShell\\Modules\\P3Utils\\P3Utils.psm1": {
+                                "source": "https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psm1"
                             }
                         }
                     },
