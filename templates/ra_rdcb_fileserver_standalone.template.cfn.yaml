@@ -169,18 +169,14 @@ Parameters:
     Description: Amazon EC2 instance type for the Remote Desktop Session Instance
     Type: String
   KeyPairName:
-    Description: >-
-      Public/private key pairs allow you to securely connect to your instance
-      after it launches
+    Description: Public/private key pairs allow you to securely connect to your instance after it launches
     Type: 'AWS::EC2::KeyPair::KeyName'
   NoPublicIp:
     AllowedValues:
       - 'false'
       - 'true'
     Default: 'true'
-    Description: >-
-      Controls whether to assign the instances a public IP. Recommended to leave
-      at "true" _unless_ launching in a public subnet
+    Description: Controls whether to assign the instances a public IP. Recommended to leave at "true" _unless_ launching in a public subnet
     Type: String
   NotificationEmail:
     AllowedPattern: '^$|.*[@].*'
@@ -192,10 +188,7 @@ Parameters:
     Type: String
   SsmRdcbCredential:
     AllowedPattern: '^(?!^([aA][wW][sS]|[sS][sS][mM]))(?=^[a-zA-Z0-9_./-]*$).*$'
-    Description: >-
-      SSM Parameter Name for a SecureString containing the domain credential for
-      the RDCB service account; SSM Parameter Value format is '@{Username =
-      "<user>"; Password = "<password>"}'
+    Description: SSM Parameter Name for a SecureString containing the domain credential for the RDCB service account; SSM Parameter Value format is '@{Username = "<user>"; Password = "<password>"}'
     MaxLength: '1024'
     MinLength: '1'
     Type: String
@@ -215,10 +208,7 @@ Resources:
     Properties:
       AvailabilityZone: !Ref Ec2SubnetAz
       Size: !Ref DataVolumeSize
-      SnapshotId: !If
-        - UseVolumeSnapshot
-        - !Ref DataVolumeSnapshotId
-        - !Ref 'AWS::NoValue'
+      SnapshotId: !If [UseVolumeSnapshot, !Ref DataVolumeSnapshotId, !Ref 'AWS::NoValue']
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
@@ -390,16 +380,11 @@ Resources:
               command: powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force
               waitAfterCompletion: '0'
             b-online-disks:
-              command: >-
-                powershell.exe "foreach ($disk in (Get-CimInstance -ClassName
-                Win32_DiskDrive)) { Set-Disk -Number $disk.Index -IsOffline
-                $false }"
+              command: powershell.exe "foreach ($disk in (Get-CimInstance -ClassName Win32_DiskDrive)) { Set-Disk -Number $disk.Index -IsOffline $false }"
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             c-initialize-disks:
-              command: >-
-                powershell.exe
-                C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeDisks.ps1
+              command:  powershell.exe C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeDisks.ps1
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             d-extend-disks:
@@ -407,9 +392,7 @@ Resources:
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             e-unzip-pstools:
-              command: >-
-                powershell.exe c:\cfn\scripts\unzip-archive.ps1
-                c:\cfn\files\pstools.zip c:\cfn\files\pstools
+              command: powershell.exe c:\cfn\scripts\unzip-archive.ps1 c:\cfn\files\pstools.zip c:\cfn\files\pstools
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
           files:
@@ -435,7 +418,7 @@ Resources:
             'c:\cfn\scripts\configure-rdcb.ps1':
               source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1
             'c:\cfn\scripts\extend-volumes.ps1':
-              content: !Sub |-
+              content: |-
                 [CmdLetBinding()]
                 Param()
                 foreach ($disk in (Get-Disk)) {
@@ -487,8 +470,7 @@ Resources:
             10-configure-admins:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "
-                  Invoke-Command -ScriptBlock {
+                  ${local_ShellCommandMap_powershell} -Command "Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module RemoteDesktop,RemoteDesktopServices;
                   $admin = (Invoke-Expression ((Get-SSMParameterValue -Name ${SsmRdcbCredential} -WithDecryption $true).Parameters | ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username + @${DomainNetbiosName};
@@ -515,19 +497,14 @@ Resources:
             10-create-upd-folder:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "New-Item -ItemType directory
-                  -Path 'D:\Shares\Profiles$'
-                  -Force -Verbose -ErrorAction Stop"
+                  ${local_ShellCommandMap_powershell} -Command "New-Item -ItemType directory -Path 'D:\Shares\Profiles$' -Force -Verbose -ErrorAction Stop"
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
               waitAfterCompletion: '0'
             20-configure-fileshares:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-fileshares.ps1
-                  -DomainNetbiosName ${DomainNetbiosName}
-                  -GroupName ${DomainAccessUserGroup}
-                  -Verbose -ErrorAction Stop
+                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-fileshares.ps1 -DomainNetbiosName ${DomainNetbiosName} -GroupName ${DomainAccessUserGroup} -Verbose -ErrorAction Stop
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
               waitAfterCompletion: '0'
@@ -536,10 +513,9 @@ Resources:
             20-configure-rdcb:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "
-                  ${local_ShellCommandMap_psexec}
-                  -u "\${DomainNetbiosName}\$(!(Invoke-Expression ((Get-SSMParameterValue -Name ${SsmRdcbCredential} -WithDecryption $true).Parameters ^| ? {$_.Name -eq ${SsmRdcbCredential} }).Value).Username)"
-                  -p "$(!(Invoke-Expression ((Get-SSMParameterValue -Name $(SsmRdcbCredential) -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)"
+                  ${local_ShellCommandMap_powershell} -Command "${local_ShellCommandMap_psexec}
+                  -u \"${DomainNetbiosName}\$(!(Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username)\"
+                  -p \"$(!(Invoke-Expression ((Get-SSMParameterValue -Name '$(SsmRdcbCredential)' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
                   ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdcb.ps1 -Verbose -ErrorAction Stop"
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
@@ -548,12 +524,7 @@ Resources:
         finalize:
           commands:
             10-signal-success:
-              command: !Sub
-                - >-
-                  cfn-signal.exe -e 0
-                  --stack ${AWS::StackName}
-                  --resource RdCbFileServerInstance
-                  --region ${AWS::Region}
+              command: !Sub cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
@@ -567,16 +538,12 @@ Resources:
                   Import-Module P3Utils;
                   $CloudWatchAgentUri = [System.Uri]'${CloudWatchAgentUrl}';
                   $CloudWatchAgentScriptDir = 'c:\cfn\scripts\AmazonCloudWatchAgent';
-                  $CloudWatchAgentZipFile = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)];
+                  $CloudWatchAgentInstaller = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)];
                   $Null = New-Item $CloudWatchAgentScriptDir -Type Directory -Force;
-                  Read-S3Object -BucketName $CloudWatchAgentUri.Host `
-                  -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '') `
-                  -File $CloudWatchAgentZipFile `
-                  -Region ${AWS::Region};
-                  $CloudWatchAgentInstallScript = $CloudWatchAgentScriptDir + '\install.ps1';
+                  Read-S3Object -BucketName $CloudWatchAgentUri.Host -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '') -File $CloudWatchAgentInstaller -Region ${AWS::Region};
                   $CloudWatchAgentConfig = $CloudWatchAgentScriptDir + '\aws-cloudwatch-agent-config.json';
                   Invoke-RetryCommand -Command Start-Process -ArgList @{ FilePath='msiexec.exe'; ArgumentList = @('/i', $CloudWatchAgentInstaller, '/qn'); NoNewWindow = $true; PassThru = $true; Wait = $true } -CheckExpression '$Return.Result.ExitCode -eq 0' -InitialDelay 17 -MaxDelay 59 -Verbose;
-                  $CloudWatchAgentCtl = "${Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
+                  $CloudWatchAgentCtl = \"${!Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
                   & $CloudWatchAgentCtl -Action cond-restart;
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
                   } -Verbose -ErrorAction Stop"
@@ -665,9 +632,7 @@ Resources:
             10-join-domain:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell}
-                  -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically'
-                  -Verbose
+                  ${local_ShellCommandMap_powershell} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
               waitAfterCompletion: forever
@@ -696,10 +661,7 @@ Resources:
             VolumeSize: 50
             VolumeType: gp2
       DisableApiTermination: true
-      EbsOptimized: !FindInMap
-        - InstanceTypeMap
-        - !Ref InstanceType
-        - SupportsEbsOptimized
+      EbsOptimized: !FindInMap [InstanceTypeMap, !Ref InstanceType, SupportsEbsOptimized]
       IamInstanceProfile: !Ref Ec2IamInstanceProfile
       ImageId: !If [UseAmiLookup, !Sub '${AmiIdLookup.Id}',!Ref AmiId]
       InstanceType: !Ref InstanceType
@@ -714,7 +676,7 @@ Resources:
             - !Sub
                 - '${RdcbEc2SecurityGroup},${local_ExtraSecurityGroupIds}'
                 -
-                 local_ExtraSecurityGroupIds: !Join [',', ExtraSecurityGroupIds]
+                 local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
           SubnetId: !Ref Ec2SubnetId
       SsmAssociations:
         - DocumentName: !Sub 'awsconfig_Domain_${DomainDirectoryId}_${DomainDnsName}'
@@ -722,19 +684,18 @@ Resources:
         - Key: Name
           Value: !Ref 'AWS::StackName'
       UserData:
-        Fn::Base64: !Sub
-            - |
-              <script>
-                cfn-init.exe -v -c launch --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
-                if %ERRORLEVEL% equ 0 goto success
+        Fn::Base64: !Sub |
+          <script>
+            cfn-init.exe -v -c launch --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
+            if %ERRORLEVEL% equ 0 goto success
 
-                :error
-                cfn-signal.exe -e 1 --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
-                echo "ERROR: cfn-init failed! Aborting!"
-                exit /b 1
+            :error
+            cfn-signal.exe -e 1 --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
+            echo "ERROR: cfn-init failed! Aborting!"
+            exit /b 1
 
-                :success
-              </script>
+            :success
+          </script>
       Volumes:
         - Device: /dev/xvdf
           VolumeId: !Ref DataVolume

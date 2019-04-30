@@ -112,8 +112,7 @@ Parameters:
   CloudWatchAgentUrl:
     AllowedPattern: '^$|^s3://.*\.msi$'
     Default: ''
-    Description: >-
-      (Optional) S3 URL to CloudWatch Agent MSI. Example: s3://amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi
+    Description: '(Optional) S3 URL to CloudWatch Agent MSI. Example: s3://amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi'
     Type: String
   ConnectionBrokerFqdn:
     AllowedPattern: '[a-zA-Z0-9_-]+\..+'
@@ -152,9 +151,7 @@ Parameters:
   DomainSvcAccount:
     AllowedPattern: '[a-zA-Z0-9_-]*'
     Default: CbSvcAccount
-    Description: >-
-      User name for the account that will join the instance to the Connection
-      Broker Cluster
+    Description: User name for the account that will join the instance to the Connection Broker Cluster
     MaxLength: '25'
     MinLength: '5'
     Type: String
@@ -446,10 +443,8 @@ Resources:
         finalize:
           commands:
             10-signal-success:
-              command: !Sub
-                - >-
+              command: !Sub >-
                   cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
-                -
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
@@ -463,16 +458,12 @@ Resources:
                   Import-Module P3Utils;
                   $CloudWatchAgentUri = [System.Uri]'${CloudWatchAgentUrl}';
                   $CloudWatchAgentScriptDir = 'c:\cfn\scripts\AmazonCloudWatchAgent';
-                  $CloudWatchAgentZipFile = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)];
+                  $CloudWatchAgentInstaller = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)];
                   $Null = New-Item $CloudWatchAgentScriptDir -Type Directory -Force;
-                  Read-S3Object -BucketName $CloudWatchAgentUri.Host `
-                  -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '') `
-                  -File $CloudWatchAgentZipFile `
-                  -Region ${AWS::Region};
-                  $CloudWatchAgentInstallScript = $CloudWatchAgentScriptDir + '\install.ps1';
+                  Read-S3Object -BucketName $CloudWatchAgentUri.Host -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '') -File $CloudWatchAgentInstaller -Region ${AWS::Region};
                   $CloudWatchAgentConfig = $CloudWatchAgentScriptDir + '\aws-cloudwatch-agent-config.json';
                   Invoke-RetryCommand -Command Start-Process -ArgList @{ FilePath='msiexec.exe'; ArgumentList = @('/i', $CloudWatchAgentInstaller, '/qn'); NoNewWindow = $true; PassThru = $true; Wait = $true } -CheckExpression '$Return.Result.ExitCode -eq 0' -InitialDelay 17 -MaxDelay 59 -Verbose;
-                  $CloudWatchAgentCtl = "${Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
+                  $CloudWatchAgentCtl = \"${!Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
                   & $CloudWatchAgentCtl -Action cond-restart;
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
                   } -Verbose -ErrorAction Stop"
@@ -532,7 +523,7 @@ Resources:
                     }
                   }
                 -
-                  local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref InstanceLogGroup, !Ref 'AWS::NoValue']
+                  local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref LaunchConfigLogGroup, !Ref 'AWS::NoValue']
         installRDS:
           commands:
             10-install-rds:
@@ -547,11 +538,7 @@ Resources:
                   ${local_ShellCommandMap_powershell} -Command "Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module RemoteDesktop,RemoteDesktopServices;
-                  if (-not ('${DomainSvcAccount}' -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators')))
-                  {
-                    [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', '${DomainSvcAccount}'); '
-                  }
-                  } -Verbose -ErrorAction Stop"
+                  if (-not ('${DomainSvcAccount}' -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) {[Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', '${DomainSvcAccount}');} } -Verbose -ErrorAction Stop"
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
               waitAfterCompletion: '0'
@@ -559,7 +546,7 @@ Resources:
               command: !Sub
                 - >-
                   ${local_ShellCommandMap_psexec} -u "${DomainNetbiosName}\${DomainSvcAccount}" -p "${DomainSvcPassword}"
-                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdsh.ps1 -DomainNetBiosName '${DomainNetbiosName}' -GroupName '${DomainAccessUserGroup}' -ConnectionBroker '${ConnectionBrokerFqdn}' -UpdPath '${UserProfileDiskPath}' -PrivateKeyPfx 'c:\cfn\files\rdp.pfx' -PrivateKeyPassword "${RdpPrivateKeyPassword}" -HealthCheckEndPoint -Verbose -ErrorAction Stop
+                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdsh.ps1 -DomainNetBiosName '${DomainNetbiosName}' -GroupName '${DomainAccessUserGroup}' -ConnectionBroker '${ConnectionBrokerFqdn}' -UpdPath '${UserProfileDiskPath}' -PrivateKeyPfx 'c:\cfn\files\rdp.pfx' -PrivateKeyPassword '"${RdpPrivateKeyPassword}"' -HealthCheckEndPoint -Verbose -ErrorAction Stop
                 -
                   local_ShellCommandMap_psexec: !FindInMap [ShellCommandMap,psexec,command]
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
@@ -644,11 +631,10 @@ Resources:
           -
             local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
       UserData:
-        Fn::Base64: !Sub
-          - |
+        Fn::Base64: !Sub |
             <script>
             REM CFN LaunchConfig Update Toggle: ${ForceUpdateToggle}
-            cfn-init.exe -v -c launch --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+            cfn-init.exe -v -c config --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
             if %ERRORLEVEL% equ 0 goto success
 
             :error
