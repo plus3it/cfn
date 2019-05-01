@@ -417,7 +417,7 @@ Resources:
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
                   } -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
           files:
             'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json':
@@ -498,7 +498,7 @@ Resources:
                 - >-
                   ${local_ShellCommandMap_powershell} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
                 -
-                 local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: forever
         ps-modules:
           files:

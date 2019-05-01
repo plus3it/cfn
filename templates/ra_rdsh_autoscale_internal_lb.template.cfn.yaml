@@ -468,7 +468,7 @@ Resources:
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
                   } -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
           files:
             'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json':
@@ -540,7 +540,7 @@ Resources:
                   Import-Module RemoteDesktop,RemoteDesktopServices;
                   if (-not ('${DomainSvcAccount}' -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) {[Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', '${DomainSvcAccount}');} } -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
             30-configure-rdsh:
               command: !Sub
@@ -548,8 +548,8 @@ Resources:
                   ${local_ShellCommandMap_psexec} -u "${DomainNetbiosName}\${DomainSvcAccount}" -p "${DomainSvcPassword}"
                   ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdsh.ps1 -DomainNetBiosName '${DomainNetbiosName}' -GroupName '${DomainAccessUserGroup}' -ConnectionBroker '${ConnectionBrokerFqdn}' -UpdPath '${UserProfileDiskPath}' -PrivateKeyPfx 'c:\cfn\files\rdp.pfx' -PrivateKeyPassword '"${RdpPrivateKeyPassword}"' -HealthCheckEndPoint -Verbose -ErrorAction Stop
                 -
-                  local_ShellCommandMap_psexec: !FindInMap [ShellCommandMap,psexec,command]
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_psexec: !FindInMap [ShellCommandMap, psexec, command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
             40-reboot-rds:
               command: powershell.exe "Restart-Computer -Force -Verbose"
@@ -561,7 +561,7 @@ Resources:
                 - >-
                   ${local_ShellCommandMap_powershell} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: forever
         ps-modules:
           files:

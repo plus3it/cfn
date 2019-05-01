@@ -344,7 +344,7 @@ Resources:
   Ec2RecoveryAlarm:
     Properties:
       AlarmActions: !Sub 'arn:aws:automate:${AWS::Region}::ec2:recover'
-      AlarmDescription:  Trigger a recovery when instance status check fails for 15 consecutive minutes
+      AlarmDescription: Trigger a recovery when instance status check fails for 15 consecutive minutes
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: InstanceId
@@ -384,7 +384,7 @@ Resources:
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             c-initialize-disks:
-              command:  powershell.exe C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeDisks.ps1
+              command: powershell.exe C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeDisks.ps1
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             d-extend-disks:
@@ -477,7 +477,7 @@ Resources:
                   if (-not ($admin -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) { [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', $admin); }
                   } -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
         configure-backups:
           commands:
@@ -490,7 +490,7 @@ Resources:
                   -ConsistencyGroup 'BackupGroup01'
                   -Verbose -ErrorAction Stop
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
         configure-fileshares:
           commands:
@@ -499,14 +499,14 @@ Resources:
                 - >-
                   ${local_ShellCommandMap_powershell} -Command "New-Item -ItemType directory -Path 'D:\Shares\Profiles$' -Force -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
             20-configure-fileshares:
               command: !Sub
                 - >-
                   ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-fileshares.ps1 -DomainNetbiosName ${DomainNetbiosName} -GroupName ${DomainAccessUserGroup} -Verbose -ErrorAction Stop
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
         configure-rdcb:
           commands:
@@ -518,8 +518,8 @@ Resources:
                   -p \"$(!(Invoke-Expression ((Get-SSMParameterValue -Name '$(SsmRdcbCredential)' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
                   ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdcb.ps1 -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
-                  local_ShellCommandMap_psexec: !FindInMap [ShellCommandMap,psexec,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  local_ShellCommandMap_psexec: !FindInMap [ShellCommandMap, psexec, command]
               waitAfterCompletion: '0'
         finalize:
           commands:
@@ -548,7 +548,7 @@ Resources:
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
                   } -Verbose -ErrorAction Stop"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
           files:
             'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json':
@@ -625,7 +625,7 @@ Resources:
                 - >-
                   ${local_ShellCommandMap_powershell} -Command "Install-WindowsFeature FS-FileServer,RDS-Connection-Broker,RDS-RD-Server,RDS-Licensing,RDS-Licensing-UI -Verbose"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
         join-domain:
           commands:
@@ -634,7 +634,7 @@ Resources:
                 - >-
                   ${local_ShellCommandMap_powershell} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: forever
         ps-modules:
           files:
@@ -649,7 +649,7 @@ Resources:
                 - >-
                   ${local_ShellCommandMap_powershell} "Restart-Computer -Force -Verbose"
                 -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap,powershell,command]
+                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: forever
       CfnUpdateTriggers:
         EbsVolumeSize: !Ref DataVolumeSize
@@ -663,7 +663,7 @@ Resources:
       DisableApiTermination: true
       EbsOptimized: !FindInMap [InstanceTypeMap, !Ref InstanceType, SupportsEbsOptimized]
       IamInstanceProfile: !Ref Ec2IamInstanceProfile
-      ImageId: !If [UseAmiLookup, !Sub '${AmiIdLookup.Id}',!Ref AmiId]
+      ImageId: !If [UseAmiLookup, !Sub '${AmiIdLookup.Id}', !Ref AmiId]
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyPairName
       Monitoring: true
@@ -674,9 +674,9 @@ Resources:
           GroupSet: !Split
             - ','
             - !Sub
-                - '${RdcbEc2SecurityGroup},${local_ExtraSecurityGroupIds}'
-                -
-                 local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
+              - '${RdcbEc2SecurityGroup},${local_ExtraSecurityGroupIds}'
+              -
+                local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
           SubnetId: !Ref Ec2SubnetId
       SsmAssociations:
         - DocumentName: !Sub 'awsconfig_Domain_${DomainDirectoryId}_${DomainDnsName}'

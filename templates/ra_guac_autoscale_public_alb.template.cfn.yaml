@@ -461,11 +461,11 @@ Resources:
                   ${local_UseURLText2}
                   ${local_UseBrandText}
                 -
-                  local_UseURL1: !If [UseURL1, !Sub ' -L ${URL1}','']
-                  local_UseURLText1: !If [UseURLText1, !Sub ' -T ${URLText1}','']
-                  local_UseURL2: !If [UseURL2, !Sub ' -l ${URL2}','']
-                  local_UseURLText2: !If [UseURLText2, !Sub ' -t ${URLText2}','']
-                  local_UseBrandText: !If [UseBrandText, !Sub ' -B ${BrandText}','']
+                  local_UseURL1: !If [UseURL1, !Sub ' -L ${URL1}', '']
+                  local_UseURLText1: !If [UseURLText1, !Sub ' -T ${URLText1}', '']
+                  local_UseURL2: !If [UseURL2, !Sub ' -l ${URL2}', '']
+                  local_UseURLText2: !If [UseURLText2, !Sub ' -t ${URLText2}', '']
+                  local_UseBrandText: !If [UseBrandText, !Sub ' -B ${BrandText}', '']
         set-active:
           'Fn::Transform':
             Name: 'AWS::Include'
@@ -524,7 +524,7 @@ Resources:
             VolumeType: gp2
       EbsOptimized: !FindInMap [InstanceTypeMap, !Ref InstanceType, SupportsEbsOptimized]
       IamInstanceProfile: !Ref Ec2IamInstanceProfile
-      ImageId: !If [UseAmiLookup, !Sub '${AmiIdLookup.Id}',!Ref AmiId]
+      ImageId: !If [UseAmiLookup, !Sub '${AmiIdLookup.Id}', !Ref AmiId]
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyPairName
       SecurityGroups:
@@ -581,9 +581,9 @@ Resources:
       Certificates:
         - CertificateArn:
             !If
-              - UseACM
-              - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${SslCertificateName}'
-              - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:server-certificate/${SslCertificateName}'
+            - UseACM
+            - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${SslCertificateName}'
+            - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:server-certificate/${SslCertificateName}'
       DefaultActions:
         - TargetGroupArn: !Ref ALBTargetGroup
           Type: forward
