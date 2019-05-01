@@ -53,12 +53,9 @@ yaml/lint: | guard/program/yamllint
 cfn/%: FIND_CFN_JSON ?= find . -name '*.template.cfn.json' -type f
 cfn/%: FIND_CFN_YAML ?= find . -name '*.template.cfn.yaml' -type f
 cfn/lint: | guard/program/cfn-lint
-    @ echo "[$@]: CFN Linting Json files..."
 	$(FIND_CFN_JSON) | $(XARGS) cfn-lint -t {}
-    @ echo "[$@]: JSON files PASSED cfn-lint test!"
-    @ echo "[$@]: CFN Linting Yaml files..."
-    $(FIND_CFN_YAML) | $(XARGS) cfn-lint -t {}
-    @ echo "[$@]: YAML files PASSED lint test!"
+	$(FIND_CFN_YAML) | $(XARGS) cfn-lint -t {}
+
 cfn/version:
 	$(FIND_CFN_JSON) | $(XARGS) bash -c "jq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
-    $(FIND_CFN_YAML) | $(XARGS) bash -c "yq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
+	$(FIND_CFN_YAML) | $(XARGS) bash -c "yq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
