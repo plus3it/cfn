@@ -82,7 +82,7 @@ Parameters:
     Description: (Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString
     Type: String
   AmiNameSearchString:
-    Default: amzn-ami-hvm-2017.09*.2017*-x86_64-gp2
+    Default: amzn-ami-hvm-2018.03*.2018*-x86_64-gp2
     Description: Search pattern to match against an AMI Name
     Type: String
   BrandText:
@@ -137,7 +137,7 @@ Parameters:
       - m5.4xlarge
       - r4.large
       - r4.xlarge
-    Default: t2.micro
+    Default: t3.micro
     Description: Amazon EC2 instance type for the Guacamole Instances
     Type: String
   KeyPairName:
@@ -193,10 +193,12 @@ Parameters:
     Type: String
   URL1:
     Default: 'https://accounts.example.com'
+    AllowedPattern: "^https?://[^\\s/$.?#].[^\\s]*$"
     Description: First custom URL/link to display on the Guac Login page
     Type: String
   URL2:
     Default: 'https://redmine.example.com'
+    AllowedPattern: "^https?://[^\\s/$.?#].[^\\s]*$"
     Description: Second custom URL/link to display on the Guac Login page
     Type: String
   URLText1:
