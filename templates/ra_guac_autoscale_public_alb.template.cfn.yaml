@@ -463,11 +463,11 @@ Resources:
                   ${local_UseURLText2}
                   ${local_UseBrandText}
                 -
-                  local_UseURL1: !If [UseURL1, !Sub ' -L ${URL1}', '']
-                  local_UseURLText1: !If [UseURLText1, !Sub ' -T ${URLText1}', '']
-                  local_UseURL2: !If [UseURL2, !Sub ' -l ${URL2}', '']
-                  local_UseURLText2: !If [UseURLText2, !Sub ' -t ${URLText2}', '']
-                  local_UseBrandText: !If [UseBrandText, !Sub ' -B ${BrandText}', '']
+                  local_UseURL1: !If [UseURL1, !Sub ' -L "${URL1}"', '']
+                  local_UseURLText1: !If [UseURLText1, !Sub ' -T "${URLText1}"', '']
+                  local_UseURL2: !If [UseURL2, !Sub ' -l "${URL2}"', '']
+                  local_UseURLText2: !If [UseURLText2, !Sub ' -t "${URLText2}"', '']
+                  local_UseBrandText: !If [UseBrandText, !Sub ' -B "${BrandText}"', '']
         set-active:
           'Fn::Transform':
             Name: 'AWS::Include'
@@ -484,8 +484,7 @@ Resources:
               command: yum -y update
           files:
             /etc/cfn/cfn-hup.conf:
-              content: !Sub
-                |-
+              content: !Sub |
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
@@ -495,8 +494,7 @@ Resources:
               mode: '000400'
               owner: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub
-                |-
+              content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init

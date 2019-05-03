@@ -246,7 +246,7 @@ Resources:
               - 'ec2:CreateTags'
             Condition:
               StringLike:
-                'ec2:ParentVolume': !Sub 'arn:aws:ec2:${AWS::Region}::*:volume/${DataVolume}'
+                'ec2:ParentVolume': !Sub 'arn:aws:ec2:${AWS::Region}:*:volume/${DataVolume}'
             Effect: Allow
             Resource: '*'
             Sid: AllowRestrictedSnapshotActions
@@ -343,7 +343,8 @@ Resources:
     Type: 'AWS::CloudWatch::Alarm'
   Ec2RecoveryAlarm:
     Properties:
-      AlarmActions: !Sub 'arn:aws:automate:${AWS::Region}::ec2:recover'
+      AlarmActions:
+        - !Sub 'arn:aws:automate:${AWS::Region}:ec2:recover'
       AlarmDescription: Trigger a recovery when instance status check fails for 15 consecutive minutes
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
@@ -397,7 +398,7 @@ Resources:
               waitAfterCompletion: '0'
           files:
             'c:\cfn\cfn-hup.conf':
-              content: !Sub |-
+              content: !Sub |
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
@@ -406,7 +407,7 @@ Resources:
             'c:\cfn\files\pstools.zip':
               source: 'https://download.sysinternals.com/files/PSTools.zip'
             'c:\cfn\hooks.d\cfn-auto-reloader.conf':
-              content: !Sub |-
+              content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.RdCbFileServerInstance.Metadata
@@ -418,7 +419,7 @@ Resources:
             'c:\cfn\scripts\configure-rdcb.ps1':
               source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1
             'c:\cfn\scripts\extend-volumes.ps1':
-              content: |-
+              content: |
                 [CmdLetBinding()]
                 Param()
                 foreach ($disk in (Get-Disk)) {
@@ -473,7 +474,7 @@ Resources:
                   ${local_ShellCommandMap_powershell} -Command "Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module RemoteDesktop,RemoteDesktopServices;
-                  $admin = (Invoke-Expression ((Get-SSMParameterValue -Name ${SsmRdcbCredential} -WithDecryption $true).Parameters | ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username + @${DomainNetbiosName};
+                  $admin = (Invoke-Expression ((Get-SSMParameterValue -Name ${SsmRdcbCredential} -WithDecryption $true).Parameters | ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username + '@${DomainNetbiosName}';
                   if (-not ($admin -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) { [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', $admin); }
                   } -Verbose -ErrorAction Stop"
                 -
@@ -504,7 +505,7 @@ Resources:
             20-configure-fileshares:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-fileshares.ps1 -DomainNetbiosName ${DomainNetbiosName} -GroupName ${DomainAccessUserGroup} -Verbose -ErrorAction Stop
+                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-fileshares.ps1 -DomainNetbiosName '${DomainNetbiosName}' -GroupName '${DomainAccessUserGroup}' -Verbose -ErrorAction Stop
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: '0'
@@ -514,8 +515,8 @@ Resources:
               command: !Sub
                 - >-
                   ${local_ShellCommandMap_powershell} -Command "${local_ShellCommandMap_psexec}
-                  -u \"${DomainNetbiosName}\$(!(Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username)\"
-                  -p \"$(!(Invoke-Expression ((Get-SSMParameterValue -Name '$(SsmRdcbCredential)' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
+                  -u \"${DomainNetbiosName}\$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username)\"
+                  -p \"$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
                   ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdcb.ps1 -Verbose -ErrorAction Stop"
                 -
                   local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]

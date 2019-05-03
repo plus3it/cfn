@@ -381,10 +381,7 @@ Resources:
           - Action:
               - 's3:GetObject'
             Effect: Allow
-            Resource: !Join
-              - ''
-              - - 'arn:aws:s3:::'
-                - !Ref RdpPrivateKeyPfx
+            Resource: !Sub 'arn:aws:s3:::${RdpPrivateKeyPfx}'
           - Action:
               - 's3:GetObject'
             Effect: Allow
@@ -443,8 +440,7 @@ Resources:
         finalize:
           commands:
             10-signal-success:
-              command: !Sub >-
-                  cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+              command: !Sub cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
@@ -581,7 +577,7 @@ Resources:
                   Location: s3://app-chemistry/snippets/restrict_cfn_permissions.snippet.cfn.yaml
           files:
             'c:\cfn\cfn-hup.conf':
-              content: !Sub |-
+              content: !Sub |
                 [main]
                 stack=${AWS::StackName}
                 region=${AWS::Region}
@@ -591,7 +587,7 @@ Resources:
               authentication: Ec2IamRole
               source: !Sub '${RdpPrivateKeyS3Endpoint}/${RdpPrivateKeyPfx}'
             'c:\cfn\hooks.d\cfn-auto-reloader.conf':
-              content: !Sub |-
+              content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init action=cfn-init.exe -v -c update --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}

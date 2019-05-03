@@ -509,12 +509,12 @@ Resources:
         setup:
           files:
             'c:\cfn\cfn-hup.conf':
-              content: !Sub |-
+              content: !Sub |
                 [main]
                 stack=${AWS::StackName}
                 region=${AWS::Region}
             'c:\cfn\hooks.d\cfn-auto-reloader.conf':
-              content: !Sub |-
+              content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init action=cfn-init.exe -v -c update --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
