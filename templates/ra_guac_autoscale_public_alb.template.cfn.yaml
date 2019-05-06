@@ -583,7 +583,7 @@ Resources:
             !If
             - UseACM
             - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${SslCertificateName}'
-            - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:server-certificate/${SslCertificateName}'
+            - !Sub 'arn:aws:iam:${AWS::Region}:${AWS::AccountId}:server-certificate/${SslCertificateName}'
       DefaultActions:
         - TargetGroupArn: !Ref ALBTargetGroup
           Type: forward
