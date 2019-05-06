@@ -26,13 +26,6 @@ jobs:
         - make sh/lint
     - stage: test
       env:
-        - JOB="CFN Version Validation"
-      install:
-        - jq --version
-      script:
-        - make cfn/version VERSION=$RELEASE_VERSION
-    - stage: test
-      env:
         - JOB="CFN Lint"
       install:
         - pip install -r .requirements/cfn-lint.txt
@@ -48,6 +41,16 @@ jobs:
         - yamllint --version
       script:
         - make yaml/lint
+    - stage: test
+      env:
+        - JOB="CFN Version Validation"
+      install:
+        - pip install -r .requirements/cfn-version-check.txt
+        - jq --version
+        - yq --version
+      language: python
+      script:
+        - make cfn/version VERSION=$RELEASE_VERSION
     - stage: deploy
       env:
         - JOB="Deploy to GitHub Releases"

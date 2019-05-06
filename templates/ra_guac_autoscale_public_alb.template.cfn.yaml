@@ -1,0 +1,623 @@
+AWSTemplateFormatVersion: 2010-09-09
+Conditions:
+  UseACM: !Equals
+    - !Ref SslCertificateService
+    - ACM
+  UseAmiLookup: !Equals
+    - !Ref AmiId
+    - ''
+  UseAutoUpdateStack: !Not
+    - !Equals
+      - !Ref UpdateSchedule
+      - ''
+  UseBrandText: !Not
+    - !Equals
+      - !Ref BrandText
+      - ''
+  UseScalingPolicy: !Or
+    - !Equals
+      - !Ref ScaleUpSchedule
+      - ''
+    - !Equals
+      - !Ref ScaleDownSchedule
+      - ''
+  UseScheduledAction: !And
+    - !Not
+      - !Equals
+        - !Ref ScaleUpSchedule
+        - ''
+    - !Not
+      - !Equals
+        - !Ref ScaleDownSchedule
+        - ''
+  UseURL1: !Not
+    - !Equals
+      - !Ref URL1
+      - ''
+  UseURL2: !Not
+    - !Equals
+      - !Ref URL2
+      - ''
+  UseURLText1: !Not
+    - !Equals
+      - !Ref URLText1
+      - ''
+  UseURLText2: !Not
+    - !Equals
+      - !Ref URLText2
+      - ''
+Description: This templates deploys Guacamole (Guac) instances in an AutoScale Group behind an ALB
+Mappings:
+  InstanceTypeMap:
+    'Fn::Transform':
+      Name: 'AWS::Include'
+      Parameters:
+        Location: 's3://app-chemistry/snippets/instance_type_map.snippet.cfn.yaml'
+Metadata:
+  Version: 0.3.1
+  cfn-lint:
+    config:
+      ignore_checks:
+        - E7001
+        - W1011
+Outputs:
+  AlbSecurityGroupId:
+    Description: Security Group ID for the Guacamole Application Load Balancer
+    Value: !Ref AlbSecurityGroup
+  Ec2SecurityGroupId:
+    Description: Security Group ID for Guacamole instances
+    Value: !Ref Ec2SecurityGroup
+  LoadBalancerDns:
+    Description: DNS name for the ALB
+    Value: !Sub ${ALB.DNSName}
+  LoadBalancerName:
+    Description: Name of the ALB
+    Value: !Ref ALB
+  TargetGroupName:
+    Description: Name of the ALB Target Group
+    Value: !Ref ALBTargetGroup
+Parameters:
+  AmiId:
+    Default: ''
+    Description: (Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString
+    Type: String
+  AmiNameSearchString:
+    Default: amzn-ami-hvm-2018.03*.2018*-x86_64-gp2
+    Description: Search pattern to match against an AMI Name
+    Type: String
+  BrandText:
+    Default: ''
+    Description: Text/Label to display branding for the Guac Login page
+    Type: String
+  DesiredCapacity:
+    Default: '1'
+    Description: The number of instances the autoscale group will spin up initially
+    MinLength: '1'
+    Type: String
+  ForceUpdateToggle:
+    AllowedValues:
+      - A
+      - B
+    Default: A
+    Description: A/B toggle that forces a change to a LaunchConfig property, triggering the AutoScale Update Policy
+    Type: String
+  GuacBaseDN:
+    Default: CN=GuacConfigGroups
+    Description: The base of the DN for all Guacamole configurations.
+    Type: String
+  GuacamoleVersion:
+    Default: 1.0.0
+    Description: Guacamole version tag. Defaults to 1.0.0
+    Type: String
+  GuacdVersion:
+    Default: 1.0.0
+    Description: Guacd version tag. Defaults to 1.0.0
+    Type: String
+  InstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - r4.large
+      - r4.xlarge
+    Default: t3.micro
+    Description: Amazon EC2 instance type for the Guacamole Instances
+    Type: String
+  KeyPairName:
+    Description: Public/private key pairs allow you to securely connect to your instance after it launches
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  LdapDN:
+    Default: 'DC=ad,DC=example,DC=com'
+    Description: Distinguished Name (DN) of the LDAP directory
+    MinLength: '1'
+    Type: String
+  LdapServer:
+    Default: ad.example.com
+    Description: Name of LDAP server Guacamole will authenticate against
+    MinLength: '1'
+    Type: String
+  MaxCapacity:
+    Default: '2'
+    Description: The maximum number of instances for the autoscale group
+    MinLength: '1'
+    Type: String
+  MinCapacity:
+    Default: '0'
+    Description: The minimum number of instances for the autoscale group
+    MinLength: '1'
+    Type: String
+  PrivateSubnetIDs:
+    Description: List of Private Subnet IDs where the Guacamole instances will run
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  PublicSubnetIDs:
+    Description: A list of Public subnet IDs to attach to the Application Load Balancer
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  ScaleDownDesiredCapacity:
+    Default: '1'
+    Description: (Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset
+    Type: Number
+  ScaleDownSchedule:
+    Default: ''
+    Description: (Optional) Scheduled Action in cron-format (UTC) to scale down the number of instances; ignored if empty or ScaleUpSchedule is unset (E.g. "0 0 * * *")
+    Type: String
+  ScaleUpSchedule:
+    Default: ''
+    Description: (Optional) Scheduled Action in cron-format (UTC) to scale up to the Desired Capacity; ignored if empty or ScaleDownSchedule is unset (E.g. "0 10 * * Mon-Fri")
+    Type: String
+  SslCertificateName:
+    Description: The name (for IAM) or identifier (for ACM) of the SSL certificate to associate with the ALB -- the cert must already exist in the service
+    Type: String
+  SslCertificateService:
+    AllowedValues:
+      - ACM
+      - IAM
+    Default: ACM
+    Description: The service hosting the SSL certificate
+    Type: String
+  URL1:
+    Default: 'https://accounts.example.com'
+    AllowedPattern: "^https?://[^\\s/$.?#].[^\\s]*$"
+    Description: First custom URL/link to display on the Guac Login page
+    Type: String
+  URL2:
+    Default: 'https://redmine.example.com'
+    AllowedPattern: "^https?://[^\\s/$.?#].[^\\s]*$"
+    Description: Second custom URL/link to display on the Guac Login page
+    Type: String
+  URLText1:
+    Default: Account Management
+    Description: Text/Label to display for the First custom URL/link displayed on the Guac Login page
+    Type: String
+  URLText2:
+    Default: Example Redmine
+    Description: Text/Label to display for the Second custom URL/link displayed on the Guac Login page
+    Type: String
+  UpdateSchedule:
+    AllowedPattern: ^$|^cron\(.*\)$|^rate\(.*\)$|^$
+    ConstraintDescription: Must be in CloudWatch events schedule expression format (Cron or Rate).
+    Default: ''
+    Description: (Optional) Time interval between auto stack updates. Refer to the AWS documentation for valid input syntax:https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
+    Type: String
+  VPC:
+    Description: VPC ID
+    Type: 'AWS::EC2::VPC::Id'
+Resources:
+  ALB:
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Subnets: !Ref PublicSubnetIDs
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+  ALBTargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPort: '8080'
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 5
+      Port: 8080
+      Protocol: HTTP
+      UnhealthyThresholdCount: 10
+      VpcId: !Ref VPC
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+  AlbSecurityGroup:
+    Properties:
+      GroupDescription: Enable Guacamole remote access from the Internet
+      Tags:
+        - Key: Name
+          Value: !Sub 'ra-guac-alb-${AWS::StackName}'
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
+  AlbToGuacEgressTcp80:
+    Properties:
+      DestinationSecurityGroupId: !Ref Ec2SecurityGroup
+      GroupId: !Ref AlbSecurityGroup
+      FromPort: 8080
+      IpProtocol: tcp
+      ToPort: 8080
+    Type: 'AWS::EC2::SecurityGroupEgress'
+  AlbToGuacIngressTcp80:
+    Properties:
+      FromPort: 8080
+      GroupId: !Ref Ec2SecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref AlbSecurityGroup
+      ToPort: 8080
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  AmiIdLookup:
+    Condition: UseAmiLookup
+    Properties:
+      AmiNameSearchString: !Ref AmiNameSearchString
+      ForceUpdateToggle: !Ref ForceUpdateToggle
+      Region: !Ref 'AWS::Region'
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-look-up-ami-ids'
+    Type: 'Custom::AmiIdLookup'
+  AutoScalingGroup:
+    CreationPolicy:
+      ResourceSignal:
+        Count: !Ref DesiredCapacity
+        Timeout: PT20M
+    Properties:
+      DesiredCapacity: !Ref DesiredCapacity
+      HealthCheckGracePeriod: 3600
+      HealthCheckType: ELB
+      LaunchConfigurationName: !Ref LaunchConfig
+      MaxSize: !Ref MaxCapacity
+      MetricsCollection:
+        - Granularity: 1Minute
+      MinSize: !Ref MinCapacity
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: !Ref 'AWS::StackName'
+      TargetGroupARNs:
+        - !Ref ALBTargetGroup
+      VPCZoneIdentifier: !Ref PrivateSubnetIDs
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+  AutoUpdateStack:
+    Condition: UseAutoUpdateStack
+    Properties:
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-update-scheduler-dev-cfn_auto_update_broker'
+      StackName: !Ref 'AWS::StackName'
+      ToggleParameter: ForceUpdateToggle
+      ToggleValues:
+        - A
+        - B
+      UpdateSchedule: !Ref UpdateSchedule
+    Type: 'Custom::AutoUpdateStack'
+  CPUAlarmHigh:
+    Condition: UseScalingPolicy
+    Properties:
+      AlarmActions:
+        - !Ref ScaleUpPolicy
+      AlarmDescription: Scale-up if CPU > 30% for 5 minutes or metric disappears indicating instance is down
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+      EvaluationPeriods: 5
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: 60
+      Statistic: Average
+      Threshold: 30
+    Type: 'AWS::CloudWatch::Alarm'
+  Ec2IamInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+        - !Ref Ec2IamRole
+    Type: 'AWS::IAM::InstanceProfile'
+  Ec2IamRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - ssm.amazonaws.com
+        Version: 2012-10-17
+      Path: /
+    Type: 'AWS::IAM::Role'
+  Ec2IamRolePolicy:
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - 'ssm:DescribeAssociation'
+              - 'ssm:GetDeployablePatchSnapshotForInstance'
+              - 'ssm:GetDocument'
+              - 'ssm:ListAssociations'
+              - 'ssm:ListInstanceAssociations'
+              - 'ssm:PutInventory'
+              - 'ssm:UpdateAssociationStatus'
+              - 'ssm:UpdateInstanceAssociationStatus'
+              - 'ssm:UpdateInstanceInformation'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 'ec2messages:AcknowledgeMessage'
+              - 'ec2messages:DeleteMessage'
+              - 'ec2messages:FailMessage'
+              - 'ec2messages:GetEndpoint'
+              - 'ec2messages:GetMessages'
+              - 'ec2messages:SendReply'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 'cloudwatch:PutMetricData'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 'ec2:DescribeInstanceStatus'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 'ds:CreateComputer'
+              - 'ds:DescribeDirectories'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeLogStreams'
+              - 'logs:PutLogEvents'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: 'arn:aws:s3:::amazon-ssm-*'
+          - Action:
+              - 's3:ListBucket'
+            Effect: Allow
+            Resource: 'arn:aws:s3:::amazon-ssm-packages-*'
+          - Action:
+              - 'autoscaling:DescribeAutoScalingInstances'
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - 'autoscaling:EnterStandby'
+              - 'autoscaling:ExitStandby'
+            Condition:
+              StringEquals:
+                'autoscaling:ResourceTag/aws:cloudformation:stack-id': !Ref 'AWS::StackId'
+            Effect: Allow
+            Resource: '*'
+        Version: 2012-10-17
+      PolicyName: !Sub 'ra-guac-${AWS::StackName}'
+      Roles:
+        - !Ref Ec2IamRole
+    Type: 'AWS::IAM::Policy'
+  Ec2SecurityGroup:
+    Properties:
+      GroupDescription: Enable Guacamole remote access
+      Tags:
+        - Key: Name
+          Value: !Sub 'ra-guac-ec2-${AWS::StackName}'
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
+  LaunchConfig:
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          config:
+            - setup
+            - set-standby
+            - make-guac
+            - set-active
+            - finalize
+          update:
+            - setup
+            - set-standby
+            - make-guac
+            - set-active
+            - finalize
+        finalize:
+          commands:
+            10-signal-success:
+              command: !Sub /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+              ignoreErrors: 'true'
+        make-guac:
+          commands:
+            10-make-guac:
+              command: !Sub
+                - >-
+                  /etc/cfn/scripts/make-guac.sh
+                  -H ${LdapServer}
+                  -D ${LdapDN}
+                  -V ${GuacamoleVersion}
+                  -v ${GuacdVersion}
+                  -C ${GuacBaseDN}
+                  ${local_UseURL1}
+                  ${local_UseURLText1}
+                  ${local_UseURL2}
+                  ${local_UseURLText2}
+                  ${local_UseBrandText}
+                -
+                  local_UseURL1: !If [UseURL1, !Sub ' -L "${URL1}"', '']
+                  local_UseURLText1: !If [UseURLText1, !Sub ' -T "${URLText1}"', '']
+                  local_UseURL2: !If [UseURL2, !Sub ' -l "${URL2}"', '']
+                  local_UseURLText2: !If [UseURLText2, !Sub ' -t "${URLText2}"', '']
+                  local_UseBrandText: !If [UseBrandText, !Sub ' -B "${BrandText}"', '']
+        set-active:
+          'Fn::Transform':
+            Name: 'AWS::Include'
+            Parameters:
+              Location: s3://app-chemistry/snippets/set_autoscaling_active_elx.snippet.cfn.yaml
+        set-standby:
+          'Fn::Transform':
+            Name: 'AWS::Include'
+            Parameters:
+              Location: s3://app-chemistry/snippets/set_autoscaling_standby_elx.snippet.cfn.yaml
+        setup:
+          commands:
+            10-yum-update:
+              command: yum -y update
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+                verbose=true
+              group: root
+              mode: '000400'
+              owner: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v -c update --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+                runas=root
+              group: root
+              mode: '000400'
+              owner: root
+            /etc/cfn/scripts/make-guac.sh:
+              group: root
+              mode: '000700'
+              owner: root
+              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/make-guac.sh
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+            VolumeType: gp2
+      EbsOptimized: !FindInMap [InstanceTypeMap, !Ref InstanceType, SupportsEbsOptimized]
+      IamInstanceProfile: !Ref Ec2IamInstanceProfile
+      ImageId: !If [UseAmiLookup, !Sub '${AmiIdLookup.Id}', !Ref AmiId]
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SecurityGroups:
+        - !Ref Ec2SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          # CFN LaunchConfig Update Toggle: ${ForceUpdateToggle}
+
+          # Get pip
+          curl --silent --show-error --retry 5 -L https://bootstrap.pypa.io/get-pip.py | python
+
+          # Add pip to path
+          hash pip 2> /dev/null || PATH="${!PATH}:/usr/local/bin"
+
+          # Upgrade setuptools
+          pip install --upgrade setuptools
+
+          # Fix python urllib3 warnings
+          yum -y install gcc python-devel libffi-devel openssl-devel
+          pip install pyopenssl ndg-httpsclient pyasn1
+
+          # Get cfn utils
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+
+          # Remove gcc now that it is no longer needed
+          yum -y remove gcc --setopt=clean_requirements_on_remove=1
+
+          # Fixup cfn utils
+          INITDIR=$(find -L /opt/aws/apitools/cfn-init/init -name redhat 2> /dev/null || echo /usr/init/redhat)
+          chmod 775 ${!INITDIR}/cfn-hup
+          ln -f -s ${!INITDIR}/cfn-hup /etc/rc.d/init.d/cfn-hup
+          chkconfig --add cfn-hup
+          chkconfig cfn-hup on
+          mkdir -p /opt/aws/bin
+          BINDIR=$(find -L /opt/aws/apitools/cfn-init -name bin 2> /dev/null || echo /usr/bin)
+          for SCRIPT in cfn-elect-cmd-leader cfn-get-metadata cfn-hup cfn-init cfn-send-cmd-event cfn-send-cmd-result cfn-signal
+          do
+            ln -s ${!BINDIR}/${!SCRIPT} /opt/aws/bin/${!SCRIPT} 2> /dev/null || echo Skipped symbolic link, /opt/aws/bin/${!SCRIPT} already exists
+          done
+
+          # Add cfn utils to path
+          hash cfn-signal 2> /dev/null || PATH="${!PATH}:/usr/local/bin:/opt/aws/bin"
+
+          # Install ssm agent
+          yum -y install https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm || true
+
+          # Execute cfn-init
+          /opt/aws/bin/cfn-init -v -c config --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region} || (echo 'ERROR: cfn-init failed! Aborting!'; /opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}; exit 1)
+
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+  Listener:
+    Properties:
+      Certificates:
+        - CertificateArn:
+            !If
+            - UseACM
+            - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${SslCertificateName}'
+            - !Sub 'arn:aws:iam:${AWS::Region}:${AWS::AccountId}:server-certificate/${SslCertificateName}'
+      DefaultActions:
+        - TargetGroupArn: !Ref ALBTargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref ALB
+      Port: 443
+      Protocol: HTTPS
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+  PublicToAlbIngressTcp443:
+    Properties:
+      CidrIp: 0.0.0.0/0
+      FromPort: 443
+      GroupId: !Ref AlbSecurityGroup
+      IpProtocol: tcp
+      ToPort: 443
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  ScaleDownScheduledAction:
+    Condition: UseScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      DesiredCapacity: !Ref ScaleDownDesiredCapacity
+      Recurrence: !Ref ScaleDownSchedule
+    Type: 'AWS::AutoScaling::ScheduledAction'
+  ScaleUpPolicy:
+    Condition: UseScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: 1
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+  ScaleUpScheduledAction:
+    Condition: UseScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      DesiredCapacity: !Ref MaxCapacity
+      Recurrence: !Ref ScaleUpSchedule
+    Type: 'AWS::AutoScaling::ScheduledAction'

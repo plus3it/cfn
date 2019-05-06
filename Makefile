@@ -50,9 +50,12 @@ sh/lint: | guard/program/shellcheck
 yaml/lint: | guard/program/yamllint
 	yamllint --strict .
 
-cfn/%: FIND_CFN ?= find . -name '*.template.cfn.*' -type f
+cfn/%: FIND_CFN_JSON ?= find . -name '*.template.cfn.json' -type f
+cfn/%: FIND_CFN_YAML ?= find . -name '*.template.cfn.yaml' -type f
 cfn/lint: | guard/program/cfn-lint
-	$(FIND_CFN) | $(XARGS) cfn-lint -t {}
+	$(FIND_CFN_JSON) | $(XARGS) cfn-lint -t {}
+	$(FIND_CFN_YAML) | $(XARGS) cfn-lint -t {}
 
 cfn/version:
-	$(FIND_CFN) | $(XARGS) bash -c "jq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
+	$(FIND_CFN_JSON) | $(XARGS) bash -c "jq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
+	$(FIND_CFN_YAML) | $(XARGS) bash -c "yq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
