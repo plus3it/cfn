@@ -232,6 +232,7 @@ Resources:
   ALBTargetGroup:
     Properties:
       HealthCheckIntervalSeconds: 30
+      HealthCheckPath: '/index.html'
       HealthCheckPort: '8080'
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 10
@@ -431,15 +432,11 @@ Resources:
         configSets:
           config:
             - setup
-            - set-standby
             - make-guac
-            - set-active
             - finalize
           update:
             - setup
-            - set-standby
             - make-guac
-            - set-active
             - finalize
         finalize:
           commands:
@@ -468,16 +465,6 @@ Resources:
                   local_UseURL2: !If [UseURL2, !Sub ' -l "${URL2}"', '']
                   local_UseURLText2: !If [UseURLText2, !Sub ' -t "${URLText2}"', '']
                   local_UseBrandText: !If [UseBrandText, !Sub ' -B "${BrandText}"', '']
-        set-active:
-          'Fn::Transform':
-            Name: 'AWS::Include'
-            Parameters:
-              Location: s3://app-chemistry/snippets/set_autoscaling_active_elx.snippet.cfn.yaml
-        set-standby:
-          'Fn::Transform':
-            Name: 'AWS::Include'
-            Parameters:
-              Location: s3://app-chemistry/snippets/set_autoscaling_standby_elx.snippet.cfn.yaml
         setup:
           commands:
             10-yum-update:
