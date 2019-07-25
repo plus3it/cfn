@@ -523,7 +523,7 @@ Resources:
         installRDS:
           commands:
             10-install-rds:
-              command: powershell.exe "Install-WindowsFeature RDS-RD-Server,RDS-Licensing,Search-Service,RSAT-ADDS-Tools,RSAT-DNS-Server,GPMC -Verbose"
+              command: powershell.exe "Import-Module P3Utils; Invoke-RetryCommand -Command Install-WindowsFeature -ArgList @{Name=@(\"RDS-RD-Server\",\"RDS-Licensing\",\"Search-Service\",\"RSAT-ADDS-Tools\",\"RSAT-DNS-Server\",\"GPMC\")} -Verbose"
               waitAfterCompletion: '0'
             15-reboot-rds:
               command: powershell.exe "Restart-Computer -Force -Verbose"
