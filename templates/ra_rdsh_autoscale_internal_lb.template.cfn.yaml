@@ -542,7 +542,7 @@ Resources:
                   Import-Module P3Utils;
                   Invoke-RetryCommand
                   -Command Install-WindowsFeature
-                  -ArgList @{Name=@(\"RDS-RD-Server\",\"RDS-Licensing\",\"Search-Service\",\"RSAT-ADDS-Tools\",\"RSAT-DNS-Server\",\"GPMC\",\"totallfubar\")}
+                  -ArgList @{Name=@(\"RDS-RD-Server\",\"RDS-Licensing\",\"Search-Service\",\"RSAT-ADDS-Tools\",\"RSAT-DNS-Server\",\"GPMC\")}
                   -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
