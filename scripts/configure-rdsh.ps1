@@ -400,8 +400,8 @@ $SignOffShortcut.Save()
 Write-Verbose "Created the logoff shortcut"
 
 # Install Git for Windows
-$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.16.2.windows.1/Git-2.16.2-64-bit.exe"
-$GitInstaller = "${Env:Temp}\Git-2.16.2-64-bit.exe"
+$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.22.0.windows.1/Git-2.22.0-64-bit.exe"
+$GitInstaller = "${Env:Temp}\$(($GitUrl -split('/'))[-1])"
 Invoke-RetryCommand -Command Download-File -ArgList @{Source=$GitUrl; Destination=$GitInstaller}
 $GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
@@ -415,18 +415,18 @@ $GitCmd = "C:\Program Files\Git\cmd\git.exe"
 & "$GitCmd" config --system --add 'credential.helper' 'manager'
 Write-Verbose "Configured git for windows"
 
-# Install Python 3.5
-$Py35Url = "https://www.python.org/ftp/python/3.5.4/python-3.5.4-amd64.exe"
-$Py35Installer = "${Env:Temp}\python-3.5.4-amd64.exe"
-Invoke-RetryCommand -Command Download-File -ArgList @{Source=$Py35Url; Destination=$Py35Installer}
-$Py35Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
-$null = Start-Process -FilePath ${Py35Installer} -ArgumentList ${Py35Params} -PassThru -Wait
-Write-Verbose "Installed python 3.5"
+# Install Python 3.6
+$Py36Url = "https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe"
+$Py36Installer = "${Env:Temp}\$(($Py36Url -split('/'))[-1])"
+Invoke-RetryCommand -Command Download-File -ArgList @{Source=$Py36Url; Destination=$Py36Installer}
+$Py36Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
+$null = Start-Process -FilePath ${Py36Installer} -ArgumentList ${Py36Params} -PassThru -Wait
+Write-Verbose "Installed python 3.6"
 
 # Install Haskell Platform (with cabal)
 $HaskellVersion = "8.0.2"
 $HaskellUrl = "https://downloads.haskell.org/~platform/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
-$HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
+$HaskellInstaller = "${Env:Temp}\$(($HaskellUrl -split('/'))[-1])"
 Invoke-RetryCommand -Command Download-File -ArgList @{Source=$HaskellUrl; Destination=$HaskellInstaller}
 $HaskellParams = "/S"
 $null = Start-Process -FilePath ${HaskellInstaller} -ArgumentList ${HaskellParams} -PassThru -Wait
