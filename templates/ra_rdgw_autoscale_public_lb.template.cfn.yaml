@@ -83,7 +83,7 @@ Metadata:
         default: AMI Name Search Pattern
       ScaleDownDesiredCapacity:
         default: Scale Down Desired Capacity
-  Version: 0.3.2
+  Version: 0.3.3
   cfn-lint:
     config:
       ignore_checks:
