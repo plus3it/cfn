@@ -477,7 +477,7 @@ Resources:
                   -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
-                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
           files:
@@ -546,7 +546,7 @@ Resources:
                   -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
-                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
             15-reboot-rds:
@@ -554,7 +554,7 @@ Resources:
                 - ${PowershellCommand} -Command "Restart-Computer -Force -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
-                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: forever
             20-configure-admins:
@@ -570,7 +570,7 @@ Resources:
                   -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
-                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
             30-configure-rdsh:
@@ -589,7 +589,7 @@ Resources:
                 - PsExecCommand: !FindInMap [ShellCommandMap, psexec, command]
                   PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
-                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               # Pause a bit here to let services settle...
               waitAfterCompletion: '30'
@@ -598,7 +598,7 @@ Resources:
                 - ${PowershellCommand} -Command "Restart-Computer -Force -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   SignalFailure: !Sub
-                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: forever
         join-domain:
@@ -698,7 +698,7 @@ Resources:
               - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
               - Command: !FindInMap [CfnUtilsMap, Init, Config]
             SignalFailure: !Sub
-              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
               - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
     Type: 'AWS::AutoScaling::LaunchConfiguration'
   LaunchConfigLogGroup:
