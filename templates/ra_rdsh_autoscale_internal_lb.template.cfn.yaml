@@ -32,6 +32,13 @@ Mappings:
       Name: 'AWS::Include'
       Parameters:
         Location: 's3://app-chemistry/snippets/shell_command_map.snippet.cfn.yaml'
+  CfnUtilsMap:
+    Init:
+      Config: cfn-init.exe -v -c config --resource LaunchConfig
+      Update: cfn-init.exe -v -c update --resource LaunchConfig
+    Signal:
+      Success: cfn-signal.exe -e 0 --resource AutoScalingGroup
+      Failure: cfn-signal.exe -e 1 --resource AutoScalingGroup
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -440,7 +447,11 @@ Resources:
         finalize:
           commands:
             10-signal-success:
-              command: !Sub cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+              command: !Sub
+                - ${SignalSuccess}
+                - SignalSuccess: !Sub
+                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Success]
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
@@ -587,10 +598,15 @@ Resources:
               authentication: Ec2IamRole
               source: !Sub '${RdpPrivateKeyS3Endpoint}/${RdpPrivateKeyPfx}'
             'c:\cfn\hooks.d\cfn-auto-reloader.conf':
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init action=cfn-init.exe -v -c update --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+              content: !Sub
+                - |
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                  action=${InitUpdate}
+                - InitUpdate: !Sub
+                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - Command: !FindInMap [CfnUtilsMap, Init, Update]
             'c:\cfn\scripts\configure-rdsh.ps1':
               source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdsh.ps1
             'c:\cfn\scripts\unzip-archive.ps1':
@@ -627,19 +643,26 @@ Resources:
           -
             local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
       UserData:
-        Fn::Base64: !Sub |
+        Fn::Base64: !Sub
+          - |
             <script>
             REM CFN LaunchConfig Update Toggle: ${ForceUpdateToggle}
-            cfn-init.exe -v -c config --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+            ${InitConfig}
             if %ERRORLEVEL% equ 0 goto success
 
             :error
-            cfn-signal.exe -e 1 --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+            ${SignalFailure}
             echo "ERROR: cfn-init failed! Aborting!"
             exit /b 1
 
             :success
             </script>
+          - InitConfig: !Sub
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - Command: !FindInMap [CfnUtilsMap, Init, Config]
+            SignalFailure: !Sub
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
     Type: 'AWS::AutoScaling::LaunchConfiguration'
   LaunchConfigLogGroup:
     Condition: InstallCloudWatchAgent
