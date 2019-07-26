@@ -591,7 +591,8 @@ Resources:
                   SignalFailure: !Sub
                     - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
+              # Pause a bit here to let services settle...
+              waitAfterCompletion: '30'
             40-reboot-rds:
               command: !Sub
                 - ${PowershellCommand} -Command "Restart-Computer -Force -Verbose -ErrorAction Stop" || ${SignalFailure}
