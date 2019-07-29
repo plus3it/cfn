@@ -40,61 +40,7 @@ Param(
 #Based on:
 # * https://s3.amazonaws.com/app-chemistry/scripts/configure-rdsh.ps1
 
-function Retry-TestCommand
-{
-    param (
-    [Parameter(Mandatory=$true)][string]$Test,
-    [Parameter(Mandatory=$false)][hashtable]$Args = @{},
-    [Parameter(Mandatory=$false)][string]$TestProperty,
-    [Parameter(Mandatory=$false)][int]$Tries = 5,
-    [Parameter(Mandatory=$false)][int]$SecondsDelay = 2,
-    [Parameter(Mandatory=$false)][switch]$ExpectNull
-    )
-    $TryCount = 0
-    $Completed = $false
-    $MsgFailed = "Command [{0}] failed" -f $Test
-    $MsgSucceeded = "Command [{0}] succeeded." -f $Test
-
-    while (-not $Completed)
-    {
-        try
-        {
-            $Result = & $Test @Args
-            $TestResult = if ($TestProperty) { $Result.$TestProperty } else { $Result }
-            if (-not $TestResult -and -not $ExpectNull)
-            {
-                throw $MsgFailed
-            }
-            else
-            {
-                Write-Verbose $MsgSucceeded
-                Write-Output $TestResult
-                $Completed = $true
-            }
-        }
-        catch
-        {
-            $TryCount++
-            if ($TryCount -ge $Tries)
-            {
-                $Completed = $true
-                Write-Output $null
-                Write-Warning ($PSItem | Select -Property * | Out-String)
-                Write-Warning ("Command [{0}] failed the maximum number of {1} time(s)." -f $Test, $Tries)
-                $PSCmdlet.ThrowTerminatingError($PSItem)
-            }
-            else
-            {
-                $Msg = $PSItem.ToString()
-                if ($Msg -ne $MsgFailed) { Write-Warning $Msg }
-                Write-Warning ("Command [{0}] failed. Retrying in {1} second(s)." -f $Test, $SecondsDelay)
-                Start-Sleep $SecondsDelay
-            }
-        }
-    }
-}
-
-function Download-File
+function global:Download-File
 {
     param (
     [Parameter(Mandatory=$true)]
@@ -157,6 +103,9 @@ if ($MissingFeatures)
 {
     throw "Missing required Windows features: $($MissingFeatures -join ',')"
 }
+
+# Import the P3Utils module
+$null = Import-Module P3Utils -Verbose:$false
 
 # Validate availability of RDS Licensing configuration
 $null = Import-Module RemoteDesktop,RemoteDesktopServices -Verbose:$false
@@ -222,7 +171,7 @@ try
             Write-Verbose ("Testing connectivity to host: {0}" -f $RDServer.Server)
             try
             {
-                $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 7 -SecondsDelay 17
+                $null = Invoke-RetryCommand -Command Test-NetConnection -ArgList @{ComputerName=$RDServer.Server; CommonTCPPort="RDP"} -CheckExpression '$? -and $Return.Result.TcpTestSucceeded' -Tries 7
                 $ValidRDServers += $RDServer.Server
                 Write-Verbose "Successfully connected to host, $($RDServer.Server), keeping this RD Server"
             }
@@ -263,7 +212,7 @@ try
     {
         if (-not ($Role -in $CurrentRoles.Roles))
         {
-            Retry-TestCommand -Test Add-RDServer -Args @{Server=$SystemName; Role=$Role; ConnectionBroker=$ConnectionBroker}
+            Invoke-RetryCommand -Command Add-RDServer -ArgList @{Server=$SystemName; Role=$Role; ConnectionBroker=$ConnectionBroker}
             $ValidRDServers += $SystemName.ToUpper()
             Write-Verbose "Configured system with role, ${Role}"
         }
@@ -283,7 +232,7 @@ try
     }
     catch [Microsoft.PowerShell.Commands.WriteErrorException]
     {
-        Retry-TestCommand -Test Add-RDSessionHost -Args @{CollectionName=$CollectionName; SessionHost=$SystemName; ConnectionBroker=$ConnectionBroker} -ExpectNull
+        Invoke-RetryCommand -Command Add-RDSessionHost -ArgList @{CollectionName=$CollectionName; SessionHost=$SystemName; ConnectionBroker=$ConnectionBroker} -CheckExpression '$?'
         Write-Verbose "Added system to RD Session Collection"
         Write-Verbose "    SessionHost=${SystemName}"
         Write-Verbose "    CollectionName=${CollectionName}"
@@ -344,7 +293,7 @@ try
                     # Host is in ACL, but was not an RD Server; test connectivity and remove the rule if the host is not responding
                     try
                     {
-                        $TestRdp = Retry-TestCommand -Test Test-NetConnection -Args @{ComputerName=$Server; CommonTCPPort="RDP"} -TestProperty "TcpTestSucceeded" -Tries 1
+                        $null = Invoke-RetryCommand -Command Test-NetConnection -ArgList @{ComputerName=$Server; CommonTCPPort="RDP"} -CheckExpression '$? -and $Return.Result.TcpTestSucceeded' -Tries 1
                         Write-Verbose "Successfully connected to host, keeping this access rule"
                         Write-Verbose "    Host: $Server"
                         Write-Verbose ("    Rule Identity: {0}" -f $Rule.IdentityReference.Value)
@@ -374,7 +323,7 @@ try
         # Write the new ACL
         Write-Verbose "Setting updated ACL on ${UpdPath}:"
         Write-Verbose ($UpdAcl.Access | Out-String)
-        Retry-TestCommand -Test Set-Acl -Args @{Path=$UpdPath; AclObject=$UpdAcl} -ExpectNull
+        Invoke-RetryCommand -Command Set-Acl -ArgList @{Path=$UpdPath; AclObject=$UpdAcl} -CheckExpression '$?'
     }
 }
 catch
@@ -451,9 +400,9 @@ $SignOffShortcut.Save()
 Write-Verbose "Created the logoff shortcut"
 
 # Install Git for Windows
-$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.16.2.windows.1/Git-2.16.2-64-bit.exe"
-$GitInstaller = "${Env:Temp}\Git-2.16.2-64-bit.exe"
-Retry-TestCommand -Test Download-File -Args @{Source=$GitUrl; Destination=$GitInstaller}
+$GitUrl = "https://github.com/git-for-windows/git/releases/download/v2.22.0.windows.1/Git-2.22.0-64-bit.exe"
+$GitInstaller = "${Env:Temp}\$(($GitUrl -split('/'))[-1])"
+Invoke-RetryCommand -Command Download-File -ArgList @{Source=$GitUrl; Destination=$GitInstaller}
 $GitParams = "/SILENT /NOCANCEL /NORESTART /SAVEINF=${Env:Temp}\git_params.txt"
 $null = Start-Process -FilePath ${GitInstaller} -ArgumentList ${GitParams} -PassThru -Wait
 Write-Verbose "Installed git for windows"
@@ -466,19 +415,19 @@ $GitCmd = "C:\Program Files\Git\cmd\git.exe"
 & "$GitCmd" config --system --add 'credential.helper' 'manager'
 Write-Verbose "Configured git for windows"
 
-# Install Python 3.5
-$Py35Url = "https://www.python.org/ftp/python/3.5.4/python-3.5.4-amd64.exe"
-$Py35Installer = "${Env:Temp}\python-3.5.4-amd64.exe"
-Retry-TestCommand -Test Download-File -Args @{Source=$Py35Url; Destination=$Py35Installer}
-$Py35Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
-$null = Start-Process -FilePath ${Py35Installer} -ArgumentList ${Py35Params} -PassThru -Wait
-Write-Verbose "Installed python 3.5"
+# Install Python 3.6
+$Py36Url = "https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe"
+$Py36Installer = "${Env:Temp}\$(($Py36Url -split('/'))[-1])"
+Invoke-RetryCommand -Command Download-File -ArgList @{Source=$Py36Url; Destination=$Py36Installer}
+$Py36Params = "/log ${env:temp}\python.log /quiet InstallAllUsers=1 PrependPath=1"
+$null = Start-Process -FilePath ${Py36Installer} -ArgumentList ${Py36Params} -PassThru -Wait
+Write-Verbose "Installed python 3.6"
 
 # Install Haskell Platform (with cabal)
 $HaskellVersion = "8.0.2"
 $HaskellUrl = "https://downloads.haskell.org/~platform/${HaskellVersion}/HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
-$HaskellInstaller = "${Env:Temp}\HaskellPlatform-${HaskellVersion}-minimal-x86_64-setup.exe"
-Retry-TestCommand -Test Download-File -Args @{Source=$HaskellUrl; Destination=$HaskellInstaller}
+$HaskellInstaller = "${Env:Temp}\$(($HaskellUrl -split('/'))[-1])"
+Invoke-RetryCommand -Command Download-File -ArgList @{Source=$HaskellUrl; Destination=$HaskellInstaller}
 $HaskellParams = "/S"
 $null = Start-Process -FilePath ${HaskellInstaller} -ArgumentList ${HaskellParams} -PassThru -Wait
 Write-Verbose "Installed haskell platform"

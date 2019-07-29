@@ -71,7 +71,7 @@ Metadata:
     ParameterLabels:
       AmiNameSearchString:
         default: AMI Name Search Pattern
-  Version: 0.3.2
+  Version: 0.3.3
   cfn-lint:
     config:
       ignore_checks:
