@@ -83,7 +83,7 @@ Metadata:
         default: AMI Name Search Pattern
       ScaleDownDesiredCapacity:
         default: Scale Down Desired Capacity
-  Version: 0.3.3
+  Version: 0.3.4
   cfn-lint:
     config:
       ignore_checks:
@@ -431,13 +431,19 @@ Resources:
                             {
                               "file_path": "c:\\ProgramData\\Amazon\\AmazonCloudWatchAgent\\Logs\\amazon-cloudwatch-agent.log",
                               "log_group_name": "${local_InstanceLogGroup}",
-                              "log_stream_name": "cloudwatch_agent_logs_{instance_id}",
+                              "log_stream_name": "{instance_id}//c/ProgramData/Amazon/AmazonCloudWatchAgent/Logs/amazon-cloudwatch-agent.log",
                               "timestamp_format": "%H:%M:%S %y %b %-d"
                             },
                             {
                               "file_path": "c:\\cfn\\log\\cfn-init.log",
                               "log_group_name": "${local_InstanceLogGroup}",
-                              "log_stream_name": "cloudformation_init_logs_{instance_id}",
+                              "log_stream_name": "{instance_id}//c/cfn/log/cfn-init.log",
+                              "timestamp_format": "%H:%M:%S %y %b %-d"
+                            },
+                            {
+                              "file_path": "c:\\cfn\\log\\cfn-init-cmd.log",
+                              "log_group_name": "${local_InstanceLogGroup}",
+                              "log_stream_name": "{instance_id}//c/cfn/log/cfn-init-cmd.log",
                               "timestamp_format": "%H:%M:%S %y %b %-d"
                             }
                           ]
@@ -446,23 +452,23 @@ Resources:
                           "collect_list" : [
                             {
                               "event_name": "System",
-                              "event_levels": ["WARNING","ERROR"],
+                              "event_levels": ["WARNING", "ERROR", "INFORMATION"],
                               "log_group_name": "${local_InstanceLogGroup}",
-                              "log_stream_name": "Windows_System_{instance_id}",
+                              "log_stream_name": "{instance_id}//EventLog/System",
                               "event_format": "text"
                             },
                             {
                               "event_name": "Application",
-                              "event_levels": ["WARNING","ERROR"],
+                              "event_levels": ["WARNING", "ERROR", "INFORMATION"],
                               "log_group_name": "${local_InstanceLogGroup}",
-                              "log_stream_name": "Windows_Application_{instance_id}",
+                              "log_stream_name": "{instance_id}//EventLog/Application",
                               "event_format": "text"
                             },
                             {
                               "event_name": "Microsoft-Windows-TerminalServices-Gateway/Operational",
                               "event_levels": ["WARNING","ERROR", "INFORMATION"],
                               "log_group_name": "${local_InstanceLogGroup}",
-                              "log_stream_name": "RDGW_Connections_{instance_id}",
+                              "log_stream_name": "{instance_id}//EventLog/Microsoft-Windows-TerminalServices-Gateway/Operational",
                               "event_format": "text"
                             }
                           ]

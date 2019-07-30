@@ -154,7 +154,7 @@ write_manifest()
         printf "\"translations\" : [ \"translations/en.json\" ]\n"
         printf "}\n"
     ) > "${guac_manifest}"
-    if ! ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
+    if ! { [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]]; }
     then
         sed -i '/html/d' "${guac_manifest}"
     fi
@@ -426,7 +426,7 @@ log "Setting up the custom branding extension"
 write_manifest "${GUAC_EXT}"
 write_brand "${GUAC_EXT}"
 
-if ( [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]] )
+if [[ -n "${URL_1}" ]] || [[ -n "${URL_2}" ]]
 then
     # Add custom URLs to Guacamole login page using Guac extensions.
     write_links "${GUAC_EXT}"
