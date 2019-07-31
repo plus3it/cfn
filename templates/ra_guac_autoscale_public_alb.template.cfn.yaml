@@ -46,6 +46,10 @@ Conditions:
     - !Equals
       - !Ref URLText2
       - ''
+  InstallCloudWatchAgent: !Not
+    - !Equals
+      - !Ref CloudWatchAgentUrl
+      - ''
 Description: This templates deploys Guacamole (Guac) instances in an AutoScale Group behind an ALB
 Mappings:
   InstanceTypeMap:
@@ -54,7 +58,7 @@ Mappings:
       Parameters:
         Location: 's3://app-chemistry/snippets/instance_type_map.snippet.cfn.yaml'
 Metadata:
-  Version: 0.3.4
+  Version: 0.3.5
   cfn-lint:
     config:
       ignore_checks:
@@ -88,6 +92,13 @@ Parameters:
   BrandText:
     Default: ''
     Description: Text/Label to display branding for the Guac Login page
+    Type: String
+  CloudWatchAgentUrl:
+    AllowedPattern: '^$|^s3://.*\.rpm$'
+    Default: ''
+    Description: >-
+      (Optional) S3 URL to CloudWatch Agent installer. Example:
+      s3://amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
     Type: String
   DesiredCapacity:
     Default: '1'
@@ -396,7 +407,9 @@ Resources:
           - Action:
               - 's3:GetObject'
             Effect: Allow
-            Resource: 'arn:aws:s3:::amazon-ssm-*'
+            Resource:
+              - 'arn:aws:s3:::amazon-ssm-*'
+              - 'arn:aws:s3:::amazoncloudwatch-agent/*'
           - Action:
               - 's3:ListBucket'
             Effect: Allow
@@ -432,12 +445,68 @@ Resources:
         configSets:
           config:
             - setup
+            - !If
+              - InstallCloudWatchAgent
+              - cw-agent-install
+              - !Ref "AWS::NoValue"
             - make-guac
             - finalize
           update:
             - setup
             - make-guac
             - finalize
+        cw-agent-install:
+          commands:
+            01-install-cloudwatch-agent:
+              command: !Sub >-
+                aws s3 cp ${CloudWatchAgentUrl} /etc/cfn/scripts/amazon-cloudwatch-agent.rpm &&
+                yum -y localinstall /etc/cfn/scripts/amazon-cloudwatch-agent.rpm
+            10-start-cloudwatch-agent:
+              command: >-
+                /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+                -a fetch-config -m ec2 -c
+                file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+          files:
+            /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
+              content: !Sub |-
+                {
+                  "logs":
+                  {
+                    "logs_collected":
+                    {
+                      "files":
+                      {
+                        "collect_list": [
+                          {
+                            "file_path": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                            "log_group_name": "/aws/ec2/lx/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}//opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                            "timestamp_format": "%H:%M:%S %y %b %-d"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init.log",
+                            "log_group_name": "/aws/ec2/lx/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}//var/log/cfn-init.log",
+                            "timestamp_format": "%H:%M:%S %y %b %-d"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init-cmd.log",
+                            "log_group_name": "/aws/ec2/lx/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}//var/log/cfn-init-cmd.log",
+                            "timestamp_format": "%H:%M:%S %y %b %-d"
+                          },
+                          {
+                            "file_path": "/var/log/messages",
+                            "log_group_name": "/aws/ec2/lx/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}//var/log/messages",
+                            "timestamp_format": "%H:%M:%S %y %b %-d"
+                          }
+                        ]
+                      }
+                    },
+                    "log_stream_name": "default_logs_{instance_id}"
+                  }
+                }
         finalize:
           commands:
             10-signal-success:
@@ -608,3 +677,8 @@ Resources:
       DesiredCapacity: !Ref MaxCapacity
       Recurrence: !Ref ScaleUpSchedule
     Type: 'AWS::AutoScaling::ScheduledAction'
+  GuacLaunchConfigLogGroup:
+    Condition: InstallCloudWatchAgent
+    Properties:
+      LogGroupName: !Sub "/aws/ec2/lx/${AWS::StackName}"
+    Type: AWS::Logs::LogGroup
