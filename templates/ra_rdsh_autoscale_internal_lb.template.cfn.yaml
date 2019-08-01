@@ -704,7 +704,7 @@ Resources:
               - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
               - Command: !FindInMap [CfnUtilsMap, Init, Config]
             SignalFailure: !Sub
-              - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
               - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
     Type: 'AWS::AutoScaling::LaunchConfiguration'
   LaunchConfigLogGroup:
