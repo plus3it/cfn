@@ -31,6 +31,13 @@ Mappings:
       Name: 'AWS::Include'
       Parameters:
         Location: 's3://app-chemistry/snippets/shell_command_map.snippet.cfn.yaml'
+  CfnUtilsMap:
+    Init:
+      Launch: cfn-init.exe -v -c launch --resource RdCbFileServerInstance
+      Update: cfn-init.exe -v -c update --resource RdCbFileServerInstance
+    Signal:
+      Success: cfn-signal.exe -e 0 --resource RdCbFileServerInstance
+      Failure: cfn-signal.exe -e 1 --resource RdCbFileServerInstance
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -407,11 +414,15 @@ Resources:
             'c:\cfn\files\pstools.zip':
               source: 'https://download.sysinternals.com/files/PSTools.zip'
             'c:\cfn\hooks.d\cfn-auto-reloader.conf':
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.RdCbFileServerInstance.Metadata
-                action=cfn-init.exe -v -c update --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
+              content: !Sub
+                - |
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.RdCbFileServerInstance.Metadata
+                  action=${InitUpdate}
+                - InitUpdate: !Sub
+                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - Command: !FindInMap [CfnUtilsMap, Init, Update]
             'c:\cfn\scripts\configure-ebsbackups.ps1':
               source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-ebsbackups.ps1
             'c:\cfn\scripts\configure-fileshares.ps1':
@@ -471,61 +482,82 @@ Resources:
             10-configure-admins:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "Invoke-Command -ScriptBlock {
+                  ${PowershellCommand} -Command "Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module RemoteDesktop,RemoteDesktopServices;
                   $admin = (Invoke-Expression ((Get-SSMParameterValue -Name ${SsmRdcbCredential} -WithDecryption $true).Parameters | ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username + '@${DomainNetbiosName}';
                   if (-not ($admin -in [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::ListMembers('Administrators'))) { [Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember('Administrators', $admin); }
-                  } -Verbose -ErrorAction Stop"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  }
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
         configure-backups:
           commands:
             10-configure-backups:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-ebsbackups.ps1
+                  ${PowershellCommand} c:\cfn\scripts\configure-ebsbackups.ps1
                   -SnapshotScript 'C:\cfn\scripts\snap-by-group.ps1'
                   -MaintenanceScript 'C:\cfn\scripts\snap-maintenance.ps1'
                   -ConsistencyGroup 'BackupGroup01'
-                  -Verbose -ErrorAction Stop
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  -Verbose -ErrorAction Stop || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
         configure-fileshares:
           commands:
             10-create-upd-folder:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "New-Item -ItemType directory -Path 'D:\Shares\Profiles$' -Force -Verbose -ErrorAction Stop"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  ${PowershellCommand} -Command "
+                  New-Item -ItemType directory -Path 'D:\Shares\Profiles$' -Force
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
             20-configure-fileshares:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-fileshares.ps1 -DomainNetbiosName '${DomainNetbiosName}' -GroupName '${DomainAccessUserGroup}' -Verbose -ErrorAction Stop
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  ${PowershellCommand} c:\cfn\scripts\configure-fileshares.ps1
+                  -DomainNetbiosName '${DomainNetbiosName}'
+                  -GroupName '${DomainAccessUserGroup}'
+                  -Verbose -ErrorAction Stop || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
         configure-rdcb:
           commands:
             20-configure-rdcb:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "${local_ShellCommandMap_psexec}
+                  ${PowershellCommand} -Command "${PsExecCommand}
                   -u \"${DomainNetbiosName}\$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username)\"
                   -p \"$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
-                  ${local_ShellCommandMap_powershell} c:\cfn\scripts\configure-rdcb.ps1 -Verbose -ErrorAction Stop"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
-                  local_ShellCommandMap_psexec: !FindInMap [ShellCommandMap, psexec, command]
+                  ${PowershellCommand} c:\cfn\scripts\configure-rdcb.ps1
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  PsExecCommand: !FindInMap [ShellCommandMap, psexec, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
         finalize:
           commands:
             10-signal-success:
-              command: !Sub cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
+              command: !Sub
+                - ${SignalSuccess}
+                - SignalSuccess: !Sub
+                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Success]
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
@@ -533,7 +565,7 @@ Resources:
             10-install-cloudwatch-agent:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "
+                  ${PowershellCommand} -Command "
                   Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module P3Utils;
@@ -547,9 +579,12 @@ Resources:
                   $CloudWatchAgentCtl = \"${!Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
                   & $CloudWatchAgentCtl -Action cond-restart;
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
-                  } -Verbose -ErrorAction Stop"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  }
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
           files:
             'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json':
@@ -623,25 +658,29 @@ Resources:
                       "log_stream_name": "default_logs_{instance_id}"
                     }
                   }
-                -
-                  local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref InstanceLogGroup, !Ref 'AWS::NoValue']
+                - local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref InstanceLogGroup, !Ref 'AWS::NoValue']
         install-roles:
           commands:
             10-install-roles:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "Install-WindowsFeature FS-FileServer,RDS-Connection-Broker,RDS-RD-Server,RDS-Licensing,RDS-Licensing-UI -Verbose"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  ${PowershellCommand} -Command "
+                  Import-Module P3Utils;
+                  Invoke-RetryCommand
+                  -Command Install-WindowsFeature
+                  -ArgList @{Name=@(\"FS-FileServer\",\"RDS-Connection-Broker\",\"RDS-RD-Server\",\"RDS-Licensing\",\"RDS-Licensing-UI\")}
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
         join-domain:
           commands:
             10-join-domain:
               command: !Sub
-                - >-
-                  ${local_ShellCommandMap_powershell} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                - ${PowershellCommand} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: forever
         ps-modules:
           files:
@@ -653,10 +692,11 @@ Resources:
           commands:
             10-reboot:
               command: !Sub
-                - >-
-                  ${local_ShellCommandMap_powershell} "Restart-Computer -Force -Verbose"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                - ${PowershellCommand} -Command "Restart-Computer -Force -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: forever
       CfnUpdateTriggers:
         EbsVolumeSize: !Ref DataVolumeSize
@@ -682,8 +722,7 @@ Resources:
             - ','
             - !Sub
               - '${RdcbEc2SecurityGroup},${local_ExtraSecurityGroupIds}'
-              -
-                local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
+              - local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
           SubnetId: !Ref Ec2SubnetId
       SsmAssociations:
         - DocumentName: !Sub 'awsconfig_Domain_${DomainDirectoryId}_${DomainDnsName}'
@@ -691,18 +730,25 @@ Resources:
         - Key: Name
           Value: !Ref 'AWS::StackName'
       UserData:
-        Fn::Base64: !Sub |
-          <script>
-            cfn-init.exe -v -c launch --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
+        Fn::Base64: !Sub
+          - |
+            <script>
+            ${InitLaunch}
             if %ERRORLEVEL% equ 0 goto success
 
             :error
-            cfn-signal.exe -e 1 --stack ${AWS::StackName} --resource RdCbFileServerInstance --region ${AWS::Region}
+            ${SignalFailure}
             echo "ERROR: cfn-init failed! Aborting!"
             exit /b 1
 
             :success
-          </script>
+            </script>
+          - InitLaunch: !Sub
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - Command: !FindInMap [CfnUtilsMap, Init, Launch]
+            SignalFailure: !Sub
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
       Volumes:
         - Device: /dev/xvdf
           VolumeId: !Ref DataVolume
