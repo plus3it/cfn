@@ -35,6 +35,13 @@ Mappings:
       Name: 'AWS::Include'
       Parameters:
         Location: 's3://app-chemistry/snippets/shell_command_map.snippet.cfn.yaml'
+  CfnUtilsMap:
+    Init:
+      Config: cfn-init.exe -v -c config --resource LaunchConfig
+      Update: cfn-init.exe -v -c update --resource LaunchConfig
+    Signal:
+      Success: cfn-signal.exe -e 0 --resource AutoScalingGroup
+      Failure: cfn-signal.exe -e 1 --resource AutoScalingGroup
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -393,7 +400,11 @@ Resources:
         finalize:
           commands:
             10-signal-success:
-              command: !Sub 'cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}'
+              command: !Sub
+                - ${SignalSuccess}
+                - SignalSuccess: !Sub
+                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Success]
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
@@ -401,7 +412,7 @@ Resources:
             10-install-cloudwatch-agent:
               command: !Sub
                 - >-
-                  ${local_ShellCommandMap_powershell} -Command "
+                  ${PowershellCommand} -Command "
                   Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module P3Utils;
@@ -415,9 +426,12 @@ Resources:
                   $CloudWatchAgentCtl = \"${!Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
                   & $CloudWatchAgentCtl -Action cond-restart;
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
-                  } -Verbose -ErrorAction Stop"
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                  }
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
           files:
             'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json':
@@ -477,34 +491,51 @@ Resources:
                       "log_stream_name": "default_logs_{instance_id}"
                     }
                   }
-                -
-                  local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref LaunchConfigLogGroup, !Ref 'AWS::NoValue']
+                - local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref LaunchConfigLogGroup, !Ref 'AWS::NoValue']
         installRDS:
           commands:
             10-install-rds:
-              command: powershell.exe "Install-WindowsFeature RDS-Gateway,RSAT-RDS-Gateway -Verbose"
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Import-Module P3Utils;
+                  Invoke-RetryCommand
+                  -Command Install-WindowsFeature
+                  -ArgList @{Name=@(\"RDS-Gateway\",\"RSAT-RDS-Gateway\")}
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
             15-restart-cwa:
-              command: net stop AmazonCloudWatchAgent && net start AmazonCloudWatchAgent
+              command: !Sub
+                - net stop AmazonCloudWatchAgent && net start AmazonCloudWatchAgent || ${SignalFailure}
+                - SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
             20-configure-rdgw:
-              command: !Sub >-
-                powershell.exe -ExecutionPolicy RemoteSigned C:\cfn\scripts\configure-rdgw.ps1
-                -DomainNetBiosName ${DomainNetbiosName}
-                -GroupName '${RemoteAccessUserGroup}'
-                -AuthenticationMethod ${AuthenticationMethod}
-                -HealthCheckEndPoint -HealthCheckDir 'C:\inetpub\healthcheck'
-                -HealthCheckSiteName 'RDGW Healthcheck Web Site'
-                -Verbose -ErrorAction Stop
+              command: !Sub
+                - >-
+                  ${PowershellCommand} C:\cfn\scripts\configure-rdgw.ps1
+                  -DomainNetBiosName ${DomainNetbiosName}
+                  -GroupName '${RemoteAccessUserGroup}'
+                  -AuthenticationMethod ${AuthenticationMethod}
+                  -HealthCheckEndPoint -HealthCheckDir 'C:\inetpub\healthcheck'
+                  -HealthCheckSiteName 'RDGW Healthcheck Web Site'
+                  -Verbose -ErrorAction Stop || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
         join-domain:
           commands:
             10-join-domain:
               command: !Sub
-                - >-
-                  ${local_ShellCommandMap_powershell} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
-                -
-                  local_ShellCommandMap_powershell: !FindInMap [ShellCommandMap, powershell, command]
+                - ${PowershellCommand} -Command Write-Verbose 'Waiting for SSM to complete domain join, which reboots the instance automatically' -Verbose
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
               waitAfterCompletion: forever
         ps-modules:
           files:
@@ -520,10 +551,15 @@ Resources:
                 stack=${AWS::StackName}
                 region=${AWS::Region}
             'c:\cfn\hooks.d\cfn-auto-reloader.conf':
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init action=cfn-init.exe -v -c update --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
+              content: !Sub
+                - |
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                  action=${InitUpdate}
+                - InitUpdate: !Sub
+                    - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+                    - Command: !FindInMap [CfnUtilsMap, Init, Update]
             'c:\cfn\scripts\configure-rdgw.ps1':
               source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdgw.ps1
           services:
@@ -549,19 +585,26 @@ Resources:
       SecurityGroups:
         - !Ref Ec2SecurityGroup
       UserData:
-        Fn::Base64: !Sub |
-          <script>
-          REM CFN LaunchConfig Update Toggle: ${ForceUpdateToggle}
-          cfn-init.exe -v -c config --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
-          if %ERRORLEVEL% equ 0 goto success
+        Fn::Base64: !Sub
+          - |
+            <script>
+            REM CFN LaunchConfig Update Toggle: ${ForceUpdateToggle}
+            ${InitConfig}
+            if %ERRORLEVEL% equ 0 goto success
 
-          :error
-          cfn-signal.exe -e 1 --stack ${AWS::StackName} --resource LaunchConfig --region ${AWS::Region}
-          echo "ERROR: cfn-init failed! Aborting!"
-          exit /b 1
+            :error
+            ${SignalFailure}
+            echo "ERROR: cfn-init failed! Aborting!"
+            exit /b 1
 
-          :success
-          </script>
+            :success
+            </script>
+          - InitConfig: !Sub
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - Command: !FindInMap [CfnUtilsMap, Init, Config]
+            SignalFailure: !Sub
+              - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
+              - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
     Type: 'AWS::AutoScaling::LaunchConfiguration'
   LaunchConfigLogGroup:
     Condition: InstallCloudWatchAgent
