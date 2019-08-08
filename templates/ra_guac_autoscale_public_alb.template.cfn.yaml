@@ -58,7 +58,7 @@ Mappings:
       Parameters:
         Location: 's3://app-chemistry/snippets/instance_type_map.snippet.cfn.yaml'
 Metadata:
-  Version: 0.3.5
+  Version: 0.3.6
   cfn-lint:
     config:
       ignore_checks:

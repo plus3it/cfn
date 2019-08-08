@@ -4,6 +4,10 @@ Conditions:
     - !Equals
       - !Ref NoPublicIp
       - 'true'
+  ConfigureBackups: !Not
+    - !Equals
+      - !Ref SnapshotFrequency
+      - ''
   CreateSnsSubscription: !Not
     - !Equals
       - !Ref NotificationEmail
@@ -78,7 +82,7 @@ Metadata:
     ParameterLabels:
       AmiNameSearchString:
         default: AMI Name Search Pattern
-  Version: 0.3.5
+  Version: 0.3.6
   cfn-lint:
     config:
       ignore_checks:
@@ -188,6 +192,10 @@ Parameters:
   NotificationEmail:
     AllowedPattern: '^$|.*[@].*'
     Description: (Optional) Email address to subscribe to notifications and alarms
+    Type: String
+  SnapshotFrequency:
+    Description: '(Optional) Specify an interval in minutes to configure snapshots of the EBS fileshare volume. Set an empty value "" to skip configuring snapshots. Default interval is 60 minutes.'
+    Default: '60'
     Type: String
   SsmKeyId:
     AllowedPattern: '^[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}$'
@@ -468,7 +476,10 @@ Resources:
             - install-roles
             - reboot
             - configure-fileshares
-            - configure-backups
+            - !If
+              - ConfigureBackups
+              - configure-backups
+              - !Ref "AWS::NoValue"
             - configure-admins
             - configure-rdcb
             - reboot
@@ -501,6 +512,7 @@ Resources:
                 - >-
                   ${PowershellCommand} c:\cfn\scripts\configure-ebsbackups.ps1
                   -SnapshotScript 'C:\cfn\scripts\snap-by-group.ps1'
+                  -SnapshotFrequency (New-TimeSpan -Minutes ${SnapshotFrequency})
                   -MaintenanceScript 'C:\cfn\scripts\snap-maintenance.ps1'
                   -ConsistencyGroup 'BackupGroup01'
                   -Verbose -ErrorAction Stop || ${SignalFailure}
