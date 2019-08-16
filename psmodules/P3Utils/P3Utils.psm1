@@ -78,3 +78,56 @@ function global:Invoke-RetryCommand {
     }
     End {}
 }
+
+function global:Test-RetryNetConnection {
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeLine=$true)]
+        [string[]]
+        $ComputerName,
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $CheckExpression = '$? -and $Return.Result.TcpTestSucceeded',
+
+        [Parameter(Mandatory=$false)]
+        [int]
+        $Tries = 5,
+
+        [Parameter(Mandatory=$false)]
+        [int]
+        $InitialDelay = 2,  # in seconds
+
+        [Parameter(Mandatory=$false)]
+        [int]
+        $MaxDelay = 32  # in seconds
+    )
+    BEGIN {
+        $ValidComputers = @()
+        $StaleComputers = @()
+    }
+    PROCESS {
+        ForEach ($computer in $ComputerName)
+        {
+            Write-Verbose ("Testing connectivity to server: {0}" -f $computer)
+            try
+            {
+                $null = Invoke-RetryCommand -Command Test-NetConnection -ArgList @{ComputerName=$computer; CommonTCPPort="RDP"} -CheckExpression $CheckExpression -Tries $Tries
+                Write-Verbose ("Successfully connected to server: {0}" -f $computer)
+                Write-Output @{ ValidComputers = $computer }
+                $ValidComputers += $computer
+            }
+            catch
+            {
+                Write-Verbose ("Server is not available, marked as stale: {0}" -f $computer)
+                Write-Output @{ StaleComputers = $computer }
+                $StaleComputers += $computer
+            }
+        }
+    }
+    END {
+        Write-Verbose "Valid Computers:"
+        $ValidComputers | ForEach-Object { Write-Verbose "*    $_" }
+        Write-Verbose "Stale Computers:"
+        $StaleComputers | ForEach-Object { Write-Verbose "*    $_" }
+    }
+}
