@@ -47,7 +47,9 @@ Copyright = '(c) 2018 Maintainers of plus3it/cfn. All rights reserved.'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @(
+    "RemoteDesktop"
+)
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
