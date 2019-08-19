@@ -131,3 +131,85 @@ function global:Test-RetryNetConnection {
         $StaleComputers | ForEach-Object { Write-Verbose "*    $_" }
     }
 }
+
+function global:Edit-AclIdentityReference {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [System.Security.AccessControl.DirectorySecurity]
+        $Acl,
+
+        [Parameter(Mandatory=$false)]
+        [string[]]
+        $IdentityReference,
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $IdentityFilter = "(?i).*\\.*[$]$",
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $FileSystemRights = "FullControl",
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $InheritanceFlags = "ContainerInherit, ObjectInherit",
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $PropagationFlags = "None",
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $AccessControlType = "Allow"
+    )
+    BEGIN {
+        $AclIdentities = @($Acl.Access.IdentityReference.Value) | Where-Object { $_ -match $IdentityFilter }
+
+        # Test if ACL contains only matching identity references
+        $DiffIdentities = Compare-Object $IdentityReference $AclIdentities
+
+        # Skip further processing if there are no differences
+        if (-not $DiffIdentities)
+        {
+            Write-Verbose "ACL contains only matching identities, no changes needed..."
+            return
+        }
+
+        # Identity in ACL but not in $IdentityReference; need to remove
+        $RemoveIdentities = $DiffIdentities | Where-Object { $_.SideIndicator -eq "=>" } | ForEach-Object { $_.InputObject }
+
+        # Identity in $IdentityReference but not in ACL; need to add
+        $AddIdentities = $DiffIdentities | Where-Object { $_.SideIndicator -eq "<=" } | ForEach-Object { $_.InputObject }
+
+        # Remove rules for identity references not present in $IdentityReference
+        foreach ($Rule in $Acl.Access)
+        {
+            $Identity = $Rule.IdentityReference.Value
+
+            if ($Identity -in $RemoveIdentities)
+            {
+                Write-Verbose "Identity is NOT VALID, removing rule:"
+                Write-Verbose "*    Rule Identity: $Identity"
+                $Acl.RemoveAccessRule($Rule)
+            }
+        }
+
+        # Add rules for identity references in $IdentityReference that are missing from the ACL
+        foreach ($Identity in $AddIdentities)
+        {
+            Write-Verbose "Adding missing access rule to ACL:"
+            Write-Verbose "*    Rule Identity: $Identity"
+            $Acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+                $Identity,
+                $FileSystemRights,
+                $InheritanceFlags,
+                $PropagationFlags,
+                $AccessControlType
+            )))
+        }
+
+        # Output the new ACL
+        Write-Verbose ($Acl.Access | Out-String)
+        Write-Output $Acl
+    }
+}
