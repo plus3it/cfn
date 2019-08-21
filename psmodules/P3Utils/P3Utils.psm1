@@ -213,3 +213,72 @@ function global:Edit-AclIdentityReference {
         Write-Output $Acl
     }
 }
+
+function global:Get-File {
+    Param (
+        [Parameter(Mandatory=$true)]
+        [System.URI]
+        $Source,
+
+        [Parameter(Mandatory=$true)]
+        [System.IO.FileInfo]
+        $Destination,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateSet("Ssl3","SystemDefault","Tls","Tls11","Tls12")]
+        [String]
+        $SecurityProtocol = "Tls12",
+
+        [Parameter(Mandatory=$false)]
+        [Switch]
+        $MakeDir,
+
+        [Parameter(Mandatory=$false)]
+        [Switch]
+        $OverWrite
+    )
+    try {
+        $ResolvedDestination = [System.IO.FileInfo]$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Destination)
+        $TempFile = New-TemporaryFile
+
+        Write-Verbose "Retrieving file:"
+        Write-Verbose "*    Source: ${Source}"
+        Write-Verbose "*    Destination: ${ResolvedDestination}"
+        Write-Verbose "*    Temporary Destination: ${TempFile}"
+
+        try
+        {
+            Write-Verbose "Attempting to retrieve file using .NET method..."
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::$SecurityProtocol
+            (New-Object Net.WebClient).DownloadFile("$Source","$TempFile")
+        }
+        catch
+        {
+            try
+            {
+                Write-Verbose $PSItem.ToString()
+                Write-Verbose ".NET method failed, attempting BITS transfer method..."
+                Start-BitsTransfer -Source $Source -Destination $TempFile -ErrorAction Stop
+            }
+            catch
+            {
+                Write-Verbose $PSItem.ToString()
+                $PSCmdlet.ThrowTerminatingError($PSItem)
+            }
+        }
+
+        If (-not $ResolvedDestination.Directory.Exists -and $MakeDir) {
+            $null = New-Item -Path $ResolvedDestination.Directory -ItemType Directory
+        }
+
+        Move-Item $TempFile $ResolvedDestination -Force:$OverWrite -ErrorAction Stop
+        Write-Output (Get-ChildItem $ResolvedDestination)
+    }
+    finally
+    {
+        if (Test-Path $TempFile)
+        {
+            Remove-Item -Path $TempFile -Force
+        }
+    }
+}
