@@ -392,22 +392,118 @@ Resources:
       'AWS::CloudFormation::Init':
         cfnsetup:
           commands:
-            a-set-execution-policy:
+            00-get-p3utils-psd1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psd1
+                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psd1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            01-get-p3utils-psm1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psm1
+                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psm1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            02-get-p3remoteaccess-psd1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3RemoteAccess/P3RemoteAccess.psd1
+                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psd1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            03-get-p3remoteaccess-psm1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3RemoteAccess/P3RemoteAccess.psm1
+                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psm1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            04-get-configure-ebsbackups-ps1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-ebsbackups.ps1
+                  -Destination 'c:\cfn\scripts\configure-ebsbackups.ps1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            05-get-snap-by-group-ebsbackups-ps1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapByCgroup.ps1
+                  -Destination 'c:\cfn\scripts\snap-by-group.ps1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            06-get-snap-maintenance-ps1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapMaint.ps1
+                  -Destination 'c:\cfn\scripts\snap-maintenance.ps1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            07-get-unzip-archive-ps1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/scripts/unzip-archive.ps1
+                  -Destination 'c:\cfn\scripts\unzip-archive.ps1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            50-set-execution-policy:
               command: powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force
               waitAfterCompletion: '0'
-            b-online-disks:
+            51-online-disks:
               command: powershell.exe "foreach ($disk in (Get-CimInstance -ClassName Win32_DiskDrive)) { Set-Disk -Number $disk.Index -IsOffline $false }"
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
-            c-initialize-disks:
+            52-initialize-disks:
               command: powershell.exe C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeDisks.ps1
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
-            d-extend-disks:
+            53-extend-disks:
               command: 'powershell.exe c:\cfn\scripts\extend-volumes.ps1 -verbose'
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
-            e-unzip-pstools:
+            54-unzip-pstools:
               command: powershell.exe c:\cfn\scripts\unzip-archive.ps1 c:\cfn\files\pstools.zip c:\cfn\files\pstools
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
@@ -431,8 +527,6 @@ Resources:
                 - InitUpdate: !Sub
                     - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
                     - Command: !FindInMap [CfnUtilsMap, Init, Update]
-            'c:\cfn\scripts\configure-ebsbackups.ps1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-ebsbackups.ps1
             'c:\cfn\scripts\configure-fileshares.ps1':
               source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-fileshares.ps1
             'c:\cfn\scripts\configure-rdcb.ps1':
@@ -453,12 +547,6 @@ Resources:
                     Write-Verbose "No change to disk $($disk.Number) partition 1"
                   }
                 }
-            'c:\cfn\scripts\snap-by-group.ps1':
-              source: https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapByCgroup.ps1
-            'c:\cfn\scripts\snap-maintenance.ps1':
-              source: https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapMaint.ps1
-            'c:\cfn\scripts\unzip-archive.ps1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/unzip-archive.ps1
           services:
             windows:
               cfn-hup:
