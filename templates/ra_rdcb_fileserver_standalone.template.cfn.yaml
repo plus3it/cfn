@@ -488,6 +488,18 @@ Resources:
                   SignalFailure: !Sub
                     - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+            08-get-cleanup-rdcb-ps1:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "
+                  Get-File
+                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/scripts/cleanup-rdcb.ps1
+                  -Destination 'c:\cfn\scripts\cleanup-rdcb.ps1'
+                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
             50-set-execution-policy:
               command: powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force
               waitAfterCompletion: '0'
@@ -630,6 +642,31 @@ Resources:
                   -GroupName '${DomainAccessUserGroup}'
                   -Verbose -ErrorAction Stop || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  SignalFailure: !Sub
+                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
+                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
+              waitAfterCompletion: '0'
+        configure-rdcb-cleanup:
+          commands:
+            20-configure-rdcb:
+              command: !Sub
+                - >-
+                  ${PowershellCommand} -Command "${PsExecCommand}
+                  -u \"${DomainNetbiosName}\$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username)\"
+                  -p \"$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
+                  ${PowershellCommand} -Command
+                  \"New-RepeatingTask
+                  -Name 'RDCB Cleanup'
+                  -Command 'powershell.exe'
+                  -Arguments 'C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$'
+                  -User (Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username
+                  -SecurePassword ((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password ^| ConvertTo-SecureString -AsPlainText -Force)
+                  -StartTime (Get-Date -Hour 20 -Minute 0 -Second 0).AddDays(1)
+                  -RepetitionInterval (New-TimeSpan -Hours 24))
+                  \"
+                  -Verbose -ErrorAction Stop" || ${SignalFailure}
+                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
+                  PsExecCommand: !FindInMap [ShellCommandMap, psexec, command]
                   SignalFailure: !Sub
                     - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
