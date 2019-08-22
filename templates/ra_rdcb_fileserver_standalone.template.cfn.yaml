@@ -487,11 +487,13 @@ Resources:
               - !Ref "AWS::NoValue"
             - configure-admins
             - configure-rdcb
+            - configure-rdcb-cleanup
             - reboot
             - finalize
           update:
             - ps-modules
             - cfnsetup
+            - configure-rdcb-cleanup
             - finalize
         configure-admins:
           commands:
@@ -553,7 +555,7 @@ Resources:
               waitAfterCompletion: '0'
         configure-rdcb-cleanup:
           commands:
-            20-configure-rdcb:
+            20-rdcb-cleanup:
               command: !Sub
                 - >-
                   ${PowershellCommand} -Command "${PsExecCommand}
