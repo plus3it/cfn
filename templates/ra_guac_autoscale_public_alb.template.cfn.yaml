@@ -180,6 +180,11 @@ Parameters:
   PublicSubnetIDs:
     Description: A list of Public subnet IDs to attach to the Application Load Balancer
     Type: 'List<AWS::EC2::Subnet::Id>'
+  RepoBranchPrefixUrl:
+    Description: URL prefix where the repo scripts can be retrieved
+    Default: https://raw.githubusercontent.com/plus3it/cfn/master
+    Type: String
+    AllowedPattern: '^https:/.*'
   ScaleDownDesiredCapacity:
     Default: '1'
     Description: (Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset
@@ -563,7 +568,7 @@ Resources:
               group: root
               mode: '000700'
               owner: root
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/make-guac.sh
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/make-guac.sh
           services:
             sysvinit:
               cfn-hup:

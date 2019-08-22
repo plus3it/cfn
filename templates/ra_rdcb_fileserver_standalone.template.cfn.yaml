@@ -193,6 +193,11 @@ Parameters:
     AllowedPattern: '^$|.*[@].*'
     Description: (Optional) Email address to subscribe to notifications and alarms
     Type: String
+  RepoBranchPrefixUrl:
+    Description: URL prefix where the repo scripts can be retrieved
+    Default: https://raw.githubusercontent.com/plus3it/cfn/master
+    Type: String
+    AllowedPattern: '^https:/.*'
   SnapshotFrequency:
     Description: '(Optional) Specify an interval in minutes to configure snapshots of the EBS fileshare volume. Set an empty value "" to skip configuring snapshots. Default interval is 60 minutes.'
     Default: '60'
@@ -397,7 +402,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psd1
+                  -Source ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psd1
                   -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psd1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -409,7 +414,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psm1
+                  -Source ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psm1
                   -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psm1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -421,7 +426,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3RemoteAccess/P3RemoteAccess.psd1
+                  -Source ${RepoBranchPrefixUrl}/psmodules/P3RemoteAccess/P3RemoteAccess.psd1
                   -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psd1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -433,7 +438,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3RemoteAccess/P3RemoteAccess.psm1
+                  -Source ${RepoBranchPrefixUrl}/psmodules/P3RemoteAccess/P3RemoteAccess.psm1
                   -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psm1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -445,7 +450,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-ebsbackups.ps1
+                  -Source ${RepoBranchPrefixUrl}/scripts/configure-ebsbackups.ps1
                   -Destination 'c:\cfn\scripts\configure-ebsbackups.ps1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -481,7 +486,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/scripts/unzip-archive.ps1
+                  -Source ${RepoBranchPrefixUrl}/scripts/unzip-archive.ps1
                   -Destination 'c:\cfn\scripts\unzip-archive.ps1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -493,7 +498,7 @@ Resources:
                 - >-
                   ${PowershellCommand} -Command "
                   Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/cfn/master/scripts/cleanup-rdcb.ps1
+                  -Source ${RepoBranchPrefixUrl}/scripts/cleanup-rdcb.ps1
                   -Destination 'c:\cfn\scripts\cleanup-rdcb.ps1'
                   -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
@@ -540,9 +545,9 @@ Resources:
                     - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
                     - Command: !FindInMap [CfnUtilsMap, Init, Update]
             'c:\cfn\scripts\configure-fileshares.ps1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-fileshares.ps1
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/configure-fileshares.ps1
             'c:\cfn\scripts\configure-rdcb.ps1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdcb.ps1
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/configure-rdcb.ps1
             'c:\cfn\scripts\extend-volumes.ps1':
               content: |
                 [CmdLetBinding()]
@@ -822,9 +827,9 @@ Resources:
         ps-modules:
           files:
             'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psd1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psd1
+              source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psd1
             'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psm1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psm1
+              source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psm1
         reboot:
           commands:
             10-reboot:
