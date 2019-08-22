@@ -397,123 +397,6 @@ Resources:
       'AWS::CloudFormation::Init':
         cfnsetup:
           commands:
-            00-get-p3utils-psd1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psd1
-                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psd1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            01-get-p3utils-psm1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psm1
-                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psm1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            02-get-p3remoteaccess-psd1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/psmodules/P3RemoteAccess/P3RemoteAccess.psd1
-                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psd1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            03-get-p3remoteaccess-psm1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/psmodules/P3RemoteAccess/P3RemoteAccess.psm1
-                  -Destination 'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psm1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            04-get-configure-ebsbackups-ps1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/scripts/configure-ebsbackups.ps1
-                  -Destination 'c:\cfn\scripts\configure-ebsbackups.ps1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            05-get-snap-by-group-ebsbackups-ps1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapByCgroup.ps1
-                  -Destination 'c:\cfn\scripts\snap-by-group.ps1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            06-get-snap-maintenance-ps1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapMaint.ps1
-                  -Destination 'c:\cfn\scripts\snap-maintenance.ps1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            07-get-unzip-archive-ps1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/scripts/unzip-archive.ps1
-                  -Destination 'c:\cfn\scripts\unzip-archive.ps1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
-            08-get-cleanup-rdcb-ps1:
-              command: !Sub
-                - >-
-                  ${PowershellCommand} -Command "Import-Module P3Utils;
-                  $null = Get-File
-                  -Source ${RepoBranchPrefixUrl}/scripts/cleanup-rdcb.ps1
-                  -Destination 'c:\cfn\scripts\cleanup-rdcb.ps1'
-                  -MakeDir -OverWrite -Verbose -ErrorAction Stop" || ${SignalFailure}
-                - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
-                  SignalFailure: !Sub
-                    - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
-                    - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
-              waitAfterCompletion: '0'
             50-set-execution-policy:
               command: powershell.exe -command Set-ExecutionPolicy RemoteSigned -Force
               waitAfterCompletion: '0'
@@ -553,10 +436,18 @@ Resources:
                 - InitUpdate: !Sub
                     - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
                     - Command: !FindInMap [CfnUtilsMap, Init, Update]
+            'c:\cfn\scripts\unzip-archive.ps1':
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/unzip-archive.ps1
+            'c:\cfn\scripts\configure-ebsbackups.ps1':
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/configure-ebsbackups.ps1
             'c:\cfn\scripts\configure-fileshares.ps1':
               source: !Sub ${RepoBranchPrefixUrl}/scripts/configure-fileshares.ps1
             'c:\cfn\scripts\configure-rdcb.ps1':
               source: !Sub ${RepoBranchPrefixUrl}/scripts/configure-rdcb.ps1
+            'c:\cfn\scripts\snap-by-group.ps1':
+              source: https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapByCgroup.ps1
+            'c:\cfn\scripts\snap-maintenance.ps1':
+              source: https://raw.githubusercontent.com/plus3it/WinEBSbackups/master/SnapMaint.ps1
             'c:\cfn\scripts\extend-volumes.ps1':
               content: |
                 [CmdLetBinding()]
@@ -685,6 +576,9 @@ Resources:
                     - (${Command} --stack ${AWS::StackName} --region ${AWS::Region} && exit /b 1)
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
+          files:
+            'c:\cfn\scripts\cleanup-rdcb.ps1':
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/cleanup-rdcb.ps1
         configure-rdcb:
           commands:
             20-configure-rdcb:
