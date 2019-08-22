@@ -272,6 +272,7 @@ function global:Get-File {
         }
 
         Move-Item $TempFile $ResolvedDestination -Force:$OverWrite -ErrorAction Stop
+        Write-Verbose "Retrieved file successfully!"
         Write-Output (Get-ChildItem $ResolvedDestination)
     }
     finally
