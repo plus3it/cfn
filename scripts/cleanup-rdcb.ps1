@@ -8,6 +8,10 @@ Param(
     [String]
     $UpdPath,
 
+    [Parameter(Mandatory=$true)]
+    [String]
+    $DomainNetbiosName,
+
     [Parameter(Mandatory=$false)]
     [String]
     $ConnectionBroker = [System.Net.DNS]::GetHostByName('').HostName,
@@ -27,7 +31,7 @@ $Acl = Get-Acl $UpdPath -ErrorAction Stop
 
 $IdentityReferences = @()
 if ($TestedSessionHosts.ValidComputers) {
-    $IdentityReferences = $TestedSessionHosts.ValidComputers | ForEach-Object { "${DomainNetBiosName}\{0}$" -f $_.Split(".")[0] }
+    $IdentityReferences = $TestedSessionHosts.ValidComputers | ForEach-Object { "${DomainNetbiosName}\{0}$" -f $_.Split(".")[0] }
 }
 
 $ValidAcl = Edit-AclIdentityReference -Acl $Acl -IdentityReference $IdentityReferences -Verbose:$VerbosePreference

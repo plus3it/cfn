@@ -581,7 +581,7 @@ Resources:
                 New-RepeatingTask `
                   -Name 'RDCB Cleanup' `
                   -Command 'cmd' `
-                  -Arguments '/c powershell.exe C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$ -Verbose -ErrorAction Stop >> c:\cfn\log\cleanup-rdcb.log 2>&1' `
+                  -Arguments '/c powershell.exe C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$ -DomainNetbiosName ${DomainNetbiosName} -Verbose -ErrorAction Stop >> c:\cfn\log\cleanup-rdcb.log 2>&1' `
                   -User $Credential.Username `
                   -SecurePassword ($Credential.Password | ConvertTo-SecureString -AsPlainText -Force) `
                   -StartTime (Get-Date -Hour 20 -Minute 0 -Second 0).AddDays(1) `
