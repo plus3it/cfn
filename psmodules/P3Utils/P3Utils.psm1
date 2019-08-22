@@ -190,7 +190,7 @@ function global:Edit-AclIdentityReference {
             {
                 Write-Verbose "Identity is NOT VALID, removing rule:"
                 Write-Verbose "*    Rule Identity: $Identity"
-                $Acl.RemoveAccessRule($Rule)
+                $null = $Acl.RemoveAccessRule($Rule)
             }
         }
 
@@ -199,7 +199,7 @@ function global:Edit-AclIdentityReference {
         {
             Write-Verbose "Adding missing access rule to ACL:"
             Write-Verbose "*    Rule Identity: $Identity"
-            $Acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $null = $Acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
                 $Identity,
                 $FileSystemRights,
                 $InheritanceFlags,
