@@ -561,16 +561,7 @@ Resources:
                   ${PowershellCommand} -Command "${PsExecCommand}
                   -u \"${DomainNetbiosName}\$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username)\"
                   -p \"$((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password)\"
-                  ${PowershellCommand} -Command
-                  \"New-RepeatingTask
-                  -Name 'RDCB Cleanup'
-                  -Command 'powershell.exe'
-                  -Arguments 'C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$'
-                  -User (Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}' }).Value).Username
-                  -SecurePassword ((Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters ^| ? {$_.Name -eq '${SsmRdcbCredential}'}).Value).Password ^| ConvertTo-SecureString -AsPlainText -Force)
-                  -StartTime (Get-Date -Hour 20 -Minute 0 -Second 0).AddDays(1)
-                  -RepetitionInterval (New-TimeSpan -Hours 24))
-                  \"
+                  ${PowershellCommand} c:\cfn\scripts\cleanup-rdcb-schedule.ps1
                   -Verbose -ErrorAction Stop" || ${SignalFailure}
                 - PowershellCommand: !FindInMap [ShellCommandMap, powershell, command]
                   PsExecCommand: !FindInMap [ShellCommandMap, psexec, command]
@@ -581,6 +572,21 @@ Resources:
           files:
             'c:\cfn\scripts\cleanup-rdcb.ps1':
               source: !Sub ${RepoBranchPrefixUrl}/scripts/cleanup-rdcb.ps1
+          files:
+            'c:\cfn\scripts\cleanup-rdcb-schedule.ps1':
+              content: !Sub |
+                [CmdLetBinding()]
+                Param()
+                Import-Module P3Utils
+                $Credential = Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters | ? {$_.Name -eq '${SsmRdcbCredential}' }).Value
+                New-RepeatingTask `
+                  -Name 'RDCB Cleanup' `
+                  -Command 'powershell.exe' `
+                  -Arguments 'C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$' `
+                  -User $Credential.Username `
+                  -SecurePassword ($Credential.Password | ConvertTo-SecureString -AsPlainText -Force) `
+                  -StartTime (Get-Date -Hour 20 -Minute 0 -Second 0).AddDays(1) `
+                  -RepetitionInterval (New-TimeSpan -Hours 24)
         configure-rdcb:
           commands:
             20-configure-rdcb:
