@@ -492,6 +492,7 @@ Resources:
             - finalize
           update:
             - ps-modules
+            - install-cloudwatch-agent
             - cfnsetup
             - configure-rdcb-cleanup
             - finalize
@@ -720,6 +721,13 @@ Resources:
                     }
                   }
                 - local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref InstanceLogGroup, !Ref 'AWS::NoValue']
+          services:
+            windows:
+              AmazonCloudWatchAgent:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - 'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json'
         install-roles:
           commands:
             10-install-roles:
