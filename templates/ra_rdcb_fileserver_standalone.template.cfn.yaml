@@ -109,9 +109,9 @@ Parameters:
     Description: Search pattern to match against an AMI Name
     Type: String
   CloudWatchAgentUrl:
-    AllowedPattern: '^$|^s3://.*\.msi$'
+    AllowedPattern: '^$|^https://.*\.msi$'
     Default: ''
-    Description: '(Optional) S3 URL to CloudWatch Agent MSI. Example: s3://amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi'
+    Description: '(Optional) S3 URL to CloudWatch Agent MSI. Example: https://s3.amazonaws.com/amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi'
     Type: String
   DataVolumeSize:
     Default: '5'
@@ -270,10 +270,6 @@ Resources:
             Effect: Allow
             Resource: '*'
             Sid: AllowRestrictedSnapshotActions
-          - Action:
-              - 's3:GetObject'
-            Effect: Allow
-            Resource: 'arn:aws:s3:::amazoncloudwatch-agent/*'
           - Action:
               - 'ec2:CreateSnapshot'
               - 'ec2:DeleteSnapshot'
@@ -618,20 +614,14 @@ Resources:
               waitAfterCompletion: '0'
         install-cloudwatch-agent:
           commands:
-            10-install-cloudwatch-agent:
+            10-configure-cloudwatch-agent:
               command: !Sub
                 - >-
                   ${PowershellCommand} -Command "
                   Invoke-Command -ScriptBlock {
                   $ErrorActionPreference = 'Stop';
                   Import-Module P3Utils;
-                  $CloudWatchAgentUri = [System.Uri]'${CloudWatchAgentUrl}';
-                  $CloudWatchAgentScriptDir = 'c:\cfn\scripts\AmazonCloudWatchAgent';
-                  $CloudWatchAgentInstaller = Join-Path $CloudWatchAgentScriptDir $CloudWatchAgentUri.Segments[($CloudWatchAgentUri.Segments.Length-1)];
-                  $Null = New-Item $CloudWatchAgentScriptDir -Type Directory -Force;
-                  Read-S3Object -BucketName $CloudWatchAgentUri.Host -Key ($CloudWatchAgentUri.Segments[1..($CloudWatchAgentUri.Segments.Length-1)] -Join '') -File $CloudWatchAgentInstaller -Region ${AWS::Region};
-                  $CloudWatchAgentConfig = $CloudWatchAgentScriptDir + '\aws-cloudwatch-agent-config.json';
-                  Invoke-RetryCommand -Command Start-Process -ArgList @{ FilePath='msiexec.exe'; ArgumentList = @('/i', $CloudWatchAgentInstaller, '/qn'); NoNewWindow = $true; PassThru = $true; Wait = $true } -CheckExpression '$Return.Result.ExitCode -eq 0' -InitialDelay 17 -MaxDelay 59 -Verbose;
+                  $CloudWatchAgentConfig = 'c:\cfn\files\aws-cloudwatch-agent-config.json';
                   $CloudWatchAgentCtl = \"${!Env:ProgramFiles}\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1\";
                   & $CloudWatchAgentCtl -Action cond-restart;
                   & $CloudWatchAgentCtl -a fetch-config -m ec2 -c file:$CloudWatchAgentConfig -s;
@@ -643,7 +633,7 @@ Resources:
                     - Command: !FindInMap [CfnUtilsMap, Signal, Failure]
               waitAfterCompletion: '0'
           files:
-            'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json':
+            'c:\cfn\files\aws-cloudwatch-agent-config.json':
               content: !Sub
                 - |-
                   {
@@ -721,13 +711,16 @@ Resources:
                     }
                   }
                 - local_InstanceLogGroup: !If [InstallCloudWatchAgent, !Ref InstanceLogGroup, !Ref 'AWS::NoValue']
+          packages:
+            msi:
+              cloudwatch-agent: !Ref CloudWatchAgentUrl
           services:
             windows:
               AmazonCloudWatchAgent:
                 enabled: 'true'
                 ensureRunning: 'true'
                 files:
-                  - 'c:\cfn\scripts\AmazonCloudWatchAgent\aws-cloudwatch-agent-config.json'
+                  - 'c:\cfn\files\aws-cloudwatch-agent-config.json'
         install-roles:
           commands:
             10-install-roles:
