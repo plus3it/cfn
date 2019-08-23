@@ -667,6 +667,12 @@ Resources:
                               "log_group_name": "${local_InstanceLogGroup}",
                               "log_stream_name": "{instance_id}//c/cfn/log/cfn-init-cmd.log",
                               "timestamp_format": "%H:%M:%S %y %b %-d"
+                            },
+                            {
+                              "file_path": "c:\\cfn\\log\\cleanup-rdcb.log",
+                              "log_group_name": "${local_InstanceLogGroup}",
+                              "log_stream_name": "{instance_id}//c/cfn/log/cleanup-rdcb.log",
+                              "timestamp_format": "%H:%M:%S %y %b %-d"
                             }
                           ]
                         },
