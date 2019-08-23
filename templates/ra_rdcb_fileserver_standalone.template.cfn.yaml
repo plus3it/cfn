@@ -572,6 +572,8 @@ Resources:
           files:
             'c:\cfn\scripts\cleanup-rdcb.ps1':
               source: !Sub ${RepoBranchPrefixUrl}/scripts/cleanup-rdcb.ps1
+            'c:\cfn\scripts\logit.cmd':
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/logit.cmd
             'c:\cfn\scripts\cleanup-rdcb-schedule.ps1':
               content: !Sub |
                 [CmdLetBinding()]
@@ -580,8 +582,8 @@ Resources:
                 $Credential = Invoke-Expression ((Get-SSMParameterValue -Name '${SsmRdcbCredential}' -WithDecryption $true).Parameters | ? {$_.Name -eq '${SsmRdcbCredential}' }).Value
                 New-RepeatingTask `
                   -Name 'RDCB Cleanup' `
-                  -Command 'cmd' `
-                  -Arguments '/c powershell.exe C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$ -DomainNetbiosName ${DomainNetbiosName} -Verbose -ErrorAction Stop >> c:\cfn\log\cleanup-rdcb.log 2>&1' `
+                  -Command 'c:\cfn\scripts\logit.cmd' `
+                  -Arguments 'powershell.exe C:\cfn\scripts\cleanup-rdcb.ps1 -UpdPath D:\Shares\Profiles$ -DomainNetbiosName ${DomainNetbiosName} -Verbose -ErrorAction Stop >> c:\cfn\log\cleanup-rdcb.log 2>&1' `
                   -User $Credential.Username `
                   -SecurePassword ($Credential.Password | ConvertTo-SecureString -AsPlainText -Force) `
                   -StartTime (Get-Date -Hour 20 -Minute 0 -Second 0).AddDays(1) `
