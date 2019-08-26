@@ -129,7 +129,7 @@ $RequiredRoles = @(
 )
 
 # Create a lock before doing work on the connection broker (a shared resource)
-$LockFile = "${UpdPath}\configure-rdsh.lock"
+$LockFile = "${UpdPath}\cleanup-rdcb-${ConnectionBroker}.lock".ToLower()
 $Lock = $false
 
 # Get an exclusive lock on the lock file
