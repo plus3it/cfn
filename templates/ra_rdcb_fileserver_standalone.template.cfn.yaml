@@ -156,6 +156,13 @@ Parameters:
   ExtraSecurityGroupIds:
     Description: List of extra Security Group IDs to attach to the RDCB EC2 instance
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
+  ForceCfnInitUpdate:
+    AllowedValues:
+      - A
+      - B
+    Default: A
+    Description: Toggles a cfn-init metadata update even if nothing else changes
+    Type: String
   InstanceType:
     AllowedValues:
       - t2.micro
@@ -762,6 +769,7 @@ Resources:
               waitAfterCompletion: forever
       CfnUpdateTriggers:
         EbsVolumeSize: !Ref DataVolumeSize
+        ForceCfnInitUpdate: !Ref ForceCfnInitUpdate
     Properties:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
