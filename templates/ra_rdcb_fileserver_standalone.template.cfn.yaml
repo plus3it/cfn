@@ -757,6 +757,10 @@ Resources:
               source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psd1
             'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psm1':
               source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psm1
+            'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psd1':
+              source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3RemoteAccess/P3RemoteAccess.psd1
+            'C:\Program Files\WindowsPowerShell\Modules\P3RemoteAccess\P3RemoteAccess.psm1':
+              source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3RemoteAccess/P3RemoteAccess.psm1
         reboot:
           commands:
             10-reboot:
