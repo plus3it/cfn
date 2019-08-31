@@ -4,7 +4,6 @@ function global:Update-RDMS {
     Process{
         Write-Debug "Starting Update-RDMS"
         Write-Debug "Import RDS cmdlets"
-        Import-Module RemoteDesktop
         $ConnectionBrokers = Get-RDServer | Where-Object {$_.Roles -contains "RDS-CONNECTION-BROKER"}
         $ServerManagerXML = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\ServerManager\Serverlist.xml"
                 Write-Debug "Find active Connection Broker"
@@ -58,4 +57,30 @@ function global:Update-RDMS {
         }
     }
     End{}
+}
+
+function global:Clear-RDSessionHost {
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeLine=$true)]
+        [Microsoft.RemoteDesktopServices.Management.RDServer[]]
+        $SessionHost,
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $ConnectionBroker = [System.Net.DNS]::GetHostByName('').HostName
+    )
+    BEGIN {
+        $Role = "RDS-RD-SERVER"
+    }
+    PROCESS {
+        ForEach ($instance in $SessionHost)
+        {
+            Write-Verbose "Removing RD Session Host, $($instance.SessionHost), from the collection, ${CollectionName}..."
+            Remove-RDSessionHost -SessionHost $instance.SessionHost -ConnectionBroker $ConnectionBroker -Force
+
+            Write-Verbose "Removing ${Role} role from $($instance.SessionHost)..."
+            Remove-RDServer -Role $Role -Server $instance.SessionHost -ConnectionBroker $ConnectionBroker -Force
+        }
+    }
+    END {}
 }

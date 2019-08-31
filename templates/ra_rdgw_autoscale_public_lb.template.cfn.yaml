@@ -90,7 +90,7 @@ Metadata:
         default: AMI Name Search Pattern
       ScaleDownDesiredCapacity:
         default: Scale Down Desired Capacity
-  Version: 0.3.6
+  Version: 0.4.0
   cfn-lint:
     config:
       ignore_checks:
@@ -210,6 +210,11 @@ Parameters:
     Description: Domain group of users authorized to use the RDGW
     MinLength: '1'
     Type: String
+  RepoBranchPrefixUrl:
+    Description: URL prefix where the repo scripts can be retrieved
+    Default: https://raw.githubusercontent.com/plus3it/cfn/master
+    Type: String
+    AllowedPattern: '^https:/.*'
   ScaleDownDesiredCapacity:
     Default: '1'
     Description: (Optional) Desired number of instances during the Scale Down Scheduled Action; ignored if ScaleDownSchedule is unset
@@ -540,9 +545,9 @@ Resources:
         ps-modules:
           files:
             'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psd1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psd1
+              source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psd1
             'C:\Program Files\WindowsPowerShell\Modules\P3Utils\P3Utils.psm1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/psmodules/P3Utils/P3Utils.psm1
+              source: !Sub ${RepoBranchPrefixUrl}/psmodules/P3Utils/P3Utils.psm1
         setup:
           files:
             'c:\cfn\cfn-hup.conf':
@@ -561,7 +566,7 @@ Resources:
                     - ${Command} --stack ${AWS::StackName} --region ${AWS::Region}
                     - Command: !FindInMap [CfnUtilsMap, Init, Update]
             'c:\cfn\scripts\configure-rdgw.ps1':
-              source: https://raw.githubusercontent.com/plus3it/cfn/master/scripts/configure-rdgw.ps1
+              source: !Sub ${RepoBranchPrefixUrl}/scripts/configure-rdgw.ps1
           services:
             windows:
               cfn-hup:
