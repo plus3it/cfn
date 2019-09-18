@@ -1534,7 +1534,7 @@
                 "AllocatedStorage": {
                     "Ref": "RdsDbAllocatedStorage"
                 },
-                "BackupRetentionPeriod": "0",
+                "BackupRetentionPeriod": 0,
                 "DBInstanceClass": {
                     "Ref": "RdsDbClass"
                 },
