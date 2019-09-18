@@ -55,6 +55,7 @@ Metadata:
           - DataVolumeSnapshotId
           - DataVolumeSize
           - ExtraSecurityGroupIds
+          - PatchSchedule
       - Label:
           default: RDCB Application Configuration
         Parameters:
@@ -200,6 +201,10 @@ Parameters:
     AllowedPattern: '^$|.*[@].*'
     Description: (Optional) Email address to subscribe to notifications and alarms
     Type: String
+  PatchSchedule:
+    Description: (Optional) Email address to subscribe to notifications and alarms
+    Type: String
+    Default: cron(0 6 ? * Sat *)
   RepoBranchPrefixUrl:
     Description: URL prefix where the repo scripts can be retrieved
     Default: https://raw.githubusercontent.com/plus3it/cfn/master
@@ -803,6 +808,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+        - Key: Patch Group
+          Value: !Ref 'AWS::StackName'
       UserData:
         Fn::Base64: !Sub
           - |
@@ -849,3 +856,66 @@ Resources:
       Name: 'AWS::Include'
       Parameters:
         Location: s3://app-chemistry/snippets/ssm_cloudwatch_instance_memory_disk_c_d.snippet.cfn.yaml
+  PatchBaseline:
+    Type: AWS::SSM::PatchBaseline
+    Properties:
+      Name: !Ref 'AWS::StackName'
+      Description: !Sub Patch baseline for ${AWS::StackName}
+      OperatingSystem: WINDOWS
+      PatchGroups:
+        - !Ref 'AWS::StackName'
+      ApprovalRules:
+        PatchRules:
+          - PatchFilterGroup:
+              PatchFilters:
+                - Key: MSRC_SEVERITY
+                  Values:
+                    - Critical
+                    - Important
+                - Key: CLASSIFICATION
+                  Values:
+                    - SecurityUpdates
+                    - CriticalUpdates
+                - Key: PRODUCT
+                  Values:
+                    - WindowsServer2016
+            ApproveAfterDays: 7
+            ComplianceLevel: CRITICAL
+  MaintenanceWindow:
+    Type: AWS::SSM::MaintenanceWindow
+    Properties:
+      AllowUnassociatedTargets: false
+      Cutoff: 1
+      Description: !Sub 'Maintenance Window to patch ${AWS::StackName}'
+      Duration: 3
+      Name: !Ref 'AWS::StackName'
+      Schedule: !Ref PatchSchedule
+  MaintenanceWindowTask:
+    Type: AWS::SSM::MaintenanceWindowTask
+    Properties:
+      WindowId: !Ref MaintenanceWindow
+      Targets:
+        - Key: WindowTargetIds
+          Values:
+            - !Ref MaintenanceWindowTarget
+      TaskArn: AWS-ApplyPatchBaseline
+      TaskInvocationParameters:
+        MaintenanceWindowRunCommandParameters:
+          Parameters:
+            Operation:
+              - Install
+      TaskType: RUN_COMMAND
+      Priority: 1
+      MaxConcurrency: '5'
+      MaxErrors: '5'
+      Name: !Ref 'AWS::StackName'
+  MaintenanceWindowTarget:
+    Type: 'AWS::SSM::MaintenanceWindowTarget'
+    Properties:
+      WindowId: !Ref MaintenanceWindow
+      ResourceType: INSTANCE
+      Targets:
+        - Key: InstanceIds
+          Values:
+            - !Ref RdCbFileServerInstance
+      Name: !Ref 'AWS::StackName'
