@@ -27,14 +27,14 @@ Description: This template deploys a Connection Broker (master) and a file serve
 Mappings:
   InstanceTypeMap:
     'Fn::Transform':
-      Name: 'AWS::Include'
+      Name: AWS::Include
       Parameters:
-        Location: 's3://app-chemistry/snippets/instance_type_map.snippet.cfn.yaml'
+        Location: s3://app-chemistry/snippets/instance_type_map.snippet.cfn.yaml
   ShellCommandMap:
     'Fn::Transform':
-      Name: 'AWS::Include'
+      Name: AWS::Include
       Parameters:
-        Location: 's3://app-chemistry/snippets/shell_command_map.snippet.cfn.yaml'
+        Location: s3://app-chemistry/snippets/shell_command_map.snippet.cfn.yaml
   CfnUtilsMap:
     Init:
       Launch: cfn-init.exe -v -c launch --resource RdCbFileServerInstance
@@ -55,6 +55,8 @@ Metadata:
           - DataVolumeSnapshotId
           - DataVolumeSize
           - ExtraSecurityGroupIds
+          - PatchSchedule
+          - PatchSnsTopicArn
       - Label:
           default: RDCB Application Configuration
         Parameters:
@@ -82,7 +84,7 @@ Metadata:
     ParameterLabels:
       AmiNameSearchString:
         default: AMI Name Search Pattern
-  Version: 0.4.1
+  Version: 0.5.0
   cfn-lint:
     config:
       ignore_checks:
@@ -102,14 +104,14 @@ Outputs:
 Parameters:
   AmiId:
     Default: ''
-    Description: '(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString'
+    Description: (Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString
     Type: String
   AmiNameSearchString:
     Default: Windows_Server-2016-English-Full-Base-*
     Description: Search pattern to match against an AMI Name
     Type: String
   CloudWatchAgentUrl:
-    AllowedPattern: '^$|^https://.*\.msi$'
+    AllowedPattern: ^$|^https://.*\.msi$
     Default: ''
     Description: '(Optional) S3 URL to CloudWatch Agent MSI. Example: https://s3.amazonaws.com/amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi'
     Type: String
@@ -120,9 +122,9 @@ Parameters:
     MinValue: '1'
     Type: Number
   DataVolumeSnapshotId:
-    AllowedPattern: '^$|snap-[a-zA-Z0-9]{8}|snap-[a-zA-Z0-9]{17}'
+    AllowedPattern: ^$|snap-[a-zA-Z0-9]{8}|snap-[a-zA-Z0-9]{17}
     Default: ''
-    Description: '(Optional) Snapshot ID of an existing EBS volume. Leave blank to instantiate an empty volume'
+    Description: (Optional) Snapshot ID of an existing EBS volume. Leave blank to instantiate an empty volume
     Type: String
   DomainAccessUserGroup:
     Default: Domain Users
@@ -130,8 +132,8 @@ Parameters:
     MinLength: '1'
     Type: String
   DomainDirectoryId:
-    AllowedPattern: 'd-[a-zA-Z0-9]{10}'
-    Description: 'ID of the AWS Directory Service domain, e.g. d-xxxxxxxxxx'
+    AllowedPattern: d-[a-zA-Z0-9]{10}
+    Description: ID of the AWS Directory Service domain, e.g. d-xxxxxxxxxx
     Type: String
   DomainDnsName:
     AllowedPattern: '[a-zA-Z0-9-]+\..+'
@@ -149,13 +151,13 @@ Parameters:
     Type: String
   Ec2SubnetAz:
     Description: Availability zone of the private subnet
-    Type: 'AWS::EC2::AvailabilityZone::Name'
+    Type: AWS::EC2::AvailabilityZone::Name
   Ec2SubnetId:
     Description: Private Subnet ID where the file server will run
-    Type: 'AWS::EC2::Subnet::Id'
+    Type: AWS::EC2::Subnet::Id
   ExtraSecurityGroupIds:
     Description: List of extra Security Group IDs to attach to the RDCB EC2 instance
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Type: List<AWS::EC2::SecurityGroup::Id>
   ForceCfnInitUpdate:
     AllowedValues:
       - A
@@ -188,7 +190,7 @@ Parameters:
     Type: String
   KeyPairName:
     Description: Public/private key pairs allow you to securely connect to your instance after it launches
-    Type: 'AWS::EC2::KeyPair::KeyName'
+    Type: AWS::EC2::KeyPair::KeyName
   NoPublicIp:
     AllowedValues:
       - 'false'
@@ -197,39 +199,46 @@ Parameters:
     Description: Controls whether to assign the instances a public IP. Recommended to leave at "true" _unless_ launching in a public subnet
     Type: String
   NotificationEmail:
-    AllowedPattern: '^$|.*[@].*'
+    AllowedPattern: ^$|.*[@].*
     Description: (Optional) Email address to subscribe to notifications and alarms
+    Type: String
+  PatchSchedule:
+    Description: Schedule used to apply patches to the instance
+    Type: String
+    Default: cron(0 6 ? * Sat *)
+  PatchSnsTopicArn:
+    Description: SNS Topic used for patch status notifications
     Type: String
   RepoBranchPrefixUrl:
     Description: URL prefix where the repo scripts can be retrieved
     Default: https://raw.githubusercontent.com/plus3it/cfn/master
     Type: String
-    AllowedPattern: '^https:/.*'
+    AllowedPattern: ^https:/.*
   SnapshotFrequency:
-    Description: '(Optional) Specify an interval in minutes to configure snapshots of the EBS fileshare volume. Set an empty value "" to skip configuring snapshots. Default interval is 60 minutes.'
+    Description: (Optional) Specify an interval in minutes to configure snapshots of the EBS fileshare volume. Set an empty value "" to skip configuring snapshots. Default interval is 60 minutes.
     Default: '60'
     Type: String
   SsmKeyId:
-    AllowedPattern: '^[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}$'
+    AllowedPattern: ^[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}$
     Description: KMS Key ID used to encrypt/decrypt the SsmRdcbCredential
     Type: String
   SsmRdcbCredential:
-    AllowedPattern: '^(?!^([aA][wW][sS]|[sS][sS][mM]))(?=^[a-zA-Z0-9_./-]*$).*$'
+    AllowedPattern: ^(?!^([aA][wW][sS]|[sS][sS][mM]))(?=^[a-zA-Z0-9_./-]*$).*$
     Description: SSM Parameter Name for a SecureString containing the domain credential for the RDCB service account; SSM Parameter Value format is '@{Username = "<user>"; Password = "<password>"}'
     MaxLength: '1024'
     MinLength: '1'
     Type: String
   VpcId:
     Description: VPC ID
-    Type: 'AWS::EC2::VPC::Id'
+    Type: AWS::EC2::VPC::Id
 Resources:
   AmiIdLookup:
     Condition: UseAmiLookup
     Properties:
       AmiNameSearchString: !Ref AmiNameSearchString
-      Region: !Ref 'AWS::Region'
-      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-look-up-ami-ids'
-    Type: 'Custom::AmiIdLookup'
+      Region: !Ref AWS::Region
+      ServiceToken: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-look-up-ami-ids
+    Type: Custom::AmiIdLookup
   DataVolume:
     DeletionPolicy: Snapshot
     Properties:
@@ -238,23 +247,23 @@ Resources:
       SnapshotId: !If [UseVolumeSnapshot, !Ref DataVolumeSnapshotId, !Ref 'AWS::NoValue']
       Tags:
         - Key: Name
-          Value: !Ref 'AWS::StackName'
+          Value: !Ref AWS::StackName
         - Key: Consistency Group
           Value: BackupGroup01
       VolumeType: gp2
-    Type: 'AWS::EC2::Volume'
+    Type: AWS::EC2::Volume
   Ec2IamInstanceProfile:
     Properties:
       Path: /
       Roles:
         - !Ref Ec2IamRole
-    Type: 'AWS::IAM::InstanceProfile'
+    Type: AWS::IAM::InstanceProfile
   Ec2IamRole:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
           - Action:
-              - 'sts:AssumeRole'
+              - sts:AssumeRole
             Effect: Allow
             Principal:
               Service:
@@ -262,44 +271,44 @@ Resources:
                 - ssm.amazonaws.com
         Version: 2012-10-17
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
   Ec2IamRolePolicy:
     Properties:
       PolicyDocument:
         Statement:
           - Action:
-              - 'ec2:CreateTags'
+              - ec2:CreateTags
             Condition:
               StringLike:
-                'ec2:ParentVolume': !Sub 'arn:aws:ec2:${AWS::Region}:*:volume/${DataVolume}'
+                'ec2:ParentVolume': !Sub arn:aws:ec2:${AWS::Region}:*:volume/${DataVolume}
             Effect: Allow
             Resource: '*'
             Sid: AllowRestrictedSnapshotActions
           - Action:
-              - 'ec2:CreateSnapshot'
-              - 'ec2:DeleteSnapshot'
-              - 'ec2:DescribeSnapshots'
-              - 'ec2:DescribeVolumes'
+              - ec2:CreateSnapshot
+              - ec2:DeleteSnapshot
+              - ec2:DescribeSnapshots
+              - ec2:DescribeVolumes
             Effect: Allow
             Resource: '*'
             Sid: AllowSnapshotActions
           - Action:
-              - 'ssm:GetParameters'
+              - ssm:GetParameters
             Effect: Allow
-            Resource: !Sub 'arn:aws:ssm:*:*:parameter/${SsmRdcbCredential}'
+            Resource: !Sub arn:aws:ssm:*:*:parameter/${SsmRdcbCredential}
             Sid: AllowSsmGetParameters
           - Action:
-              - 'kms:Decrypt'
+              - kms:Decrypt
             Effect: Allow
-            Resource: !Sub 'arn:aws:kms:*:*:key/${SsmKeyId}'
+            Resource: !Sub arn:aws:kms:*:*:key/${SsmKeyId}
             Sid: AllowKmsDecrypt
         Version: 2012-10-17
-      PolicyName: !Sub 'rdcb-ec2-${AWS::StackName}'
+      PolicyName: !Sub rdcb-ec2-${AWS::StackName}
       Roles:
         - !Ref Ec2IamRole
-    Type: 'AWS::IAM::Policy'
+    Type: AWS::IAM::Policy
   Ec2LowDiskSpaceAlarm20C:
     Properties:
       AlarmActions:
@@ -315,7 +324,7 @@ Resources:
       Period: 60
       Statistic: Average
       Threshold: 20
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
   Ec2LowDiskSpaceAlarm20D:
     Properties:
       AlarmActions:
@@ -331,7 +340,7 @@ Resources:
       Period: 60
       Statistic: Average
       Threshold: 20
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
   Ec2LowDiskSpaceAlarm40C:
     Properties:
       AlarmActions:
@@ -347,7 +356,7 @@ Resources:
       Period: 60
       Statistic: Average
       Threshold: 40
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
   Ec2LowDiskSpaceAlarm40D:
     Properties:
       AlarmActions:
@@ -363,11 +372,11 @@ Resources:
       Period: 60
       Statistic: Average
       Threshold: 40
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
   Ec2RecoveryAlarm:
     Properties:
       AlarmActions:
-        - !Sub 'arn:aws:automate:${AWS::Region}:ec2:recover'
+        - !Sub arn:aws:automate:${AWS::Region}:ec2:recover
       AlarmDescription: Trigger a recovery when instance status check fails for 15 consecutive minutes
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
@@ -379,18 +388,18 @@ Resources:
       Period: 60
       Statistic: Minimum
       Threshold: 0
-    Type: 'AWS::CloudWatch::Alarm'
+    Type: AWS::CloudWatch::Alarm
   Ec2SelfIngressAll:
     Properties:
       GroupId: !Ref RdcbEc2SecurityGroup
       IpProtocol: '-1'
       SourceSecurityGroupId: !Ref RdcbEc2SecurityGroup
-    Type: 'AWS::EC2::SecurityGroupIngress'
+    Type: AWS::EC2::SecurityGroupIngress
   InstanceLogGroup:
     Condition: InstallCloudWatchAgent
     Properties:
-      LogGroupName: !Sub '/aws/ec2/win/${AWS::StackName}'
-    Type: 'AWS::Logs::LogGroup'
+      LogGroupName: !Sub /aws/ec2/win/${AWS::StackName}
+    Type: AWS::Logs::LogGroup
   RdCbFileServerInstance:
     CreationPolicy:
       ResourceSignal:
@@ -412,7 +421,7 @@ Resources:
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             53-extend-disks:
-              command: 'powershell.exe c:\cfn\scripts\extend-volumes.ps1 -verbose'
+              command: powershell.exe c:\cfn\scripts\extend-volumes.ps1 -verbose
               ignoreErrors: 'true'
               waitAfterCompletion: '0'
             54-unzip-pstools:
@@ -642,7 +651,7 @@ Resources:
           files:
             'c:\cfn\files\aws-cloudwatch-agent-config.json':
               content: !Sub
-                - |-
+                - |
                   {
                     "logs": {
                       "logs_collected" : {
@@ -727,7 +736,7 @@ Resources:
                 enabled: 'true'
                 ensureRunning: 'true'
                 files:
-                  - 'c:\cfn\files\aws-cloudwatch-agent-config.json'
+                  - c:\cfn\files\aws-cloudwatch-agent-config.json
         install-roles:
           commands:
             10-install-roles:
@@ -795,14 +804,16 @@ Resources:
           GroupSet: !Split
             - ','
             - !Sub
-              - '${RdcbEc2SecurityGroup},${local_ExtraSecurityGroupIds}'
+              - ${RdcbEc2SecurityGroup},${local_ExtraSecurityGroupIds}
               - local_ExtraSecurityGroupIds: !Join [',', !Ref ExtraSecurityGroupIds]
           SubnetId: !Ref Ec2SubnetId
       SsmAssociations:
-        - DocumentName: !Sub 'awsconfig_Domain_${DomainDirectoryId}_${DomainDnsName}'
+        - DocumentName: !Sub awsconfig_Domain_${DomainDirectoryId}_${DomainDnsName}
       Tags:
         - Key: Name
-          Value: !Ref 'AWS::StackName'
+          Value: !Ref AWS::StackName
+        - Key: Patch Group
+          Value: !Ref AWS::StackName
       UserData:
         Fn::Base64: !Sub
           - |
@@ -826,26 +837,185 @@ Resources:
       Volumes:
         - Device: /dev/xvdf
           VolumeId: !Ref DataVolume
-    Type: 'AWS::EC2::Instance'
+    Type: AWS::EC2::Instance
   RdcbEc2SecurityGroup:
     Properties:
       GroupDescription: Logical container for an RDCB EC2 instance
       Tags:
         - Key: Name
-          Value: !Sub 'rdcb-ec2-${AWS::StackName}'
+          Value: !Sub rdcb-ec2-${AWS::StackName}
       VpcId: !Ref VpcId
-    Type: 'AWS::EC2::SecurityGroup'
+    Type: AWS::EC2::SecurityGroup
   SnsSubscriptionEmail:
     Condition: CreateSnsSubscription
     Properties:
       Endpoint: !Ref NotificationEmail
       Protocol: email
       TopicArn: !Ref SnsTopic
-    Type: 'AWS::SNS::Subscription'
+    Type: AWS::SNS::Subscription
   SnsTopic:
-    Type: 'AWS::SNS::Topic'
+    Type: AWS::SNS::Topic
   SsmAssociationCloudWatchMetrics:
     'Fn::Transform':
-      Name: 'AWS::Include'
+      Name: AWS::Include
       Parameters:
         Location: s3://app-chemistry/snippets/ssm_cloudwatch_instance_memory_disk_c_d.snippet.cfn.yaml
+  PatchBaseline:
+    Properties:
+      ApprovalRules:
+        PatchRules:
+          - PatchFilterGroup:
+              PatchFilters:
+                - Key: MSRC_SEVERITY
+                  Values:
+                    - Critical
+                    - Important
+                - Key: CLASSIFICATION
+                  Values:
+                    - SecurityUpdates
+                    - CriticalUpdates
+                - Key: PRODUCT
+                  Values:
+                    - WindowsServer2016
+            ApproveAfterDays: 7
+            ComplianceLevel: CRITICAL
+      Description: !Sub Patch baseline for ${AWS::StackName}
+      Name: !Ref AWS::StackName
+      OperatingSystem: WINDOWS
+      PatchGroups:
+        - !Ref AWS::StackName
+    Type: AWS::SSM::PatchBaseline
+  MaintenanceWindow:
+    Properties:
+      AllowUnassociatedTargets: false
+      Cutoff: 1
+      Description: !Sub Maintenance Window to patch ${AWS::StackName}
+      Duration: 3
+      Name: !Ref AWS::StackName
+      Schedule: !Ref PatchSchedule
+    Type: AWS::SSM::MaintenanceWindow
+  MaintenanceWindowTask:
+    Properties:
+      MaxConcurrency: '5'
+      MaxErrors: '5'
+      Name: !Ref AWS::StackName
+      Priority: 1
+      ServiceRoleArn: !Sub ${MaintenanceWindowIamRole.Arn}
+      Targets:
+        - Key: WindowTargetIds
+          Values:
+            - !Ref MaintenanceWindowTarget
+      TaskArn: AWS-ApplyPatchBaseline
+      TaskInvocationParameters:
+        MaintenanceWindowRunCommandParameters:
+          NotificationConfig:
+            NotificationArn: !Ref PatchSnsTopicArn
+            NotificationEvents:
+              - All
+            NotificationType: Invocation
+          Parameters:
+            Operation:
+              - Install
+          ServiceRoleArn: !Sub ${MaintenanceWindowSnsIamRole.Arn}
+      TaskType: RUN_COMMAND
+      WindowId: !Ref MaintenanceWindow
+    Type: AWS::SSM::MaintenanceWindowTask
+  MaintenanceWindowTarget:
+    Properties:
+      Name: !Ref AWS::StackName
+      ResourceType: INSTANCE
+      Targets:
+        - Key: InstanceIds
+          Values:
+            - !Ref RdCbFileServerInstance
+      WindowId: !Ref MaintenanceWindow
+    Type: AWS::SSM::MaintenanceWindowTarget
+  MaintenanceWindowIamRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ssm.amazonaws.com
+        Version: 2012-10-17
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - ssm:CancelCommand
+                  - ssm:GetCommandInvocation
+                  - ssm:ListCommandInvocations
+                  - ssm:ListCommands
+                  - ssm:SendCommand
+                  - ssm:GetAutomationExecution
+                  - ssm:GetParameters
+                  - ssm:StartAutomationExecution
+                Effect: Allow
+                Resource:
+                  - '*'
+              - Action:
+                  - ec2:DescribeInstanceAttribute
+                  - ec2:DescribeInstanceStatus
+                  - ec2:DescribeInstances
+                Effect: Allow
+                Resource:
+                  - '*'
+              - Action:
+                  - lambda:InvokeFunction
+                Effect: Allow
+                Resource:
+                  - arn:aws:lambda:*:*:function:SSM*
+                  - arn:aws:lambda:*:*:function:*:SSM*
+              - Action:
+                  - states:DescribeExecution
+                  - states:StartExecution
+                Effect: Allow
+                Resource:
+                  - arn:aws:states:*:*:stateMachine:SSM*
+                  - arn:aws:states:*:*:execution:SSM*
+              - Action:
+                  - resource-groups:ListGroups
+                  - resource-groups:ListGroupResources
+                Effect: Allow
+                Resource:
+                  - '*'
+              - Action:
+                  - tag:GetResources
+                Effect: Allow
+                Resource:
+                  - '*'
+              - Action: iam:PassRole
+                Condition:
+                  StringEquals:
+                    iam:PassedToService:
+                      - ssm.amazonaws.com
+                Effect: Allow
+                Resource: !Sub ${MaintenanceWindowSnsIamRole.Arn}
+            Version: 2012-10-17
+          PolicyName: !Ref AWS::StackName
+    Type: AWS::IAM::Role
+  MaintenanceWindowSnsIamRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ssm.amazonaws.com
+        Version: 2012-10-17
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - sns:Publish
+                Effect: Allow
+                Resource:
+                  - !Ref PatchSnsTopicArn
+            Version: 2012-10-17
+          PolicyName: !Ref AWS::StackName
+    Type: AWS::IAM::Role
