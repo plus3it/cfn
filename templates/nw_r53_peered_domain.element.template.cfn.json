@@ -2,7 +2,7 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This element creates a Route53 Private Hosted Zone and the associated resource records for a peered domain.",
     "Metadata": {
-        "Version": "0.4.1"
+        "Version": "0.5.0"
     },
     "Outputs": {
         "PrivateHostedZoneId": {
