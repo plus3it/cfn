@@ -180,7 +180,8 @@
                     "Ref": "RdsSecurityGroupIds"
                 }
             },
-            "Type": "AWS::RDS::DBInstance"
+            "Type": "AWS::RDS::DBInstance",
+            "UpdateReplacePolicy": "Snapshot"
         },
         "RdsOptionGroup": {
             "DeletionPolicy": "Retain",
@@ -202,7 +203,8 @@
                     }
                 ]
             },
-            "Type": "AWS::RDS::OptionGroup"
+            "Type": "AWS::RDS::OptionGroup",
+            "UpdateReplacePolicy": "Retain"
         },
         "RdsSubnetGroup": {
             "Properties": {
