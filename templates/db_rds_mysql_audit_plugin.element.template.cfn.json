@@ -137,6 +137,7 @@
     "Resources": {
         "RdsInstance": {
             "DeletionPolicy": "Snapshot",
+            "UpdateReplacePolicy": "Snapshot",
             "Properties": {
                 "AllocatedStorage": {
                     "Ref": "RdsDbAllocatedStorage"
@@ -184,6 +185,7 @@
         },
         "RdsOptionGroup": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "EngineName": "mysql",
                 "MajorEngineVersion": "5.6",

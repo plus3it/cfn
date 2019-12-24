@@ -56,6 +56,7 @@
     "Resources": {
         "PeeredDcARecordSet1": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -87,6 +88,7 @@
         },
         "PeeredDcARecordSet2": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -118,6 +120,7 @@
         },
         "PeeredDcSrvRecordSet1": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -163,6 +166,7 @@
         },
         "PeeredDcSrvRecordSet2": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -208,6 +212,7 @@
         },
         "PeeredDomainARecordSet": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "PrivateHostedZone"
@@ -238,6 +243,7 @@
         },
         "PrivateHostedZone": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "HostedZoneConfig": {
                     "Comment": {

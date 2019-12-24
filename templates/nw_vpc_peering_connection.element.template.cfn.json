@@ -120,6 +120,7 @@
         "VpcPeerRoute1": {
             "Condition": "RouteTable1",
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": {
                     "Ref": "VpcPeerCidr"
@@ -136,6 +137,7 @@
         "VpcPeerRoute2": {
             "Condition": "RouteTable2",
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": {
                     "Ref": "VpcPeerCidr"
@@ -152,6 +154,7 @@
         "VpcPeerRoute3": {
             "Condition": "RouteTable3",
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": {
                     "Ref": "VpcPeerCidr"
@@ -168,6 +171,7 @@
         "VpcPeerRoute4": {
             "Condition": "RouteTable4",
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": {
                     "Ref": "VpcPeerCidr"
@@ -183,6 +187,7 @@
         },
         "VpcPeeringConnection": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "PeerOwnerId": {
                     "Ref": "VpcPeerAccountId"

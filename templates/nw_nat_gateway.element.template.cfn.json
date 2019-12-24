@@ -46,6 +46,7 @@
     "Resources": {
         "NATGateway": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "AllocationId": {
                     "Fn::GetAtt": [
@@ -61,6 +62,7 @@
         },
         "NATGatewayElasticIP": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Domain": "vpc"
             },
@@ -68,6 +70,7 @@
         },
         "PrivateRoute": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": "0.0.0.0/0",
                 "NatGatewayId": {
@@ -81,6 +84,7 @@
         },
         "PrivateRouteTable": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {

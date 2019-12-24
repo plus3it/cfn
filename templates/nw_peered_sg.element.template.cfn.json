@@ -26,6 +26,7 @@
     "Resources": {
         "RDPIngressTcp3389": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "FromPort": 3389,
                 "GroupId": {
@@ -41,6 +42,7 @@
         },
         "SSHIngressTcp22": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "FromPort": 22,
                 "GroupId": {
@@ -56,6 +58,7 @@
         },
         "VpcPeerSecurityGroup": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "GroupDescription": "Enables remote access from instances in the specified security group within the peered account",
                 "Tags": [

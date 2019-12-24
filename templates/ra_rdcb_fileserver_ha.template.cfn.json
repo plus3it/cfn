@@ -493,6 +493,7 @@
         },
         "DataVolume": {
             "DeletionPolicy": "Snapshot",
+            "UpdateReplacePolicy": "Snapshot",
             "Properties": {
                 "AvailabilityZone": {
                     "Ref": "Ec2SubnetAz"

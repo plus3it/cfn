@@ -47,6 +47,7 @@
     "Resources": {
         "PrivateSubnet": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "AvailabilityZone": {
                     "Ref": "AvailabilityZoneName"
@@ -86,6 +87,7 @@
         },
         "PrivateSubnetRouteTableAssociation": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "RouteTableId": {
                     "Ref": "PrivateRouteTableId"

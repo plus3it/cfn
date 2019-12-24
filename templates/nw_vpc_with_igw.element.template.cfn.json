@@ -41,6 +41,7 @@
     "Resources": {
         "AttachGateway": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "InternetGatewayId": {
                     "Ref": "InternetGateway"
@@ -53,6 +54,7 @@
         },
         "InternetGateway": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {
@@ -67,6 +69,7 @@
         },
         "PublicRoute": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "DependsOn": "AttachGateway",
             "Properties": {
                 "DestinationCidrBlock": "0.0.0.0/0",
@@ -81,6 +84,7 @@
         },
         "PublicRouteTable": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {
@@ -106,6 +110,7 @@
         },
         "VPC": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "CidrBlock": {
                     "Ref": "CIDRVPC"

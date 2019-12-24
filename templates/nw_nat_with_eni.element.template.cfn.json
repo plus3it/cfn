@@ -120,6 +120,7 @@
     "Resources": {
         "IamNatInstanceProfile": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Path": "/",
                 "Roles": [
@@ -132,6 +133,7 @@
         },
         "IamNatRole": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "AssumeRolePolicyDocument": {
                     "Statement": [
@@ -155,6 +157,7 @@
         },
         "IamNatRolePolicy": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "PolicyDocument": {
                     "Statement": [
@@ -188,6 +191,7 @@
                 }
             },
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DesiredCapacity": "1",
                 "LaunchConfigurationName": {
@@ -222,6 +226,7 @@
         },
         "NATElasticIP": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Domain": "vpc"
             },
@@ -229,6 +234,7 @@
         },
         "NATElasticIPAssociation": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "AllocationId": {
                     "Fn::GetAtt": [
@@ -244,6 +250,7 @@
         },
         "NATElasticNetworkInterface": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Description": "Network Interface for NAT Instance",
                 "GroupSet": [
@@ -279,6 +286,7 @@
         },
         "NATLaunchConfig": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "DependsOn": [
                 "NATElasticNetworkInterface"
             ],
@@ -475,6 +483,7 @@
         },
         "NATSecurityGroup": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "GroupDescription": "Enables outbound internet access for private subnets via the NAT instances",
                 "SecurityGroupIngress": [
@@ -519,6 +528,7 @@
         },
         "PrivateRoute": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "DestinationCidrBlock": "0.0.0.0/0",
                 "NetworkInterfaceId": {
@@ -532,6 +542,7 @@
         },
         "PrivateRouteTable": {
             "DeletionPolicy": "Retain",
+            "UpdateReplacePolicy": "Retain",
             "Properties": {
                 "Tags": [
                     {
