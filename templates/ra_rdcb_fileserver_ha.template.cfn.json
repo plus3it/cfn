@@ -207,7 +207,14 @@
                 }
             }
         },
-        "Version": "0.5.1"
+        "Version": "0.5.1",
+        "cfn-lint": {
+            "config": {
+                "ignore_checks": [
+                    "W4002"
+                ]
+            }
+        }
     },
     "Outputs": {
         "RdcbEc2InstanceId": {
