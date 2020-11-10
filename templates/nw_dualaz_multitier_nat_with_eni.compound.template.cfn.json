@@ -14,14 +14,21 @@
             ]
         },
         "CreateSecurityGroup": {
-            "Fn::Not": [
+            "Fn::And": [
                 {
-                    "Fn::Equals": [
+                    "Fn::Not": [
                         {
-                            "Ref": "VpcPeerSecurityGroup"
-                        },
-                        ""
+                            "Fn::Equals": [
+                                {
+                                    "Ref": "VpcPeerSecurityGroup"
+                                },
+                                ""
+                            ]
+                        }
                     ]
+                },
+                {
+                    "Condition": "PeerVpc"
                 }
             ]
         },
