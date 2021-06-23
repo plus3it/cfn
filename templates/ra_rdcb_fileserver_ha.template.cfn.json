@@ -211,6 +211,7 @@
         "cfn-lint": {
             "config": {
                 "ignore_checks": [
+                    "E3012",
                     "W4002"
                 ]
             }
