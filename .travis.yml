@@ -1,4 +1,6 @@
-language: bash
+language: python
+dist: focal
+python: "3.8"
 
 env:
   global:
@@ -6,6 +8,8 @@ env:
     - OWNER=plus3it
     - DEPLOY_SLUG=$OWNER/$REPO
     - RELEASE_VERSION=$(grep -E '^current_version' $TRAVIS_BUILD_DIR/.bumpversion.cfg | sed 's/^.*= //')
+
+if: branch = master OR type = pull_request OR tag is present
 
 jobs:
   include:
@@ -30,14 +34,13 @@ jobs:
       install:
         - pip install -r .requirements/cfn-lint.txt
         - cfn-lint --version
-      language: python
       script:
         - make cfn/lint
     - stage: test
       env:
         - JOB="YAML Lint"
       install:
-        - pip install --user yamllint
+        - pip install yamllint
         - yamllint --version
       script:
         - make yaml/lint
@@ -48,7 +51,6 @@ jobs:
         - pip install -r .requirements/cfn-version-check.txt
         - jq --version
         - yq --version
-      language: python
       script:
         - make cfn/version VERSION=$RELEASE_VERSION
     - stage: deploy
@@ -76,7 +78,6 @@ jobs:
           condition: '"$PRIOR_VERSION" != "$RELEASE_VERSION"'
     - stage: deploy
       provider: script
-      language: python
       env:
         - JOB="Deploy to S3"
       install: skip
