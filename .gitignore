@@ -1,0 +1,17 @@
+# tardigrade-ci
+.tardigrade-ci
+tardigrade-ci/
+
+# python cache
+__pycache__
+.python-version
+.pytest_cache
+
+# MacOS
+.DS_Store
+
+# ec (editorconfig-checker)
+.git/
+
+#ide folders
+.idea/
