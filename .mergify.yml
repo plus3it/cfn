@@ -1,15 +1,15 @@
 pull_request_rules:
-  - name: automatic approve dependabot pull requests
+  - name: approve dependabot pull requests
     conditions:
-      - author~=dependabot\[bot\]|dependabot-preview\[bot\]
-      - status-success=Travis CI - Pull Request
+      - author=dependabot[bot]
+      - label!=terraform
     actions:
       review:
         type: APPROVE
 
-  - name: automatic merge for dependabot pull requests
+  - name: merge dependabot pull requests
     conditions:
-      - author~=dependabot\[bot\]|dependabot-preview\[bot\]
+      - author=dependabot[bot]
       - "#approved-reviews-by>=1"
     actions:
       merge:
