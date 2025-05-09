@@ -62,9 +62,9 @@ Configuration AssertAdRecycleBin
 
         xADRecycleBin RecycleBin
         {
-           EnterpriseAdministratorCredential = $Node.EnterpriseAdministratorCredential
-           ForestFQDN = $Node.ForestFqdn
-           DependsOn = '[xWaitForADDomain]DscForestWait'
+            EnterpriseAdministratorCredential = $Node.EnterpriseAdministratorCredential
+            ForestFQDN = $Node.ForestFqdn
+            DependsOn = '[xWaitForADDomain]DscForestWait'
         }
 
         # Remove ConfigStore as last step, as it will contain sensitive info

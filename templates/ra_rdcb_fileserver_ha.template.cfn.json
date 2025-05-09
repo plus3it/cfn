@@ -212,6 +212,9 @@
             "config": {
                 "ignore_checks": [
                     "E3012",
+                    "W1011",
+                    "W1030",
+                    "W2501",
                     "W4002"
                 ]
             }
@@ -257,6 +260,7 @@
     },
     "Parameters": {
         "AmiId": {
+            "AllowedPattern": "^$|^ami-([0-9a-z]{8}|[0-9a-z]{17})$",
             "Default": "",
             "Description": "(Optional) AMI ID -- will supersede Lambda-based AMI lookup using AmiNameSearchString",
             "Type": "AWS::EC2::Image::Id"
@@ -408,12 +412,8 @@
             "Type": "String"
         },
         "RdsDbPassword": {
-            "AllowedPattern": ".*[^\"@/].*",
-            "ConstraintDescription": "Must not contain \", @, or /",
-            "Default": "connectionbroker",
             "Description": "The database admin account password; must match password associated with the RdsSnapshot; these characters are not valid: \", @, and /",
-            "NoEcho": "true",
-            "Type": "String"
+            "Type": "AWS::SSM::Parameter::Value<String>"
         },
         "RdsDbUsername": {
             "AllowedPattern": "^([a-zA-Z])([-a-zA-Z0-9])*",

@@ -4,19 +4,19 @@ function Get-FilesFromGitHost
 {
     <#
     .SYNOPSIS
-       This function will download files over HTTP from a remote git repository
-       without using Git
+        This function will download files over HTTP from a remote git repository
+        without using Git
     .DESCRIPTION
-       This function will download files over HTTP from a remote git repository
-       without using Git. At a minimum, you will need to provide the Source
-       (https://github.com/owner/repo/path/to/dir). Optionally, you may specify
-       Ref (default: $null, determined by remote git host), or Destination
-       (default: current directory).
+        This function will download files over HTTP from a remote git repository
+        without using Git. At a minimum, you will need to provide the Source
+        (https://github.com/owner/repo/path/to/dir). Optionally, you may specify
+        Ref (default: $null, determined by remote git host), or Destination
+        (default: current directory).
     .EXAMPLE
-       # Get files from the root of a GitHub repository:
+        # Get files from the root of a GitHub repository:
 
-       Get-FilesFromGitHost -Source 'https://github.com/owner/repo'
-     .EXAMPLE
+        Get-FilesFromGitHost -Source 'https://github.com/owner/repo'
+    .EXAMPLE
         # Get files from a subdirectory within a GitHub repository:
 
         Get-FilesFromGitHost -Source 'https://github.com/owner/repo/path/to/directory'
@@ -25,21 +25,27 @@ function Get-FilesFromGitHost
     Param
     (
         # Please provide the remote git source (https://github.com/owner/repo/path/to/dir)
-        [Parameter(Mandatory=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=0)]
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipelineByPropertyName=$true,
+            Position=0
+        )]
         [string]$Source,
 
         # Please provide the git ref
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=1)]
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipelineByPropertyName=$true,
+            Position=1
+        )]
         [string]$Ref,
 
         # Please provide the destination directory (will be created)
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=2)]
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipelineByPropertyName=$true,
+            Position=2
+        )]
         [string]$Destination = "."
     )
     Begin
@@ -95,15 +101,19 @@ function Get-GitHostApiMethod
     Param
     (
         # Please provide the api method call
-        [Parameter(Mandatory=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=0)]
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipelineByPropertyName=$true,
+            Position=0
+        )]
         [string]$MethodType,
 
         # Please provide the remote git host
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=1)]
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipelineByPropertyName=$true,
+            Position=1
+        )]
         [string]$SourceHost
     )
     Begin
@@ -124,15 +134,19 @@ function List-GitFiles
     Param
     (
         # Please provide the remote git source
-        [Parameter(Mandatory=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=0)]
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipelineByPropertyName=$true,
+            Position=0
+        )]
         [string]$Source,
 
         # Please provide the git ref
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=1)]
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipelineByPropertyName=$true,
+            Position=1
+        )]
         [string]$Ref
     )
     Begin
@@ -160,45 +174,57 @@ function List-GitHubFiles
     Param
     (
         # Please provide the remote git api uri to a repo/path
-        [Parameter(Mandatory=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   ParameterSetName="ApiUri",
-                   Position=0)]
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipelineByPropertyName=$true,
+            ParameterSetName="ApiUri",
+            Position=0
+        )]
         [string]$ApiUri,
 
         # Please provide the repo owner
-        [Parameter(Mandatory=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   ParameterSetName="NoApiUri",
-                   Position=0)]
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipelineByPropertyName=$true,
+            ParameterSetName="NoApiUri",
+            Position=0
+        )]
         [string]$Owner,
 
         # Please provide the repo name
-        [Parameter(Mandatory=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   ParameterSetName="NoApiUri",
-                   Position=1)]
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipelineByPropertyName=$true,
+            ParameterSetName="NoApiUri",
+            Position=1
+        )]
         [string]$Repo,
 
         # Please provide the repo path
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   ParameterSetName="NoApiUri",
-                   Position=2)]
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipelineByPropertyName=$true,
+            ParameterSetName="NoApiUri",
+            Position=2
+        )]
         [string]$RepoPath,
 
         # Please provide the api host
-        [Parameter(Mandatory=$false,
-                   ValueFromPipelineByPropertyName=$true,
-                   ParameterSetName="NoApiUri",
-                   Position=3)]
+        [Parameter(
+            Mandatory=$false,
+            ValueFromPipelineByPropertyName=$true,
+            ParameterSetName="NoApiUri",
+            Position=3
+        )]
         [string]$ApiHost = "api.github.com",
 
         # Please provide the git ref
-        [Parameter(Mandatory=$false,
-                   ParameterSetName="NoApiUri",
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=4)]
+        [Parameter(
+            Mandatory=$false,
+            ParameterSetName="NoApiUri",
+            ValueFromPipelineByPropertyName=$true,
+            Position=4
+        )]
         [string]$Ref
     )
     Begin
