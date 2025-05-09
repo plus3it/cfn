@@ -2,7 +2,7 @@
 #
 # configure-nat-eni.sh
 #
-# This script is designed to attach an Elastic Network Interface to 
+# This script is designed to attach an Elastic Network Interface to
 # a NAT instance.
 #
 # Written by Loren Gordon, hosted at:
@@ -14,7 +14,7 @@
 # Script will look for an ENI with a tag `TAG_KEY` that matches the
 # `TAG_KEY` on the instance. e.g. Both the ENI and the instance
 # must have a tag of `TAG_KEY` and the value must be the same.
-# `TAG_KEY` defaults to 'Name', but can be passed as the first 
+# `TAG_KEY` defaults to 'Name', but can be passed as the first
 # parameter to the script.
 #
 # Pre-requisites:
@@ -154,9 +154,9 @@ while true; do
         die "Timer expired before network interface acquired IP address."
     fi
     IP_ADDRESS=$(ip addr show dev "${ETH}" 2> /dev/null | awk '/inet /{ sub(/\/.*$/,"",$2); print $2 }')
-    if [[ -n "${IP_ADDRESS}" ]]; then 
+    if [[ -n "${IP_ADDRESS}" ]]; then
         break  # break loop if IP was found
-    fi  
+    fi
     log "Not found yet. Trying again in $delay second(s). Will timeout if not reachable within $timer second(s)."
     sleep $delay
     timer=$(( timer-delay ))

@@ -1,7 +1,30 @@
 version: 2
 updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+  # Maintain dependencies for dockerfiles
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      docker:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for python packages
   - package-ecosystem: pip
     directory: "/.requirements"
     schedule:
-      interval: daily
-    open-pull-requests-limit: 10
+      interval: monthly
+    groups:
+      pip:
+        patterns:
+          - "*"

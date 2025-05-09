@@ -2,7 +2,15 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "This template deploys a MySQL RDS instance",
     "Metadata": {
-        "Version": "0.5.1"
+        "Version": "0.5.1",
+        "cfn-lint": {
+            "config": {
+                "ignore_checks": [
+                    "W1011",
+                    "W2501"
+                ]
+            }
+        }
     },
     "Outputs": {
         "JDBCConnectionString": {
@@ -98,14 +106,8 @@
             "Type": "String"
         },
         "RdsDbPassword": {
-            "AllowedPattern": "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "ConstraintDescription": "Must contain letters, numbers and symbols.",
-            "Default": "RdsDbAdmin456$%^",
             "Description": "The database admin account password, these characters are not valid: \", @, and /",
-            "MaxLength": "41",
-            "MinLength": "16",
-            "NoEcho": "true",
-            "Type": "String"
+            "Type": "AWS::SSM::Parameter::Value<String>"
         },
         "RdsDbUsername": {
             "AllowedPattern": "^([a-zA-Z])([-a-zA-Z0-9])*",
@@ -154,7 +156,7 @@
                     "Ref": "RdsSubnetGroup"
                 },
                 "Engine": "MySQL",
-                "EngineVersion": "5.6.29",
+                "EngineVersion": "8.4.4",
                 "MasterUserPassword": {
                     "Ref": "RdsDbPassword"
                 },

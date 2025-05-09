@@ -1,0 +1,17 @@
+name: Validate the project version
+on:
+  pull_request:
+
+concurrency:
+  group: version-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone this git repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Check that the project version is set in all CFN templates
+        run: make cfn/version
