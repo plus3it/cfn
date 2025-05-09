@@ -9,5 +9,6 @@ deploy:
 	@echo "make: Applying version tag to bucket objects"
 	aws s3api list-objects --bucket $(BUCKET) --query "Contents[?starts_with(Key, \`$(PREFIX)\`)].{Key:Key}" --out text | $(XARGS) -n1 -P8 -t aws s3api put-object-tagging --bucket $(BUCKET) --tagging "TagSet=[{Key=Version,Value=$(VERSION)}]" --key {}
 
-cfn/version:
+cfn/version: | guard/program/yq
 	$(FIND_CFN) | $(XARGS) bash -c "yq -e '.Metadata.Version | test(\"^$(VERSION)$$\")' {} > /dev/null || (echo '[{}]: BAD/MISSING Cfn Version Metadata'; exit 1)"
+	@echo "make: All CloudFormation templates have the correct version metadata"
