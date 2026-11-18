@@ -156,7 +156,7 @@
                     "Ref": "RdsSubnetGroup"
                 },
                 "Engine": "MySQL",
-                "EngineVersion": "8.4.4",
+                "EngineVersion": "8.4",
                 "MasterUserPassword": {
                     "Ref": "RdsDbPassword"
                 },
@@ -189,7 +189,7 @@
             "DeletionPolicy": "Retain",
             "Properties": {
                 "EngineName": "mysql",
-                "MajorEngineVersion": "5.6",
+                "MajorEngineVersion": "8.4",
                 "OptionConfigurations": [
                     {
                         "OptionName": "MARIADB_AUDIT_PLUGIN"
